@@ -5,6 +5,8 @@ import { playItem, playFeedback } from "@/lib/audio";
 import { cn } from "@/lib/utils";
 import { Volume2 } from "lucide-react";
 import { gamePool, shuffle, pickN } from "./_shared";
+import { pickNextLetter, recordSrsAnswer, recordLetterMastery } from "@/data/srs";
+const SRS_TOPIC = "balloon-game";
 import type { ContentItem } from "@/data/types";
 
 interface Balloon {
@@ -28,7 +30,9 @@ const BalloonGame = () => {
 
   const newRound = () => {
     const pool = gamePool();
-    const tgt = pool[Math.floor(Math.random() * pool.length)];
+    const ids = pool.map((p) => p.id);
+    const tgtId = pickNextLetter("games", SRS_TOPIC, ids);
+    const tgt = pool.find((p) => p.id === tgtId) || pool[0];
     setTarget(tgt);
     const distractors = pickN(pool.filter((p) => p.id !== tgt.id), 4);
     const all = shuffle([tgt, ...distractors]);
@@ -78,6 +82,8 @@ const BalloonGame = () => {
     if (b.popped || !target) return;
     setBalloons((bs) => bs.map((x) => x.uid === b.uid ? { ...x, popped: true } : x));
     const correct = b.item.id === target.id;
+    recordSrsAnswer("games", SRS_TOPIC, target.id, correct);
+    recordLetterMastery(target.id, correct);
     if (correct) {
       setScore((s) => s + 1);
       await playFeedback(true);

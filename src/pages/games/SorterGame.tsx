@@ -1,89 +1,109 @@
 import { useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { LangToggle } from "@/components/LangToggle";
-import { playItem, playFeedback } from "@/lib/audio";
+import { playItem, playSpeech, playFeedback } from "@/lib/audio";
 import { cn } from "@/lib/utils";
 import { gamePool, getGameLang, pickN, shuffle } from "./_shared";
+import { recordSrsAnswer, recordLetterMastery } from "@/data/srs";
 import type { ContentItem } from "@/data/types";
 
 // =============================================================
-// Kutu Boşalt — kutu içinde 3-4 farklı nesne. Aynı nesneden 3'ünü
-// üst üste seçince o nesnenin adını söyler ve siler. Kutu boşalınca kazan.
+// Kutu Boşalt — Sistem rastgele bir harfi söyler ("ha"). Kutudan
+// o harfin 3 örneğini sırayla seç. Yanlış seçim → titreşim/yanlış sesi.
+// 3'ü doğru seçince harfin SRS seviyesi yükselir; yeni hedef gelir.
 // =============================================================
 
-const TOTAL_ITEMS = 18; // 6 of each across ~3 types
+interface Cell { uid: string; item: ContentItem; cleared: boolean; wrong: boolean; }
 
-interface Cell { uid: string; item: ContentItem; selected: boolean; cleared: boolean; }
+const PER_TYPE = 3;
+const TYPE_COUNT = 4; // 4 farklı harf × 3 = 12 hücre
 
 function buildBox(): { cells: Cell[]; types: ContentItem[] } {
   const lang = getGameLang();
   const pool = gamePool(lang);
-  const types = pickN(pool, 3);
-  // Each type appears exactly 6 times (so 3 sets of 3 per type) — 18 cells total
+  const types = pickN(pool, Math.min(TYPE_COUNT, pool.length));
   const all: ContentItem[] = [];
-  types.forEach((t) => { for (let i = 0; i < 6; i++) all.push(t); });
+  types.forEach((t) => { for (let i = 0; i < PER_TYPE; i++) all.push(t); });
   const shuffled = shuffle(all);
   const cells: Cell[] = shuffled.map((it, i) => ({
-    uid: `${it.id}-${i}`, item: it, selected: false, cleared: false,
+    uid: `${it.id}-${i}`, item: it, cleared: false, wrong: false,
   }));
   return { cells, types };
 }
 
+const SRS_TOPIC = "sorter-game";
+
 const SorterGame = () => {
   const [board, setBoard] = useState(() => buildBox());
+  const [target, setTarget] = useState<ContentItem | null>(null);
+  const [progress, setProgress] = useState(0); // doğru tıklanan hedef sayısı (0..3)
   const [score, setScore] = useState(0);
   const [busy, setBusy] = useState(false);
-  // bump key to rebuild on lang change
-  const [, setLangKey] = useState(0);
-  useEffect(() => {
-    const h = () => { setBoard(buildBox()); setScore(0); setLangKey((k) => k + 1); };
-    window.addEventListener("games-lang-change", h);
-    return () => window.removeEventListener("games-lang-change", h);
-  }, []);
+
+  const remainingTypes = useMemo(
+    () => {
+      const left: Record<string, ContentItem> = {};
+      board.cells.forEach((c) => { if (!c.cleared) left[c.item.id] = c.item; });
+      return Object.values(left);
+    },
+    [board.cells]
+  );
 
   const won = useMemo(
     () => board.cells.length > 0 && board.cells.every((c) => c.cleared),
     [board.cells]
   );
 
-  const reset = () => { setBoard(buildBox()); setScore(0); setBusy(false); };
+  // Hedef yoksa veya hedef tükendiyse yeni hedef seç + sesini çal
+  useEffect(() => {
+    if (won) return;
+    const targetGone = !target || !remainingTypes.some((t) => t.id === target.id);
+    if (targetGone && remainingTypes.length > 0) {
+      const next = remainingTypes[Math.floor(Math.random() * remainingTypes.length)];
+      setTarget(next);
+      setProgress(0);
+      setTimeout(() => playItem(next), 300);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [board.cells, won]);
+
+  useEffect(() => {
+    const h = () => { setBoard(buildBox()); setScore(0); setTarget(null); setProgress(0); };
+    window.addEventListener("games-lang-change", h);
+    return () => window.removeEventListener("games-lang-change", h);
+  }, []);
+
+  const reset = () => { setBoard(buildBox()); setScore(0); setBusy(false); setTarget(null); setProgress(0); };
 
   const tap = async (c: Cell) => {
-    if (busy || c.cleared || c.selected) return;
-    // toggle select
-    const updated = board.cells.map((x) => x.uid === c.uid ? { ...x, selected: true } : x);
-    setBoard({ ...board, cells: updated });
-
-    const selectedSame = updated.filter((x) => !x.cleared && x.selected && x.item.id === c.item.id);
-    const otherSelected = updated.find((x) => !x.cleared && x.selected && x.item.id !== c.item.id);
-
-    if (otherSelected) {
-      // farklı nesne seçildi → seçimi sıfırla
-      setBusy(true);
-      await playFeedback(false);
-      setTimeout(() => {
-        setBoard((b) => ({ ...b, cells: b.cells.map((x) => ({ ...x, selected: false })) }));
-        setBusy(false);
-      }, 450);
-      return;
-    }
-
-    if (selectedSame.length === 3) {
-      setBusy(true);
-      // ses + temizle
-      playItem(c.item);
-      setTimeout(() => {
-        setBoard((b) => ({
-          ...b,
-          cells: b.cells.map((x) =>
-            !x.cleared && x.item.id === c.item.id && x.selected
-              ? { ...x, cleared: true, selected: false }
-              : x
-          ),
-        }));
+    if (busy || c.cleared || !target) return;
+    if (c.item.id === target.id) {
+      // doğru
+      setBoard((b) => ({ ...b, cells: b.cells.map((x) => x.uid === c.uid ? { ...x, cleared: true } : x) }));
+      const newProgress = progress + 1;
+      setProgress(newProgress);
+      playFeedback(true);
+      if (newProgress >= PER_TYPE) {
+        // hedef tamamlandı → sesini söyle, SRS'ye doğru olarak yaz
+        setBusy(true);
+        playItem(target);
+        recordSrsAnswer("games", SRS_TOPIC, target.id, true);
+        recordLetterMastery(target.id, true);
         setScore((s) => s + 1);
+        // sesin bitmesini bekle, sonra yeni hedef seç
+        setTimeout(() => { setTarget(null); setBusy(false); }, 1300);
+      }
+    } else {
+      // yanlış → titreşim+ses, SRS'ye yanlış olarak yaz
+      setBusy(true);
+      recordSrsAnswer("games", SRS_TOPIC, target.id, false);
+      recordLetterMastery(target.id, false);
+      await playFeedback(false);
+      setBoard((b) => ({ ...b, cells: b.cells.map((x) => x.uid === c.uid ? { ...x, wrong: true } : x) }));
+      setTimeout(() => {
+        setBoard((b) => ({ ...b, cells: b.cells.map((x) => x.uid === c.uid ? { ...x, wrong: false } : x) }));
         setBusy(false);
-      }, 600);
+      }, 500);
     }
   };
 
@@ -107,9 +127,29 @@ const SorterGame = () => {
           </div>
         </div>
 
-        <p className="text-center text-sm font-bold text-muted-foreground mb-2">
-          Aynı nesneden 3 tane seç → kutudan silinir!
-        </p>
+        {/* Hedef paneli */}
+        {!won && target && (
+          <div className="mb-3 rounded-2xl bg-card border-4 border-warning/50 p-3 shadow-card flex items-center justify-between gap-3">
+            <div className="flex-1">
+              <div className="text-[11px] font-bold text-muted-foreground">Hedef harf</div>
+              <div className="text-base font-extrabold">"{target.label}" harfini bul</div>
+              <div className="mt-1 flex gap-1">
+                {Array.from({ length: PER_TYPE }).map((_, i) => (
+                  <span key={i} className={cn(
+                    "h-2 w-6 rounded-full",
+                    i < progress ? "bg-success" : "bg-muted",
+                  )} />
+                ))}
+              </div>
+            </div>
+            <button
+              onClick={() => playItem(target)}
+              className="shrink-0 rounded-full bg-primary text-primary-foreground px-4 py-2 font-bold shadow-soft text-sm"
+            >
+              🔊 Dinle
+            </button>
+          </div>
+        )}
 
         {won ? (
           <div className="rounded-3xl bg-card p-6 text-center shadow-card border-4 border-success/40 animate-bounce-in">
@@ -128,8 +168,8 @@ const SorterGame = () => {
                   className={cn(
                     "aspect-square rounded-2xl flex items-center justify-center text-4xl shadow-soft border-4 transition-bouncy",
                     c.cleared ? "opacity-0 pointer-events-none" :
-                      c.selected ? "bg-success/30 border-success animate-pop scale-110" :
-                        "bg-card border-primary/20 hover:-translate-y-1"
+                      c.wrong ? "bg-destructive/30 border-destructive animate-pop" :
+                        "bg-card border-primary/20 hover:-translate-y-1 active:scale-95",
                   )}
                 >
                   {!c.cleared && <span>{c.item.emoji}</span>}
