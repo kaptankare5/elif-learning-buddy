@@ -48,7 +48,7 @@ const FlappyGame = () => {
   const [eaten, setEaten] = useState(0);
   const [lives, setLives] = useState(3);
   const [gameOver, setGameOver] = useState(false);
-  const [paused, setPaused] = useState(false);
+  const [paused, setPaused] = useState(true);
 
   const tickRef = useRef(0);
   const velRef = useRef(0); velRef.current = vel;
@@ -68,7 +68,8 @@ const FlappyGame = () => {
   useEffect(() => { pickTarget(); }, [pickTarget]);
 
   const flap = useCallback(() => {
-    if (gameOver || paused) return;
+    if (gameOver) return;
+    if (paused) setPaused(false);
     setVel(FLAP);
   }, [gameOver, paused]);
 
@@ -228,7 +229,7 @@ const FlappyGame = () => {
 
   const reset = () => {
     setBirdY(40); setVel(0); setLetters([]); setScore(0);
-    setEaten(0); setLives(3); setGameOver(false); setPaused(false);
+    setEaten(0); setLives(3); setGameOver(false); setPaused(true);
     UID = 1; tickRef.current = 0;
     setTimeout(pickTarget, 0);
   };
@@ -322,8 +323,10 @@ const FlappyGame = () => {
           )}
 
           {paused && !gameOver && (
-            <div className="absolute inset-0 flex items-center justify-center bg-background/70">
-              <div className="text-2xl font-extrabold">⏸️ Duraklatıldı</div>
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80">
+              <div className="text-5xl mb-2">🐦</div>
+              <div className="text-xl font-extrabold text-info mb-1">Hazır?</div>
+              <div className="text-sm font-bold text-muted-foreground">Zıplamak için ekrana dokun</div>
             </div>
           )}
         </div>

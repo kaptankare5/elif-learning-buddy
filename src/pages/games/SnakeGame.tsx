@@ -42,7 +42,7 @@ const SnakeGame = () => {
   const [eaten, setEaten] = useState(0);
   const [score, setScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
-  const [paused, setPaused] = useState(false);
+  const [paused, setPaused] = useState(true);
 
   const newFood = useCallback((occupied: Cell[]) => {
     const pool = gamePool();
@@ -161,12 +161,14 @@ const SnakeGame = () => {
     setEaten(0);
     setScore(0);
     setGameOver(false);
-    setPaused(false);
+    setPaused(true);
     setQuiz(null);
     newFood([{ x: 5, y: 9 }, { x: 4, y: 9 }, { x: 3, y: 9 }]);
   };
 
   const turn = (nd: Dir) => {
+    if (gameOver) return;
+    if (paused) setPaused(false);
     const d = dirRef.current;
     if ((nd.x !== 0 && d.x === 0) || (nd.y !== 0 && d.y === 0)) setDir(nd);
   };
@@ -264,6 +266,16 @@ const SnakeGame = () => {
               <span className="text-lg font-extrabold leading-none">{opt.item.emoji}</span>
             </div>
           ))}
+          {!gameOver && paused && (
+            <button
+              onClick={() => setPaused(false)}
+              className="absolute inset-0 flex flex-col items-center justify-center bg-background/80"
+            >
+              <div className="text-5xl mb-2">🐍</div>
+              <div className="text-xl font-extrabold text-success mb-1">Hazır?</div>
+              <div className="text-sm font-bold text-muted-foreground">Başlamak için bir yöne bas</div>
+            </button>
+          )}
           {gameOver && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/90">
               <div className="text-4xl mb-2">😵</div>
