@@ -1,0 +1,108 @@
+import { Link } from "react-router-dom";
+import { PageHeader } from "@/components/PageHeader";
+import { SUBJECTS } from "@/data/subjects";
+import { getTopicSrs, getNamespaceStats, useSrsTick, type Level } from "@/data/srs";
+import { cn } from "@/lib/utils";
+
+const NS = "quiz" as const;
+
+const ProgressPage = () => {
+  useSrsTick(NS);
+  const stats = getNamespaceStats(NS);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-secondary/30 to-background">
+      <main className="container mx-auto max-w-2xl px-4 pb-16">
+        <PageHeader title="📈 İlerleme" backTo="/" centered />
+
+        <div className="mb-4 grid grid-cols-3 gap-2">
+          <Stat label="Toplam Cevap" value={stats.total} color="text-primary" />
+          <Stat label="Doğru" value={stats.correct} color="text-success" />
+          <Stat label="Başarı" value={`${stats.percent}%`} color="text-info" />
+        </div>
+
+        <div className="mb-6 grid grid-cols-4 gap-2">
+          {[1, 2, 3, 4].map((l) => (
+            <LevelBox key={l} level={l as Level} count={stats.levelCount[l as Level]} />
+          ))}
+        </div>
+
+        <div className="space-y-4">
+          {SUBJECTS.map((s) => (
+            <div key={s.id} className="rounded-3xl bg-card shadow-card border-2 border-border/50 overflow-hidden">
+              <div className={cn("p-3 text-white", s.bgVar)}>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">{s.emoji}</span>
+                  <h2 className="font-extrabold">{s.title}</h2>
+                </div>
+              </div>
+              <div className="p-3 space-y-2">
+                {s.topics.map((t) => {
+                  const srs = getTopicSrs(NS, t.id);
+                  const ids = t.items.map((i) => i.id);
+                  const counts: Record<Level, number> = { 1: 0, 2: 0, 3: 0, 4: 0 };
+                  let touched = 0;
+                  for (const id of ids) {
+                    const e = srs[id];
+                    if (e) { counts[e.level as Level]++; touched++; }
+                  }
+                  const pct = ids.length ? Math.round((touched / ids.length) * 100) : 0;
+                  return (
+                    <Link
+                      key={t.id}
+                      to={`/konu/${s.id}/${t.id}`}
+                      className="flex items-center gap-3 rounded-2xl bg-muted/50 p-3 transition-bouncy hover:bg-muted"
+                    >
+                      <span className="text-2xl">{t.emoji}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-sm truncate">{t.title}</div>
+                        <div className="mt-1 h-2 rounded-full bg-background overflow-hidden">
+                          <div className="h-full bg-gradient-to-r from-info via-primary to-success" style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                      <div className="flex gap-1 text-[10px] font-bold">
+                        {[1, 2, 3, 4].map((l) => (
+                          <span key={l} className={cn("rounded px-1 py-0.5",
+                            l === 1 && "bg-info/20 text-info",
+                            l === 2 && "bg-warning/20 text-warning",
+                            l === 3 && "bg-secondary text-secondary-foreground",
+                            l === 4 && "bg-success/20 text-success")}>
+                            {counts[l as Level]}
+                          </span>
+                        ))}
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </main>
+    </div>
+  );
+};
+
+function Stat({ label, value, color }: { label: string; value: string | number; color: string }) {
+  return (
+    <div className="rounded-2xl bg-card p-3 text-center shadow-soft border-2 border-border/40">
+      <div className="text-[10px] font-bold text-muted-foreground">{label}</div>
+      <div className={cn("text-2xl font-extrabold", color)}>{value}</div>
+    </div>
+  );
+}
+
+function LevelBox({ level, count }: { level: Level; count: number }) {
+  return (
+    <div className={cn("rounded-xl p-2 text-center shadow-soft border-2",
+      level === 1 && "bg-info/10 border-info/40",
+      level === 2 && "bg-warning/10 border-warning/40",
+      level === 3 && "bg-secondary/40 border-secondary",
+      level === 4 && "bg-success/10 border-success/40")}>
+      <div className="text-[10px] font-bold text-muted-foreground">Seviye {level}</div>
+      <div className="text-xl font-extrabold">{count}</div>
+    </div>
+  );
+}
+
+export default ProgressPage;
