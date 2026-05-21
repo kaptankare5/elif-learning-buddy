@@ -42,7 +42,7 @@ const SnakeGame = () => {
   const [eaten, setEaten] = useState(0);
   const [score, setScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
-  const [paused, setPaused] = useState(false);
+  const [paused, setPaused] = useState(true);
 
   const newFood = useCallback((occupied: Cell[]) => {
     const pool = gamePool();
