@@ -266,6 +266,16 @@ const SnakeGame = () => {
               <span className="text-lg font-extrabold leading-none">{opt.item.emoji}</span>
             </div>
           ))}
+          {!gameOver && paused && (
+            <button
+              onClick={() => setPaused(false)}
+              className="absolute inset-0 flex flex-col items-center justify-center bg-background/80"
+            >
+              <div className="text-5xl mb-2">🐍</div>
+              <div className="text-xl font-extrabold text-success mb-1">Hazır?</div>
+              <div className="text-sm font-bold text-muted-foreground">Başlamak için bir yöne bas</div>
+            </button>
+          )}
           {gameOver && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/90">
               <div className="text-4xl mb-2">😵</div>
