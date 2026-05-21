@@ -161,12 +161,14 @@ const SnakeGame = () => {
     setEaten(0);
     setScore(0);
     setGameOver(false);
-    setPaused(false);
+    setPaused(true);
     setQuiz(null);
     newFood([{ x: 5, y: 9 }, { x: 4, y: 9 }, { x: 3, y: 9 }]);
   };
 
   const turn = (nd: Dir) => {
+    if (gameOver) return;
+    if (paused) setPaused(false);
     const d = dirRef.current;
     if ((nd.x !== 0 && d.x === 0) || (nd.y !== 0 && d.y === 0)) setDir(nd);
   };
