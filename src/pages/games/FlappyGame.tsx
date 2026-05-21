@@ -323,8 +323,10 @@ const FlappyGame = () => {
           )}
 
           {paused && !gameOver && (
-            <div className="absolute inset-0 flex items-center justify-center bg-background/70">
-              <div className="text-2xl font-extrabold">⏸️ Duraklatıldı</div>
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80">
+              <div className="text-5xl mb-2">🐦</div>
+              <div className="text-xl font-extrabold text-info mb-1">Hazır?</div>
+              <div className="text-sm font-bold text-muted-foreground">Zıplamak için ekrana dokun</div>
             </div>
           )}
         </div>
