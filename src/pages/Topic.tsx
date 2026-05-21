@@ -15,6 +15,7 @@ import {
   type Level,
 } from "@/data/srs";
 import { cn } from "@/lib/utils";
+import { useAge, itemsForAge } from "@/lib/age";
 
 type Mode = "pratik" | "kart";
 
@@ -48,7 +49,8 @@ const Topic = () => {
   const [picked, setPicked] = useState<string | null>(null);
   const [score, setScore] = useState(0);
 
-  const items = topic?.items || [];
+  const [age] = useAge();
+  const items = itemsForAge(topic?.items || [], age);
   const itemIds = useMemo(() => items.map((i) => i.id), [items]);
 
   // Konu/mod değiştiğinde sıfırla
@@ -115,17 +117,17 @@ const Topic = () => {
 
           <button
             onClick={() => playItem(item)}
-            className="w-full bg-card rounded-3xl p-8 shadow-card border-4 border-primary/20 transition-bouncy hover:scale-[1.02] active:scale-95 animate-bounce-in min-h-[55vh] flex flex-col items-center justify-center"
+            className="w-full bg-card rounded-3xl p-8 shadow-card border-4 border-primary/20 transition-bouncy hover:scale-[1.02] active:scale-95 animate-bounce-in min-h-[55vh] flex flex-col items-center justify-center gap-4"
             key={item.id}
           >
-            {item.emoji && <div className="text-7xl mb-4">{item.emoji}</div>}
-            <div className="text-8xl font-extrabold text-primary text-shadow-soft animate-pop leading-none mb-10">
+            {item.emoji && <div className="text-7xl">{item.emoji}</div>}
+            <div className="text-8xl font-extrabold text-primary text-shadow-soft animate-pop">
               {item.label}
             </div>
             {item.subLabel && (
-              <div className="text-xl font-bold text-muted-foreground mb-8">{item.subLabel}</div>
+              <div className="text-xl font-bold text-muted-foreground">{item.subLabel}</div>
             )}
-            <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-primary-foreground font-bold shadow-soft">
+            <div className="mt-2 inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-primary-foreground font-bold shadow-soft">
               <Volume2 className="h-5 w-5" />
               <span>Dinle</span>
             </div>
@@ -206,9 +208,9 @@ const Topic = () => {
                 <Volume2 className="h-5 w-5" />
                 Tekrar Dinle
               </button>
-              {q.target.subLabel && (
-                <p className="text-xs text-muted-foreground mt-2">{q.target.subLabel}</p>
-              )}
+              <p className="text-xs text-muted-foreground mt-2">
+                ({q.target.lang === "en" ? "İngilizce" : "Türkçe"})
+              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -226,12 +228,7 @@ const Topic = () => {
                     )}
                   >
                     {opt.emoji && <span className="text-5xl">{opt.emoji}</span>}
-                    <span className={cn(
-                      "font-extrabold leading-none",
-                      // Arapça harfli kısa etiketler için çok büyük; düz isimler için orta boy
-                      opt.label.length <= 4 ? "text-7xl" : "text-2xl",
-                      (isCorrect || isWrong) ? "text-white" : "text-foreground"
-                    )}>
+                    <span className={cn("text-lg font-extrabold", (isCorrect || isWrong) ? "text-white" : "text-foreground")}>
                       {opt.label}
                     </span>
                   </button>

@@ -1,26 +1,34 @@
-// Elifba — Ortak içerik tipleri
-// Sesler build-time ElevenLabs ile üretildi → public/audio/<sha1>.mp3
-// Audio anahtarı: item.speech (Arapça metin) → SHA-1 → /audio/<hash>.mp3
+// Mini Akıl - Ortak içerik tipleri ve veri katmanı
+// Tüm konular aynı şemayı paylaşır: konu listesi -> item listesi
+// Sesler ElevenLabs ile build-time üretilir, public/audio/{tr,en}/<sha1>.mp3 olarak saklanır
 
-export type Lang = "tr"; // Tek dil — Arapça metinler `speech` alanında
+export type Lang = "tr" | "en";
 
+// MEB okul öncesi yaş grupları (36-72 ay)
+export type Age = 3 | 4 | 5 | 6;
+export const ALL_AGES: Age[] = [3, 4, 5, 6];
+
+// Tek bir öğrenme öğesi (harf, sayı, kelime, hayvan, şekil...)
 export interface ContentItem {
   id: string;
-  // Görsel etiket (ekranda büyük gösterilen Arapça veya isim)
+  // Görsel etiket (ekranda gösterilen)
   label: string;
-  // İkincil etiket (Türkçe okunuş, örn. "be", "ne", "bââ")
+  // İkincil etiket (örn. ingilizcede türkçesi: "cat" -> "kedi")
   subLabel?: string;
-  // TTS için kullanılacak Arapça metin (manifest anahtarı ile aynı)
+  // Telaffuz edilecek metin (label'dan farklı olabilir; örn. "B" -> "be")
   speech: string;
-  // Sabit "tr" — eski API uyumu için
+  // Hangi dilde konuşulacak (TTS sesi)
   lang: Lang;
-  // Opsiyonel emoji (oyun kartlarında küçük görsel için)
+  // Gösterimde kullanılacak emoji veya görsel
   emoji?: string;
   image?: string;
+  // Soru üretimi için sayısal değer (matematik için)
   value?: number;
+  // Renk anahtarı (rengler için: "red" | "blue" | "yellow" | ...)
   colorKey?: string;
 }
 
+// Konu / kategori (örn. "Türkçe > Harfler")
 export interface ContentTopic {
   id: string;
   parent: SubjectId;
@@ -28,16 +36,19 @@ export interface ContentTopic {
   description: string;
   emoji: string;
   items: ContentItem[];
+  // SRS alıştırma türü: 'visual-to-speech' (kart -> ses), 'speech-to-visual' (ses -> seç)
   practiceMode?: "visual" | "audio" | "math";
+  // MEB okul öncesi: bu konu hangi yaş grupları için uygun? Boşsa tüm yaşlar.
+  ages?: Age[];
 }
 
-export type SubjectId = "harfler" | "harekeler" | "baglantilar";
+export type SubjectId = "turkce" | "ingilizce" | "matematik" | "doga" | "kavramlar";
 
 export interface Subject {
   id: SubjectId;
   title: string;
   emoji: string;
   description: string;
-  bgVar: string;
+  bgVar: string; // tailwind class for background
   topics: ContentTopic[];
 }

@@ -1,13 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { LangToggle } from "@/components/LangToggle";
-import { playItem, playSpeech, playFeedback } from "@/lib/audio";
+import { playItem, playFeedback } from "@/lib/audio";
 import { cn } from "@/lib/utils";
-import { gamePool, getGameLang, pickN, shuffle } from "./_shared";
-import { recordSrsAnswer, recordLetterMastery } from "@/data/srs";
+import { gamePool, getGameLang, pickN } from "./_shared";
 import type { ContentItem } from "@/data/types";
-
-const SRS_TOPIC = "match3-game";
 
 // =============================================================
 // Üçlü Eşleştir — Candy-Crush tarzı, 5x6 grid, 3-4 farklı nesne türü.
@@ -119,31 +116,12 @@ function applyGravity(g: Cell[][], types: ContentItem[]): Cell[][] {
   return next;
 }
 
-// Tahtada hangi item türleri 1 takasla 3'lü oluşturabilir? — set olarak döner
-function findPossibleMatchTypes(g: Cell[][]): ContentItem[] {
-  const ids = new Set<string>();
-  const map: Record<string, ContentItem> = {};
-  const trySwap = (r1: number, c1: number, r2: number, c2: number) => {
-    const copy = g.map((row) => row.slice());
-    const tmp = copy[r1][c1]; copy[r1][c1] = copy[r2][c2]; copy[r2][c2] = tmp;
-    const m = findMatches(copy);
-    m.forEach((x) => { ids.add(x.item.id); map[x.item.id] = x.item; });
-  };
-  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
-    if (c + 1 < COLS) trySwap(r, c, r, c + 1);
-    if (r + 1 < ROWS) trySwap(r, c, r + 1, c);
-  }
-  return [...ids].map((i) => map[i]);
-}
-
 const Match3Game = () => {
   const [types, setTypes] = useState<ContentItem[]>(() => pickN(gamePool(), TYPES_COUNT));
   const [grid, setGrid] = useState<Cell[][]>(() => buildGrid(types));
   const [selected, setSelected] = useState<{ r: number; c: number } | null>(null);
   const [score, setScore] = useState(0);
   const [busy, setBusy] = useState(false);
-  const [moveCount, setMoveCount] = useState(0);
-  const [quiz, setQuiz] = useState<{ target: ContentItem; options: ContentItem[] } | null>(null);
 
   useEffect(() => {
     const h = () => {
@@ -178,7 +156,7 @@ const Match3Game = () => {
   };
 
   const tap = async (r: number, c: number) => {
-    if (busy || quiz) return;
+    if (busy) return;
     if (!selected) { setSelected({ r, c }); return; }
     if (selected.r === r && selected.c === c) { setSelected(null); return; }
     const dr = Math.abs(selected.r - r), dc = Math.abs(selected.c - c);
@@ -195,6 +173,7 @@ const Match3Game = () => {
     const matches = findMatches(swapped);
     if (!matches.length) {
       await playFeedback(false);
+      // swap back
       const back = swapped.map((row) => row.slice());
       const tmp = back[sel.r][sel.c];
       back[sel.r][sel.c] = back[r][c];
@@ -204,34 +183,12 @@ const Match3Game = () => {
       return;
     }
     await resolve(swapped);
-
-    // Hamle sayacı + ekran taraması: ≥3 farklı 3'lenebilir tür varsa sınav aç
-    const nextCount = moveCount + 1;
-    setMoveCount(nextCount);
-    if (nextCount % 3 === 0) {
-      // setGrid async — son halini almak için küçük bekleme
-      await new Promise((res) => setTimeout(res, 150));
-      setGrid((curr) => {
-        const possible = findPossibleMatchTypes(curr);
-        if (possible.length >= 3) {
-          const target = possible[Math.floor(Math.random() * possible.length)];
-          const distractors = shuffle(possible.filter((p) => p.id !== target.id)).slice(0, 2);
-          const opts = shuffle([target, ...distractors]);
-          setTimeout(() => {
-            setQuiz({ target, options: opts });
-            playSpeech(target.speech);
-          }, 200);
-        }
-        return curr;
-      });
-    }
     setBusy(false);
   };
 
   const reset = () => {
     const t = pickN(gamePool(), TYPES_COUNT);
     setTypes(t); setGrid(buildGrid(t)); setScore(0); setSelected(null); setBusy(false);
-    setMoveCount(0); setQuiz(null);
   };
 
   return (
@@ -257,7 +214,7 @@ const Match3Game = () => {
           Komşu kutuları yer değiştir — 3'lü dizilim patlasın!
         </p>
 
-        <div className="relative rounded-3xl bg-gradient-to-br from-topic-pink/30 to-warning/20 border-8 border-topic-pink/60 shadow-card p-2">
+        <div className="rounded-3xl bg-gradient-to-br from-topic-pink/30 to-warning/20 border-8 border-topic-pink/60 shadow-card p-2">
           <div
             className="grid gap-1.5"
             style={{ gridTemplateColumns: `repeat(${COLS}, minmax(0, 1fr))` }}
@@ -281,36 +238,6 @@ const Match3Game = () => {
               );
             }))}
           </div>
-
-          {quiz && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/95 backdrop-blur gap-4 p-4 rounded-2xl">
-              <div className="text-xs font-bold text-muted-foreground">🎯 Sınav</div>
-              <p className="text-base font-extrabold text-center">Sesi dinle, doğru harfi seç</p>
-              <button
-                onClick={() => playSpeech(quiz.target.speech)}
-                className="rounded-full bg-primary text-primary-foreground px-4 py-2 font-bold shadow-soft text-sm"
-              >
-                🔊 Tekrar dinle
-              </button>
-              <div className="flex gap-3 flex-wrap justify-center">
-                {quiz.options.map((opt) => (
-                  <button
-                    key={opt.id}
-                    onClick={() => {
-                      const correct = opt.id === quiz.target.id;
-                      recordSrsAnswer("games", SRS_TOPIC, quiz.target.id, correct);
-                      recordLetterMastery(quiz.target.id, correct);
-                      playFeedback(correct);
-                      setQuiz(null);
-                    }}
-                    className="text-5xl bg-card rounded-2xl p-4 border-4 border-primary/40 shadow-card active:scale-95"
-                  >
-                    {opt.emoji}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </main>
     </div>
