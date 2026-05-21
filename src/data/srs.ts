@@ -186,3 +186,8 @@ export function useSrsTick(ns: Namespace) {
   }, [ns]);
   return tick;
 }
+
+// Backward-compat shim — eski oyunlardan çağrılır
+export function recordLetterMastery(_letterId: string, _correct: boolean) {
+  // No-op: yeni müfredatta letter-bazlı mastery yok; SRS recordSrsAnswer kullanılıyor
+}
