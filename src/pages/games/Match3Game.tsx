@@ -154,26 +154,42 @@ const Match3Game = () => {
     return () => window.removeEventListener("games-lang-change", h);
   }, []);
 
-  // resolve matches cascade
+  // resolve matches cascade — her item türünü TEK TEK patlat, sesi söyle, sonra devam
   const resolve = async (start: Cell[][]) => {
     let cur = start;
     let safety = 0;
-    while (safety++ < 12) {
+    while (safety++ < 20) {
       const matches = findMatches(cur);
       if (!matches.length) break;
-      // speak first matched item
-      const spoken = new Set<string>();
-      matches.forEach((m) => { if (!spoken.has(m.item.id)) { spoken.add(m.item.id); playItem(m.item); } });
-      setScore((s) => s + matches.length);
-      // null out matched
-      cur = cur.map((row, r) => row.map((cell, c) => (
-        matches.some((m) => m.r === r && m.c === c) ? { id: cell.id, item: null } : cell
-      )));
-      setGrid(cur);
-      await new Promise((res) => setTimeout(res, 350));
+
+      // item türüne göre grupla
+      const groups = new Map<string, { r: number; c: number; item: ContentItem }[]>();
+      matches.forEach((m) => {
+        const arr = groups.get(m.item.id) || [];
+        arr.push(m);
+        groups.set(m.item.id, arr);
+      });
+
+      // her grubu sırayla işle: sesi söyle → patlat → bekle
+      for (const [, group] of groups) {
+        const item = group[0].item;
+        playItem(item);
+        setScore((s) => s + group.length);
+        // sesin başlaması için kısa bekleme
+        await new Promise((res) => setTimeout(res, 250));
+        // bu grubu null'a çevir
+        cur = cur.map((row, r) => row.map((cell, c) => (
+          group.some((m) => m.r === r && m.c === c) ? { id: cell.id, item: null } : cell
+        )));
+        setGrid(cur);
+        // sesin bitmesi için bekle
+        await new Promise((res) => setTimeout(res, 900));
+      }
+
+      // tüm gruplar patladıktan sonra yerçekimi
       cur = applyGravity(cur, types);
       setGrid(cur);
-      await new Promise((res) => setTimeout(res, 250));
+      await new Promise((res) => setTimeout(res, 300));
     }
   };
 

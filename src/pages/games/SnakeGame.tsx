@@ -142,7 +142,9 @@ const SnakeGame = () => {
           const newEaten = eaten + 1;
           setEaten(newEaten);
           if (newEaten >= 4) {
-            setTimeout(() => startQuiz(newSnake), 0);
+            // 4. nesnenin sesi bitsin diye sınavı geciktir
+            setPaused(true);
+            setTimeout(() => { setPaused(false); startQuiz(newSnake); }, 1600);
           } else {
             setTimeout(() => newFood(newSnake), 0);
           }
