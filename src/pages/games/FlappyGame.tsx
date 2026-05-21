@@ -48,7 +48,7 @@ const FlappyGame = () => {
   const [eaten, setEaten] = useState(0);
   const [lives, setLives] = useState(3);
   const [gameOver, setGameOver] = useState(false);
-  const [paused, setPaused] = useState(false);
+  const [paused, setPaused] = useState(true);
 
   const tickRef = useRef(0);
   const velRef = useRef(0); velRef.current = vel;
