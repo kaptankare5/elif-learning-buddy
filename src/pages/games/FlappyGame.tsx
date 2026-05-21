@@ -229,7 +229,7 @@ const FlappyGame = () => {
 
   const reset = () => {
     setBirdY(40); setVel(0); setLetters([]); setScore(0);
-    setEaten(0); setLives(3); setGameOver(false); setPaused(false);
+    setEaten(0); setLives(3); setGameOver(false); setPaused(true);
     UID = 1; tickRef.current = 0;
     setTimeout(pickTarget, 0);
   };
