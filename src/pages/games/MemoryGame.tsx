@@ -53,9 +53,10 @@ const MemoryGame = () => {
       }, 1100);
     } else {
       playItem(c.item);
-      setTimeout(() => {
+      setTimeout(async () => {
         setCards((cs) => cs.map((x) => (x.uid === first.uid || x.uid === c.uid) ? { ...x, flipped: false } : x));
         setFirst(null); setBusy(false);
+        await playFeedback(false);
       }, 900);
     }
   };

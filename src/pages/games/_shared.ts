@@ -1,4 +1,4 @@
-import { LETTERS } from "@/data/letters";
+import { flattenItems } from "@/data/subjects";
 import type { ContentItem, Lang } from "@/data/types";
 
 export function shuffle<T>(a: T[]): T[] {
@@ -10,30 +10,37 @@ export function shuffle<T>(a: T[]): T[] {
   return r;
 }
 
-// Tek dilli — eski API uyumu için
-export function getGameLang(): Lang { return "tr"; }
-export function setGameLang(_l: Lang) { /* no-op */ }
+const LANG_KEY = "games-lang";
 
-// Oyunlarda kullanılan havuz: 28 temel harf (lamelif hariç) — uzun isimleri sesli
-const LONG_NAMES: Record<string, string> = {
-  elif: "أَلِف", be: "بَاء", te: "تَاء", se: "ثَاء", cim: "جِيم", ha: "حَاء", hi: "خَاء",
-  dal: "دَال", zel: "ذَال", ra: "رَاء", ze: "زَاي", sin: "سِين", sin2: "شِين",
-  sad: "صَاد", dad: "ضَاد", ti: "طَاء", zi: "ظَاء", ayin: "عَيْن", gayin: "غَيْن",
-  fe: "فَاء", kaf: "قَاف", kef: "كَاف", lam: "لاَم", mim: "مِيم", nun: "نُون",
-  vav: "وَاو", he: "هَاء", ye: "يَاء",
-};
+export function getGameLang(): Lang {
+  try {
+    const v = localStorage.getItem(LANG_KEY);
+    if (v === "en" || v === "tr") return v;
+  } catch { /* ignore */ }
+  return "tr";
+}
 
-const POOL: ContentItem[] = LETTERS.filter((l) => l.id !== "lamelif").map((l) => ({
-  id: `pool-${l.id}`,
-  label: l.name,         // Türkçe ismi (be, te, cim...)
-  subLabel: l.name,
-  speech: LONG_NAMES[l.id] ?? l.letter,
-  lang: "tr" as const,
-  emoji: l.letter,        // Oyunlar emoji alanını büyük gösterir → Arapça harfi göster
-}));
+export function setGameLang(l: Lang) {
+  try { localStorage.setItem(LANG_KEY, l); } catch { /* ignore */ }
+  try { window.dispatchEvent(new Event("games-lang-change")); } catch { /* ignore */ }
+}
 
-export function gamePool(_lang?: Lang): ContentItem[] {
-  return POOL;
+// Görsel-olarak oyunda kullanılabilecek itemlar (emojili, harf/hece/alfabe değil)
+// Dil parametresi opsiyonel — verilmezse seçili dile göre filtrelenir
+export function gamePool(lang?: Lang): ContentItem[] {
+  const target = lang ?? getGameLang();
+  return flattenItems().filter(
+    (it) =>
+      it.lang === target &&
+      !!it.emoji &&
+      !it.id.startsWith("harf-") &&
+      !it.id.startsWith("ilkses-") &&
+      !it.id.startsWith("hece-") &&
+      !it.id.startsWith("en-letter-") &&
+      !it.id.startsWith("top-") &&
+      !it.id.startsWith("cik-") &&
+      !it.id.startsWith("karsi-")
+  );
 }
 
 export function pickN<T>(arr: T[], n: number): T[] {

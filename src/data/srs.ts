@@ -6,7 +6,6 @@
 // - Her namespace ("quiz" / "games") ayrı saklanır
 
 import { useEffect, useState } from "react";
-import { logAnswer } from "@/data/cloudSync";
 
 export type Level = 1 | 2 | 3 | 4;
 export type Namespace = "quiz" | "games";
@@ -138,21 +137,6 @@ export function recordSrsAnswer(ns: Namespace, topicId: string, letterId: string
     if (e.level > 1) e.level = ((e.level - 1) as Level);
   }
   save(ns, s);
-  // Sessizce buluta da yaz (giriş yapmamışsa hiçbir şey yapmaz)
-  logAnswer({ topicId: `${ns}:${topicId}`, letterId, correct }).catch(() => {});
-}
-
-// Oyun quizleri için: hem "games" namespace'ine hem de Progress sayfasının
-// okuduğu "quiz/temel" topic'ine yazar. Böylece doğru/yanlış cevaplar
-// genel harf seviyesini etkiler.
-export function recordLetterMastery(letterPoolId: string, correct: boolean) {
-  // gamePool ids: "pool-be" ; temel topic ids: "harf-be"
-  const baseId = letterPoolId.startsWith("pool-")
-    ? "harf-" + letterPoolId.slice(5)
-    : letterPoolId.startsWith("harf-")
-      ? letterPoolId
-      : "harf-" + letterPoolId;
-  recordSrsAnswer("quiz", "temel", baseId, correct);
 }
 
 // İstatistikler — Progress sayfası için

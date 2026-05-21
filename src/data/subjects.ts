@@ -1,34 +1,50 @@
 import type { ContentItem, ContentTopic, Subject, SubjectId } from "./types";
-import {
-  harflerTopics,
-  baglantilarTopics,
-  harekelerTopics,
-} from "./topics/elifba";
+import { turkceTopics } from "./topics/turkce";
+import { ingilizceTopics } from "./topics/ingilizce";
+import { matematikTopics } from "./topics/matematik";
+import { dogaTopics } from "./topics/doga";
+import { kavramlarTopics } from "./topics/kavramlar";
 
 export const SUBJECTS: Subject[] = [
   {
-    id: "harfler",
-    title: "Harfler",
+    id: "turkce",
+    title: "Türkçe",
     emoji: "📖",
-    description: "29 Arapça harfi tanı",
+    description: "Harfler, sesler ve heceler",
     bgVar: "bg-[image:var(--bg-turkce)]",
-    topics: harflerTopics,
+    topics: turkceTopics,
   },
   {
-    id: "baglantilar",
-    title: "Bağlantılar",
-    emoji: "🔗",
-    description: "Başta, ortada, sonda",
+    id: "ingilizce",
+    title: "English",
+    emoji: "🇬🇧",
+    description: "Alphabet, colors & animals",
     bgVar: "bg-[image:var(--bg-ingilizce)]",
-    topics: baglantilarTopics,
+    topics: ingilizceTopics,
   },
   {
-    id: "harekeler",
-    title: "Harekeler",
-    emoji: "✨",
-    description: "Fetha, esre, ötre, cezim, tenvin, med",
+    id: "matematik",
+    title: "Matematik",
+    emoji: "🔢",
+    description: "Sayılar, şekiller, toplama",
     bgVar: "bg-[image:var(--bg-matematik)]",
-    topics: harekelerTopics,
+    topics: matematikTopics,
+  },
+  {
+    id: "doga",
+    title: "Doğa & Hayat",
+    emoji: "🌳",
+    description: "Hayvanlar, meslekler, mevsimler",
+    bgVar: "bg-[image:var(--bg-doga)]",
+    topics: dogaTopics,
+  },
+  {
+    id: "kavramlar",
+    title: "Kavramlar",
+    emoji: "🧠",
+    description: "Boyut, konum, duygu, zıt",
+    bgVar: "bg-[image:var(--bg-kavramlar)]",
+    topics: kavramlarTopics,
   },
 ];
 
@@ -40,6 +56,7 @@ export function getTopic(subjectId: SubjectId, topicId: string): ContentTopic | 
   return getSubject(subjectId)?.topics.find((t) => t.id === topicId);
 }
 
+// Tüm konulardaki tüm itemları düzleştirir (oyunlar için havuz)
 export function flattenItems(): ContentItem[] {
   return SUBJECTS.flatMap((s) => s.topics.flatMap((t) => t.items));
 }

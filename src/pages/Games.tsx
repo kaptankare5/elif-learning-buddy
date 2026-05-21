@@ -4,12 +4,12 @@ import { LangToggle } from "@/components/LangToggle";
 
 const GAMES = [
   { id: "memory", title: "Hafıza Kartları", emoji: "🃏", color: "from-topic-pink to-pink", desc: "Eşleşenleri bul" },
-  { id: "match3", title: "Üçlü Eşleştir", emoji: "🍬", color: "from-topic-pink to-warning", desc: "3'lü dizip patlat" },
-  { id: "snake", title: "Yılan Oyunu", emoji: "🐍", color: "from-success to-topic-doga", desc: "Harfleri ye, sınavı geç" },
   { id: "balloon", title: "Balon Patlatma", emoji: "🎈", color: "from-topic-blue to-info", desc: "Doğru balonu patlat" },
-  { id: "sorter", title: "Kutu Boşalt", emoji: "📦", color: "from-topic-doga to-success", desc: "Sorulan harfi seç, kutuyu boşalt" },
-  { id: "triple", title: "Üçlü Eşle", emoji: "🧩", color: "from-topic-blue to-primary", desc: "3'lü eşle, sesi duy" },
-  { id: "flappy", title: "Uçan Kuş", emoji: "🐦", color: "from-info to-primary", desc: "Doğru harfi yut, sorulara cevap ver" },
+  { id: "treasure", title: "Hazine Sandığı", emoji: "🎁", color: "from-topic-purple to-primary", desc: "Doğru sandığa koy" },
+  { id: "runner", title: "Koşu Oyunu", emoji: "🏃", color: "from-topic-orange to-warning", desc: "Sayıları topla" },
+  { id: "sorter", title: "Kutu Boşalt", emoji: "📦", color: "from-topic-doga to-success", desc: "3 aynıyı seç, sil" },
+  { id: "match3", title: "Üçlü Eşleştir", emoji: "🍬", color: "from-topic-pink to-warning", desc: "3'lü dizip patlat" },
+  { id: "triple", title: "Triple Match", emoji: "🧩", color: "from-topic-blue to-primary", desc: "Meslekleri öğren (EN)" },
   { id: "quiz", title: "Hızlı Quiz", emoji: "⚡", color: "from-topic-doga to-success", desc: "60 saniyede skor" },
 ];
 

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { cn } from "@/lib/utils";
 import { gamePool, getGameLang, pickN } from "./_shared";
@@ -52,8 +52,6 @@ const TripleMatchGame = () => {
   const [floatText, setFloatText] = useState<string | null>(null);
   const [status, setStatus] = useState<"playing" | "won" | "lost">("playing");
   const [matches, setMatches] = useState(0);
-  const [hintId, setHintId] = useState<number | null>(null);
-  const lastTapRef = useRef<number>(Date.now());
 
   useEffect(() => {
     const onChange = () => {
@@ -69,45 +67,16 @@ const TripleMatchGame = () => {
     return () => window.removeEventListener("games-lang-change", onChange);
   }, []);
 
-  // İdle hint — 5sn dokunma yoksa eşleştirilebilir bir taşı vurgula
-  useEffect(() => {
-    if (status !== "playing") { setHintId(null); return; }
-    const id = setInterval(() => {
-      if (Date.now() - lastTapRef.current < 5000) return;
-      const trayCounts: Record<string, number> = {};
-      tray.forEach((s) => { if (s) trayCounts[s.item.id] = (trayCounts[s.item.id] || 0) + 1; });
-      const boardCounts: Record<string, BoxItem[]> = {};
-      box.forEach((b) => { (boardCounts[b.item.id] = boardCounts[b.item.id] || []).push(b); });
-      let pickKey: string | null = null;
-      for (const k of Object.keys(trayCounts)) {
-        if ((trayCounts[k] + (boardCounts[k]?.length || 0)) >= 3 && (boardCounts[k]?.length || 0) > 0) {
-          pickKey = k; break;
-        }
-      }
-      if (!pickKey) {
-        const k = Object.keys(boardCounts).find((kk) => boardCounts[kk].length >= 3);
-        if (k) pickKey = k;
-      }
-      if (pickKey && boardCounts[pickKey]) {
-        setHintId(boardCounts[pickKey][0].id);
-      }
-    }, 800);
-    return () => clearInterval(id);
-  }, [box, tray, status]);
-
   const reset = () => {
     setBox(buildBoard(lang));
     setTray(Array(TRAY_SIZE).fill(null));
     setStatus("playing");
     setMatches(0);
     setFloatText(null);
-    lastTapRef.current = Date.now();
   };
 
   const tap = (entry: BoxItem) => {
     if (status !== "playing") return;
-    lastTapRef.current = Date.now();
-    setHintId(null);
     const slotIdx = tray.findIndex((s) => s === null);
     if (slotIdx === -1) return;
 
@@ -150,7 +119,7 @@ const TripleMatchGame = () => {
     }
   };
 
-  const isEn = false;
+  const isEn = lang === "en";
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-topic-blue/20 to-background">
@@ -181,10 +150,7 @@ const TripleMatchGame = () => {
             <button
               key={b.id}
               onClick={() => tap(b)}
-              className={cn(
-                "absolute flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-card border-4 border-primary/40 shadow-card text-5xl sm:text-6xl font-extrabold active:scale-90 transition-bouncy hover:scale-110 hover:z-10 animate-bounce-in",
-                hintId === b.id && "ring-4 ring-warning bg-warning/30 animate-pulse z-20"
-              )}
+              className="absolute text-4xl sm:text-5xl active:scale-90 transition-bouncy hover:scale-110 animate-bounce-in"
               style={{
                 left: `${b.x}%`,
                 top: `${b.y}%`,
@@ -194,6 +160,7 @@ const TripleMatchGame = () => {
               {b.item.emoji}
             </button>
           ))}
+
           {floatText && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="bg-success text-success-foreground text-3xl font-extrabold px-6 py-3 rounded-2xl shadow-elegant animate-pop">
