@@ -50,7 +50,7 @@ const Topic = () => {
   const [score, setScore] = useState(0);
 
   const [age] = useAge();
-  const items = itemsForAge(topic?.items || [], age);
+  const items = useMemo(() => itemsForAge(topic?.items || [], age), [topic, age]);
   const itemIds = useMemo(() => items.map((i) => i.id), [items]);
 
   // Konu/mod değiştiğinde sıfırla
