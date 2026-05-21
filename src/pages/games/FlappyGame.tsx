@@ -68,7 +68,8 @@ const FlappyGame = () => {
   useEffect(() => { pickTarget(); }, [pickTarget]);
 
   const flap = useCallback(() => {
-    if (gameOver || paused) return;
+    if (gameOver) return;
+    if (paused) setPaused(false);
     setVel(FLAP);
   }, [gameOver, paused]);
 
