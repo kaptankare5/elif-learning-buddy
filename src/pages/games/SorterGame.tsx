@@ -90,8 +90,12 @@ const SorterGame = () => {
         recordSrsAnswer("games", SRS_TOPIC, target.id, true);
         recordLetterMastery(target.id, true);
         setScore((s) => s + 1);
-        // sesin bitmesini bekle, sonra yeni hedef seç
-        setTimeout(() => { setTarget(null); setBusy(false); }, 1300);
+        // sesin bitmesini bekle, sonra temizlenen hücreleri kaldır + yeni hedef
+        setTimeout(() => {
+          setBoard((b) => ({ ...b, cells: b.cells.filter((x) => x.item.id !== target.id) }));
+          setTarget(null);
+          setBusy(false);
+        }, 1300);
       }
     } else {
       // yanlış → titreşim+ses, SRS'ye yanlış olarak yaz
