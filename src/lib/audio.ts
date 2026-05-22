@@ -51,31 +51,48 @@ function ttsFallback(text: string, lang?: Lang) {
   } catch { /* ignore */ }
 }
 
-export async function playSpeech(text: string, lang?: Lang) {
+// Resolve only when the played audio actually ends (or fails).
+export function playSpeech(text: string, lang?: Lang): Promise<void> {
   stopCurrent();
   const found = lookupKey(text, lang);
   if (!found) {
     console.warn(`[audio] no mp3 for ${lang ?? "auto"}::${text} → TTS fallback`);
-    ttsFallback(text, lang);
-    return;
+    return new Promise((resolve) => {
+      if (typeof window === "undefined" || !("speechSynthesis" in window)) { resolve(); return; }
+      try {
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = lang === "en" ? "en-US" : "tr-TR";
+        u.rate = 0.95;
+        u.onend = () => resolve();
+        u.onerror = () => resolve();
+        window.speechSynthesis.speak(u);
+      } catch { resolve(); }
+    });
   }
   const url = `/audio/${found.lang}/${found.key}.mp3`;
-  try {
-    const audio = new Audio(url);
-    audio.preload = "auto";
-    currentAudio = audio;
-    await audio.play();
-  } catch (e) {
-    // AbortError = interrupted by next play; sessiz geç
-    const err = e as { name?: string };
-    if (err?.name !== "AbortError") {
-      console.warn("audio play failed", text, e);
+  return new Promise<void>((resolve) => {
+    try {
+      const audio = new Audio(url);
+      audio.preload = "auto";
+      currentAudio = audio;
+      let done = false;
+      const finish = () => { if (done) return; done = true; resolve(); };
+      audio.addEventListener("ended", finish);
+      audio.addEventListener("error", finish);
+      audio.play().catch((e: { name?: string }) => {
+        if (e?.name !== "AbortError") console.warn("audio play failed", text, e);
+        finish();
+      });
+      // Safety: max 8s
+      setTimeout(finish, 8000);
+    } catch {
+      resolve();
     }
-  }
+  });
 }
 
-export async function playItem(item: ContentItem) {
-  await playSpeech(item.speech, item.lang);
+export function playItem(item: ContentItem): Promise<void> {
+  return playSpeech(item.speech, item.lang);
 }
 
 export async function playFeedback(positive: boolean) {
