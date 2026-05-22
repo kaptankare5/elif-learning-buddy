@@ -2,10 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, Navigate } from "react-router-dom";
 import { getSubject, getTopic } from "@/data/subjects";
 import { PageHeader } from "@/components/PageHeader";
-import { playItem, playFeedback } from "@/lib/audio";
+import { playItem, playFeedback, playSpeech } from "@/lib/audio";
 import { Volume2, ChevronLeft, ChevronRight } from "lucide-react";
 import type { ContentItem, SubjectId } from "@/data/types";
 import { MathPractice } from "@/components/MathPractice";
+import NeckGame from "@/pages/kavram/NeckGame";
+import SizeGame from "@/pages/kavram/SizeGame";
 import {
   pickNextLetter,
   recordSrsAnswer,
@@ -44,7 +46,6 @@ const Topic = () => {
   const [idx, setIdx] = useState(0);
   const tick = useSrsTick(NS);
 
-  // Pratik durumu
   const [q, setQ] = useState<{ target: ContentItem; options: ContentItem[] } | null>(null);
   const [picked, setPicked] = useState<string | null>(null);
   const [score, setScore] = useState(0);
@@ -53,7 +54,6 @@ const Topic = () => {
   const items = useMemo(() => itemsForAge(topic?.items || [], age), [topic, age]);
   const itemIds = useMemo(() => items.map((i) => i.id), [items]);
 
-  // Konu/mod değiştiğinde sıfırla
   useEffect(() => {
     setIdx(0);
     setQ(null);
@@ -61,15 +61,14 @@ const Topic = () => {
     setScore(0);
   }, [topicId, mode]);
 
-  // Pratik modu: yeni soru üret
   useEffect(() => {
     if (mode !== "pratik" || !topic || itemIds.length === 0 || q) return;
+    if (topic.interactiveGame) return;
     const tid = pickNextLetter(NS, topic.id, itemIds);
     setQ(buildQuestion(items, tid));
     setPicked(null);
   }, [mode, topic, itemIds, q, items]);
 
-  // Hedef değişince sesi çal
   useEffect(() => {
     if (mode === "pratik" && q?.target) playItem(q.target);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -77,7 +76,11 @@ const Topic = () => {
 
   if (!subject || !topic) return <Navigate to="/" replace />;
 
-  // Matematik özel pratiği — değişmedi
+  // İnteraktif anasınıfı oyunları
+  if (topic.interactiveGame === "neck") return <NeckGame />;
+  if (topic.interactiveGame === "size") return <SizeGame />;
+
+  // Matematik özel pratiği
   if (topic.practiceMode === "math") {
     return (
       <div className="min-h-screen bg-gradient-to-b from-accent/30 to-background">
@@ -89,7 +92,6 @@ const Topic = () => {
     );
   }
 
-  // SRS seviye dağılımı
   const srs = getTopicSrs(NS, topic.id);
   const levelCount: Record<Level, number> = { 1: 0, 2: 0, 3: 0, 4: 0 };
   for (const id of itemIds) {
@@ -98,7 +100,7 @@ const Topic = () => {
   }
   void tick;
 
-  // === KART (serbest gez) MODU ===
+  // === KART MODU (yazısız) ===
   if (mode === "kart") {
     const item = items[idx];
     const total = items.length;
@@ -108,37 +110,32 @@ const Topic = () => {
       <div className="min-h-screen bg-gradient-to-b from-secondary/30 to-background">
         <main className="container mx-auto max-w-xl px-4 pb-16">
           <PageHeader title={topic.title} backTo={`/konu/${subject.id}`} centered />
-
           <ModeSwitch mode={mode} onChange={setMode} />
 
-          <div className="mb-3 flex items-center justify-between text-sm font-bold text-muted-foreground">
-            <span>{idx + 1} / {total}</span>
+          <div className="mb-3 flex items-center justify-center gap-1 text-sm font-bold text-muted-foreground">
+            {Array.from({ length: total }).map((_, i) => (
+              <span key={i} className={cn("h-2 w-2 rounded-full", i === idx ? "bg-primary" : "bg-muted")} />
+            ))}
           </div>
 
           <button
             onClick={() => playItem(item)}
-            className="w-full bg-card rounded-3xl p-8 shadow-card border-4 border-primary/20 transition-bouncy hover:scale-[1.02] active:scale-95 animate-bounce-in min-h-[55vh] flex flex-col items-center justify-center gap-4"
+            className="w-full bg-card rounded-3xl p-8 shadow-card border-4 border-primary/20 transition-bouncy hover:scale-[1.02] active:scale-95 animate-bounce-in min-h-[55vh] flex flex-col items-center justify-center gap-6"
             key={item.id}
+            aria-label="Dinle"
           >
-            {item.emoji && <div className="text-7xl">{item.emoji}</div>}
-            <div className="text-8xl font-extrabold text-primary text-shadow-soft animate-pop">
-              {item.label}
-            </div>
-            {item.subLabel && (
-              <div className="text-xl font-bold text-muted-foreground">{item.subLabel}</div>
-            )}
-            <div className="mt-2 inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-primary-foreground font-bold shadow-soft">
-              <Volume2 className="h-5 w-5" />
-              <span>Dinle</span>
+            {item.emoji && <div className="text-[140px] leading-none">{item.emoji}</div>}
+            <div className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-primary-foreground font-bold shadow-soft text-xl">
+              <Volume2 className="h-6 w-6" />
             </div>
           </button>
 
           <div className="mt-6 grid grid-cols-2 gap-3">
-            <button onClick={prev} className="flex items-center justify-center gap-2 rounded-2xl bg-card border-2 border-border/60 p-4 font-bold text-foreground shadow-soft transition-bouncy hover:scale-105 active:scale-95">
-              <ChevronLeft className="h-5 w-5" /> Önceki
+            <button onClick={prev} className="flex items-center justify-center gap-2 rounded-2xl bg-card border-2 border-border/60 p-5 shadow-soft transition-bouncy hover:scale-105 active:scale-95" aria-label="Önceki">
+              <ChevronLeft className="h-8 w-8" />
             </button>
-            <button onClick={next} className="flex items-center justify-center gap-2 rounded-2xl bg-primary p-4 font-bold text-primary-foreground shadow-soft transition-bouncy hover:scale-105 active:scale-95">
-              Sonraki <ChevronRight className="h-5 w-5" />
+            <button onClick={next} className="flex items-center justify-center gap-2 rounded-2xl bg-primary p-5 text-primary-foreground shadow-soft transition-bouncy hover:scale-105 active:scale-95" aria-label="Sonraki">
+              <ChevronRight className="h-8 w-8" />
             </button>
           </div>
         </main>
@@ -146,7 +143,7 @@ const Topic = () => {
     );
   }
 
-  // === PRATİK (SRS) MODU ===
+  // === PRATİK (yazısız) ===
   const choose = async (opt: ContentItem) => {
     if (!q || picked) return;
     setPicked(opt.id);
@@ -155,6 +152,12 @@ const Topic = () => {
     recordSrsAnswer(NS, topic.id, q.target.id, correct);
     await playFeedback(correct);
     setTimeout(() => setQ(null), 700);
+  };
+
+  const askAgain = () => {
+    if (!q) return;
+    // "Hangisi ___?" şeklinde sesli sor
+    playSpeech(`Hangisi ${q.target.speech}?`, q.target.lang);
   };
 
   return (
@@ -186,31 +189,23 @@ const Topic = () => {
                 l === 4 && "bg-success/10 border-success/40",
               )}
             >
-              <div className="text-[10px] font-bold text-muted-foreground">Sv {l}</div>
-              <div className="text-lg font-extrabold text-foreground">{levelCount[l as Level]}</div>
+              <div className="text-2xl">{"⭐".repeat(l)}</div>
+              <div className="text-base font-extrabold text-foreground">{levelCount[l as Level]}</div>
             </div>
           ))}
-        </div>
-
-        <div className="mb-3 flex items-center justify-between text-sm font-bold text-muted-foreground">
-          <span>⭐ Puan: {score}</span>
-          <span>{itemIds.length} öğe</span>
         </div>
 
         {q && (
           <>
             <div className="bg-card rounded-3xl p-6 shadow-card border-4 border-primary/20 mb-4 text-center animate-bounce-in" key={q.target.id}>
-              <p className="text-sm font-bold text-muted-foreground mb-2">Hangisi bu?</p>
               <button
-                onClick={() => playItem(q.target)}
-                className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-primary-foreground font-extrabold shadow-soft transition-bouncy hover:scale-105"
+                onClick={askAgain}
+                className="inline-flex items-center gap-3 rounded-full bg-primary px-8 py-5 text-primary-foreground font-extrabold shadow-soft transition-bouncy hover:scale-105 animate-pulse"
+                aria-label="Tekrar dinle"
               >
-                <Volume2 className="h-5 w-5" />
-                Tekrar Dinle
+                <Volume2 className="h-8 w-8" />
+                <span className="text-2xl">🎧</span>
               </button>
-              <p className="text-xs text-muted-foreground mt-2">
-                ({q.target.lang === "en" ? "İngilizce" : "Türkçe"})
-              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -222,15 +217,13 @@ const Topic = () => {
                     key={opt.id}
                     onClick={() => choose(opt)}
                     className={cn(
-                      "aspect-square rounded-3xl flex flex-col items-center justify-center gap-2 shadow-card border-4 transition-bouncy bg-card border-primary/20 hover:-translate-y-1",
+                      "aspect-square rounded-3xl flex items-center justify-center shadow-card border-4 transition-bouncy bg-card border-primary/20 hover:-translate-y-1",
                       isCorrect && "bg-success border-success animate-pop",
                       isWrong && "bg-destructive border-destructive animate-shake",
                     )}
+                    aria-label={opt.label}
                   >
-                    {opt.emoji && <span className="text-5xl">{opt.emoji}</span>}
-                    <span className={cn("text-lg font-extrabold", (isCorrect || isWrong) ? "text-white" : "text-foreground")}>
-                      {opt.label}
-                    </span>
+                    {opt.emoji && <span className="text-7xl leading-none">{opt.emoji}</span>}
                   </button>
                 );
               })}
@@ -248,20 +241,22 @@ function ModeSwitch({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => voi
       <button
         onClick={() => onChange("pratik")}
         className={cn(
-          "flex-1 rounded-xl py-2 text-sm font-extrabold transition-bouncy",
+          "flex-1 rounded-xl py-3 text-2xl transition-bouncy",
           mode === "pratik" ? "bg-primary text-primary-foreground shadow-soft" : "text-muted-foreground"
         )}
+        aria-label="Pratik"
       >
-        🎯 Pratik
+        🎯
       </button>
       <button
         onClick={() => onChange("kart")}
         className={cn(
-          "flex-1 rounded-xl py-2 text-sm font-extrabold transition-bouncy",
+          "flex-1 rounded-xl py-3 text-2xl transition-bouncy",
           mode === "kart" ? "bg-primary text-primary-foreground shadow-soft" : "text-muted-foreground"
         )}
+        aria-label="Kartlar"
       >
-        📇 Kartlar
+        📇
       </button>
     </div>
   );

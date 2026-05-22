@@ -12,6 +12,7 @@ export const kavramlarTopics: ContentTopic[] = [
     emoji: "🔵",
     practiceMode: "visual",
     ages: [3, 4, 5, 6],
+    interactiveGame: "size",
     items: [
       { id: "kav-buyuk-fil", label: "Büyük", subLabel: "Fil", speech: "büyük", lang: "tr", emoji: "🐘" },
       { id: "kav-kucuk-fare", label: "Küçük", subLabel: "Fare", speech: "küçük", lang: "tr", emoji: "🐭" },
@@ -27,6 +28,7 @@ export const kavramlarTopics: ContentTopic[] = [
     emoji: "📏",
     practiceMode: "visual",
     ages: [4, 5, 6],
+    interactiveGame: "neck",
     items: [
       { id: "kav-uzun-zurafa", label: "Uzun", subLabel: "Zürafa", speech: "uzun", lang: "tr", emoji: "🦒" },
       { id: "kav-kisa-kirpi", label: "Kısa", subLabel: "Kirpi", speech: "kısa", lang: "tr", emoji: "🦔" },
