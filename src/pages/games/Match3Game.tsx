@@ -296,6 +296,7 @@ const Match3Game = () => {
           >
             {grid.map((row, r) => row.map((cell, c) => {
               const isSel = selected?.r === r && selected?.c === c;
+              const isHi = highlighted.has(cell.id);
               return (
                 <button
                   key={cell.id}
@@ -304,6 +305,7 @@ const Match3Game = () => {
                   className={cn(
                     "aspect-square rounded-xl flex items-center justify-center text-3xl shadow-soft border-2 transition-bouncy",
                     !cell.item ? "bg-transparent border-transparent" :
+                      isHi ? "bg-warning/60 border-warning scale-125 animate-pulse ring-4 ring-warning" :
                       isSel ? "bg-primary/30 border-primary scale-110 animate-pop" :
                         "bg-card border-primary/20 active:scale-95"
                   )}
