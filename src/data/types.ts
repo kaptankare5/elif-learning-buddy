@@ -40,6 +40,8 @@ export interface ContentTopic {
   practiceMode?: "visual" | "audio" | "math";
   // MEB okul öncesi: bu konu hangi yaş grupları için uygun? Boşsa tüm yaşlar.
   ages?: Age[];
+  // İnteraktif anasınıfı mini-oyunu (varsa Topic sayfası bunu render eder)
+  interactiveGame?: "neck" | "size" | "position" | "opposite" | "emotion";
 }
 
 export type SubjectId = "turkce" | "ingilizce" | "matematik" | "doga" | "kavramlar";
