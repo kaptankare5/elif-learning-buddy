@@ -36,27 +36,23 @@ const MemoryGame = () => {
     setCards(updated);
 
     if (!first) {
-      playItem(c.item);
+      setBusy(true);
+      await playItem(c.item);
       setFirst(c);
+      setBusy(false);
       return;
     }
     setMoves((m) => m + 1);
     setBusy(true);
     if (first.item.id === c.item.id) {
-      // eşleşti — kelimeyi sadece bir kez söyle, bitince geri bildirim ver
       setCards((cs) => cs.map((x) => x.item.id === c.item.id ? { ...x, matched: true, flipped: true } : x));
       await playItem(c.item);
-      // kelimenin çalma süresine yer aç
-      setTimeout(async () => {
-        setFirst(null); setBusy(false);
-        await playFeedback(true);
-      }, 1100);
+      await playFeedback(true);
+      setFirst(null); setBusy(false);
     } else {
-      playItem(c.item);
-      setTimeout(() => {
-        setCards((cs) => cs.map((x) => (x.uid === first.uid || x.uid === c.uid) ? { ...x, flipped: false } : x));
-        setFirst(null); setBusy(false);
-      }, 900);
+      await playItem(c.item);
+      setCards((cs) => cs.map((x) => (x.uid === first.uid || x.uid === c.uid) ? { ...x, flipped: false } : x));
+      setFirst(null); setBusy(false);
     }
   };
 
