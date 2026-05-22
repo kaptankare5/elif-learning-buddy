@@ -41,15 +41,6 @@ function lookupKey(text: string, lang?: Lang): { lang: Lang; key: string } | nul
   return null;
 }
 
-function ttsFallback(text: string, lang?: Lang) {
-  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-  try {
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = lang === "en" ? "en-US" : "tr-TR";
-    u.rate = 0.95;
-    window.speechSynthesis.speak(u);
-  } catch { /* ignore */ }
-}
 
 // Resolve only when the played audio actually ends (or fails).
 export function playSpeech(text: string, lang?: Lang): Promise<void> {
