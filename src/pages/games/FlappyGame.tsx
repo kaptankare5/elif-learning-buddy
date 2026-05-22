@@ -55,23 +55,29 @@ const FlappyGame = () => {
   const yRef = useRef(40); yRef.current = birdY;
   const targetRef = useRef<ContentItem | null>(null); targetRef.current = target;
 
-  const pickTarget = useCallback(() => {
+  const pausedRef = useRef(true); pausedRef.current = paused;
+
+  const pickTarget = useCallback((silent = false) => {
     const pool = gamePool();
     const ids = pool.map((p) => p.id);
     const id = pickNextLetter("games", SRS_TOPIC, ids);
     const item = pool.find((p) => p.id === id) || pool[0];
     setTarget(item);
-    playItem(item);
+    if (!silent && !pausedRef.current) playItem(item);
   }, []);
 
-  // İlk hedef
-  useEffect(() => { pickTarget(); }, [pickTarget]);
+  // İlk hedef — sessiz seç, oyun başlayınca seslendir
+  useEffect(() => { pickTarget(true); }, [pickTarget]);
 
   const flap = useCallback(() => {
     if (gameOver) return;
-    if (paused) setPaused(false);
+    if (paused) {
+      setPaused(false);
+      // ilk uçuşta hedefi seslendir
+      if (target) playItem(target);
+    }
     setVel(FLAP);
-  }, [gameOver, paused]);
+  }, [gameOver, paused, target]);
 
   // Klavye / boşluk
   useEffect(() => {
