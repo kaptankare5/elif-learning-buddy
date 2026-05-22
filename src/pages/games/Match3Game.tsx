@@ -154,10 +154,13 @@ const Match3Game = () => {
     return () => window.removeEventListener("games-lang-change", h);
   }, []);
 
+  const [highlighted, setHighlighted] = useState<Set<number>>(new Set());
+
   // resolve matches cascade — her item türünü TEK TEK patlat, sesi söyle, sonra devam
   const resolve = async (start: Cell[][]) => {
     let cur = start;
     let safety = 0;
+    let cascadeIndex = 0;
     while (safety++ < 20) {
       const matches = findMatches(cur);
       if (!matches.length) break;
@@ -170,22 +173,35 @@ const Match3Game = () => {
         groups.set(m.item.id, arr);
       });
 
-      // her grubu sırayla işle: sesi söyle → patlat → bekle
+      // her grubu sırayla işle
+      let firstInCascade = true;
       for (const [, group] of groups) {
         const item = group[0].item;
-        playItem(item);
+        const groupIds = new Set(group.map((m) => {
+          const cell = cur[m.r]?.[m.c];
+          return cell?.id ?? -1;
+        }));
+
+        // İlk hamleden sonraki gruplar — önce vurgula, sonra patlat
+        if (!firstInCascade || cascadeIndex > 0) {
+          setHighlighted(groupIds);
+          await new Promise((res) => setTimeout(res, 550));
+          setHighlighted(new Set());
+        }
+        firstInCascade = false;
+
         setScore((s) => s + group.length);
-        // sesin başlaması için kısa bekleme
-        await new Promise((res) => setTimeout(res, 250));
         // bu grubu null'a çevir
         cur = cur.map((row, r) => row.map((cell, c) => (
           group.some((m) => m.r === r && m.c === c) ? { id: cell.id, item: null } : cell
         )));
         setGrid(cur);
-        // sesin bitmesi için bekle
-        await new Promise((res) => setTimeout(res, 900));
+        // sesi söyle ve bitmesini bekle (kesintisiz)
+        await playItem(item);
+        await new Promise((res) => setTimeout(res, 150));
       }
 
+      cascadeIndex++;
       // tüm gruplar patladıktan sonra yerçekimi
       cur = applyGravity(cur, types);
       setGrid(cur);
