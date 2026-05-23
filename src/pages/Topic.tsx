@@ -176,24 +176,25 @@ const Topic = () => {
 
         <ModeSwitch mode={mode} onChange={setMode} />
 
-        {/* Seviye barı */}
+        {/* Seviye barı — küçük göstergeler */}
         <div className="mb-4 grid grid-cols-4 gap-2">
           {[1, 2, 3, 4].map((l) => (
             <div
               key={l}
               className={cn(
-                "rounded-xl p-2 text-center shadow-soft border-2",
+                "rounded-lg p-1.5 text-center shadow-soft border",
                 l === 1 && "bg-info/10 border-info/40",
                 l === 2 && "bg-warning/10 border-warning/40",
                 l === 3 && "bg-secondary/40 border-secondary",
                 l === 4 && "bg-success/10 border-success/40",
               )}
             >
-              <div className="text-2xl">{"⭐".repeat(l)}</div>
-              <div className="text-base font-extrabold text-foreground">{levelCount[l as Level]}</div>
+              <div className="text-[10px] leading-none">{"⭐".repeat(l)}</div>
+              <div className="text-xs font-extrabold text-foreground mt-0.5">{levelCount[l as Level]}</div>
             </div>
           ))}
         </div>
+
 
         {q && (
           <>
@@ -212,22 +213,29 @@ const Topic = () => {
               {q.options.map((opt) => {
                 const isCorrect = picked && opt.id === q.target.id;
                 const isWrong = picked === opt.id && opt.id !== q.target.id;
+                const showLabel = opt.lang === "en";
                 return (
                   <button
                     key={opt.id}
                     onClick={() => choose(opt)}
                     className={cn(
-                      "aspect-square rounded-3xl flex items-center justify-center shadow-card border-4 transition-bouncy bg-card border-primary/20 hover:-translate-y-1",
+                      "aspect-square rounded-3xl flex flex-col items-center justify-center gap-1 shadow-card border-4 transition-bouncy bg-card border-primary/20 hover:-translate-y-1",
                       isCorrect && "bg-success border-success animate-pop",
                       isWrong && "bg-destructive border-destructive animate-shake",
                     )}
                     aria-label={opt.label}
                   >
-                    {opt.emoji && <span className="text-7xl leading-none">{opt.emoji}</span>}
+                    {opt.emoji && <span className={cn("leading-none", showLabel ? "text-5xl" : "text-7xl")}>{opt.emoji}</span>}
+                    {showLabel && (
+                      <span className={cn("text-lg font-extrabold", (isCorrect || isWrong) ? "text-white" : "text-foreground")}>
+                        {opt.label}
+                      </span>
+                    )}
                   </button>
                 );
               })}
             </div>
+
           </>
         )}
       </main>
@@ -237,12 +245,14 @@ const Topic = () => {
 
 function ModeSwitch({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => void }) {
   return (
-    <div className="mb-4 flex gap-2 rounded-2xl bg-muted p-1">
+    <div className="mb-5 flex gap-3 rounded-3xl bg-primary/10 p-2 shadow-soft border-2 border-primary/30">
       <button
         onClick={() => onChange("pratik")}
         className={cn(
-          "flex-1 rounded-xl py-3 text-2xl transition-bouncy",
-          mode === "pratik" ? "bg-primary text-primary-foreground shadow-soft" : "text-muted-foreground"
+          "flex-1 rounded-2xl py-4 text-3xl flex items-center justify-center gap-2 font-extrabold transition-bouncy",
+          mode === "pratik"
+            ? "bg-primary text-primary-foreground shadow-elegant scale-105"
+            : "bg-card text-muted-foreground hover:scale-[1.02]"
         )}
         aria-label="Pratik"
       >
@@ -251,13 +261,16 @@ function ModeSwitch({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => voi
       <button
         onClick={() => onChange("kart")}
         className={cn(
-          "flex-1 rounded-xl py-3 text-2xl transition-bouncy",
-          mode === "kart" ? "bg-primary text-primary-foreground shadow-soft" : "text-muted-foreground"
+          "flex-1 rounded-2xl py-4 text-3xl flex items-center justify-center gap-2 font-extrabold transition-bouncy",
+          mode === "kart"
+            ? "bg-primary text-primary-foreground shadow-elegant scale-105"
+            : "bg-card text-muted-foreground hover:scale-[1.02]"
         )}
         aria-label="Kartlar"
       >
-        📇
+        🃏
       </button>
+
     </div>
   );
 }
