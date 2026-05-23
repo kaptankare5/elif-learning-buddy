@@ -1,7 +1,6 @@
 import type { ContentTopic } from "../types";
 
-// MEB OKUL ÖNCESİ — Kavramlar, Duygular, Zıt Anlamlılar, Günler/Aylar, Örüntü, Taşıtlar
-// 36-72 ay (3-6 yaş) bilişsel & sosyal-duygusal alan kazanımları
+// MEB OKUL ÖNCESİ — Kavramlar (sade set: sadece interaktif oyunlu olanlar + taşıtlar)
 
 export const kavramlarTopics: ContentTopic[] = [
   {
@@ -16,8 +15,6 @@ export const kavramlarTopics: ContentTopic[] = [
     items: [
       { id: "kav-buyuk-fil", label: "Büyük", subLabel: "Fil", speech: "büyük", lang: "tr", emoji: "🐘" },
       { id: "kav-kucuk-fare", label: "Küçük", subLabel: "Fare", speech: "küçük", lang: "tr", emoji: "🐭" },
-      { id: "kav-buyuk-top", label: "Büyük", subLabel: "Top", speech: "büyük", lang: "tr", emoji: "⚽" },
-      { id: "kav-kucuk-top", label: "Küçük", subLabel: "Misket", speech: "küçük", lang: "tr", emoji: "🔘" },
     ],
   },
   {
@@ -32,67 +29,6 @@ export const kavramlarTopics: ContentTopic[] = [
     items: [
       { id: "kav-uzun-zurafa", label: "Uzun", subLabel: "Zürafa", speech: "uzun", lang: "tr", emoji: "🦒" },
       { id: "kav-kisa-kirpi", label: "Kısa", subLabel: "Kirpi", speech: "kısa", lang: "tr", emoji: "🦔" },
-      { id: "kav-uzun-yilan", label: "Uzun", subLabel: "Yılan", speech: "uzun", lang: "tr", emoji: "🐍" },
-      { id: "kav-kisa-solucan", label: "Kısa", subLabel: "Solucan", speech: "kısa", lang: "tr", emoji: "🪱" },
-    ],
-  },
-  {
-    id: "konum",
-    parent: "kavramlar",
-    title: "Konum",
-    description: "Üst, alt, içinde, dışında",
-    emoji: "🧭",
-    practiceMode: "visual",
-    ages: [4, 5, 6],
-    items: [
-      { id: "kav-ust", label: "Üst", speech: "üst", lang: "tr", emoji: "🐦⬆️🌳" },
-      { id: "kav-alt", label: "Alt", speech: "alt", lang: "tr", emoji: "🌳⬇️🐛" },
-      { id: "kav-icinde", label: "İçinde", speech: "içinde", lang: "tr", emoji: "📦🐱" },
-      { id: "kav-disinda", label: "Dışında", speech: "dışında", lang: "tr", emoji: "🐱📤" },
-      { id: "kav-on", label: "Ön", speech: "ön", lang: "tr", emoji: "🧒➡️" },
-      { id: "kav-arka", label: "Arka", speech: "arka", lang: "tr", emoji: "⬅️🧒" },
-      { id: "kav-sag", label: "Sağ", speech: "sağ", lang: "tr", emoji: "🧒👉" },
-      { id: "kav-sol", label: "Sol", speech: "sol", lang: "tr", emoji: "👈🧒" },
-    ],
-  },
-  {
-    id: "zit-anlamli",
-    parent: "kavramlar",
-    title: "Zıt Anlamlılar",
-    description: "Sıcak-soğuk, açık-kapalı...",
-    emoji: "↔️",
-    practiceMode: "visual",
-    ages: [5, 6],
-    items: [
-      { id: "zit-sicak", label: "Sıcak", speech: "sıcak", lang: "tr", emoji: "☀️🔥" },
-      { id: "zit-soguk", label: "Soğuk", speech: "soğuk", lang: "tr", emoji: "❄️🧊" },
-      { id: "zit-acik", label: "Açık", speech: "açık", lang: "tr", emoji: "🚪➡️" },
-      { id: "zit-kapali", label: "Kapalı", speech: "kapalı", lang: "tr", emoji: "🚪🔒" },
-      { id: "zit-hizli", label: "Hızlı", speech: "hızlı", lang: "tr", emoji: "🏎️💨" },
-      { id: "zit-yavas", label: "Yavaş", speech: "yavaş", lang: "tr", emoji: "🐢💤" },
-      { id: "zit-mutlu", label: "Mutlu", speech: "mutlu", lang: "tr", emoji: "😀🎉" },
-      { id: "zit-uzgun", label: "Üzgün", speech: "üzgün", lang: "tr", emoji: "😢💧" },
-      { id: "zit-temiz", label: "Temiz", speech: "temiz", lang: "tr", emoji: "🧼✨" },
-      { id: "zit-kirli", label: "Kirli", speech: "kirli", lang: "tr", emoji: "🧦💩" },
-    ],
-  },
-  {
-    id: "duygular",
-    parent: "kavramlar",
-    title: "Duygular",
-    description: "Mutlu, üzgün, kızgın, korkmuş",
-    emoji: "😊",
-    practiceMode: "visual",
-    ages: [3, 4, 5, 6],
-    items: [
-      { id: "duy-mutlu", label: "Mutlu", speech: "mutlu", lang: "tr", emoji: "😀" },
-      { id: "duy-uzgun", label: "Üzgün", speech: "üzgün", lang: "tr", emoji: "😢" },
-      { id: "duy-kizgin", label: "Kızgın", speech: "kızgın", lang: "tr", emoji: "😠" },
-      { id: "duy-korkmus", label: "Korkmuş", speech: "korkmuş", lang: "tr", emoji: "😨" },
-      { id: "duy-saskin", label: "Şaşkın", speech: "şaşkın", lang: "tr", emoji: "😮" },
-      { id: "duy-yorgun", label: "Yorgun", speech: "yorgun", lang: "tr", emoji: "😴" },
-      { id: "duy-utangac", label: "Utangaç", speech: "utangaç", lang: "tr", emoji: "😊" },
-      { id: "duy-asik", label: "Sevgi dolu", speech: "sevgi dolu", lang: "tr", emoji: "🥰" },
     ],
   },
   {
@@ -116,41 +52,6 @@ export const kavramlarTopics: ContentTopic[] = [
       { id: "tas-kayik", label: "Kayık", speech: "kayık", lang: "tr", emoji: "🛶" },
       { id: "tas-roket", label: "Roket", speech: "roket", lang: "tr", emoji: "🚀" },
       { id: "tas-itfaiye", label: "İtfaiye", speech: "itfaiye arabası", lang: "tr", emoji: "🚒" },
-    ],
-  },
-  {
-    id: "gunler-aylar",
-    parent: "kavramlar",
-    title: "Günler & Aylar",
-    description: "Haftanın günleri ve aylar",
-    emoji: "📅",
-    practiceMode: "visual",
-    ages: [5, 6],
-    items: [
-      { id: "gun-pzt", label: "Pazartesi", speech: "pazartesi", lang: "tr", emoji: "1️⃣" },
-      { id: "gun-sal", label: "Salı", speech: "salı", lang: "tr", emoji: "2️⃣" },
-      { id: "gun-car", label: "Çarşamba", speech: "çarşamba", lang: "tr", emoji: "3️⃣" },
-      { id: "gun-per", label: "Perşembe", speech: "perşembe", lang: "tr", emoji: "4️⃣" },
-      { id: "gun-cum", label: "Cuma", speech: "cuma", lang: "tr", emoji: "5️⃣" },
-      { id: "gun-cmt", label: "Cumartesi", speech: "cumartesi", lang: "tr", emoji: "6️⃣" },
-      { id: "gun-paz", label: "Pazar", speech: "pazar", lang: "tr", emoji: "7️⃣" },
-    ],
-  },
-  {
-    id: "trafik",
-    parent: "kavramlar",
-    title: "Trafik & Güvenlik",
-    description: "Trafik işaretleri ve güvenlik",
-    emoji: "🚦",
-    practiceMode: "visual",
-    ages: [4, 5, 6],
-    items: [
-      { id: "tra-kirmizi", label: "Kırmızı", subLabel: "Dur", speech: "kırmızı dur", lang: "tr", emoji: "🔴" },
-      { id: "tra-sari", label: "Sarı", subLabel: "Dikkat", speech: "sarı dikkat", lang: "tr", emoji: "🟡" },
-      { id: "tra-yesil", label: "Yeşil", subLabel: "Geç", speech: "yeşil geç", lang: "tr", emoji: "🟢" },
-      { id: "tra-yaya", label: "Yaya geçidi", speech: "yaya geçidi", lang: "tr", emoji: "🚸" },
-      { id: "tra-emniyet", label: "Emniyet kemeri", speech: "emniyet kemeri", lang: "tr", emoji: "💺" },
-      { id: "tra-kask", label: "Kask", speech: "kask", lang: "tr", emoji: "⛑️" },
     ],
   },
 ];

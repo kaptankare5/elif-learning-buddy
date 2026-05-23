@@ -3,6 +3,8 @@ import { PageHeader } from "@/components/PageHeader";
 import { LangToggle } from "@/components/LangToggle";
 
 const GAMES = [
+  { id: "puzzle", title: "Yapboz", emoji: "🧩", color: "from-warning to-topic-pink", desc: "Parçaları birleştir, sesi duy" },
+  { id: "runner", title: "Koşan Çocuk", emoji: "🏃", color: "from-sky-400 to-success", desc: "Doğruya koş, yanlıştan zıpla" },
   { id: "memory", title: "Hafıza Kartları", emoji: "🃏", color: "from-topic-pink to-pink", desc: "Eşleşenleri bul" },
   { id: "match3", title: "Üçlü Eşleştir", emoji: "🍬", color: "from-topic-pink to-warning", desc: "3'lü dizip patlat" },
   { id: "snake", title: "Yılan Oyunu", emoji: "🐍", color: "from-success to-topic-doga", desc: "Harfleri ye, sınavı geç" },

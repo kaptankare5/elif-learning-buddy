@@ -3,28 +3,7 @@ import type { ContentTopic } from "../types";
 // İNGİLİZCE — 4-5 yaş anaokulu seviyesi
 // İngiliz aksanı (lang: "en") ile çalınır
 
-const ALPHABET_EN = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").map((letter) => ({
-  letter,
-  // İngilizce harf isimleri (ay, bee, see, ...)
-  name: letter,
-}));
-
 export const ingilizceTopics: ContentTopic[] = [
-  {
-    id: "alphabet",
-    parent: "ingilizce",
-    title: "Alphabet",
-    description: "A’dan Z’ye İngilizce alfabe",
-    emoji: "🔠",
-    practiceMode: "visual",
-    ages: [5,6],
-    items: ALPHABET_EN.map((l) => ({
-      id: `en-letter-${l.letter.toLowerCase()}`,
-      label: l.letter,
-      speech: l.name,
-      lang: "en" as const,
-    })),
-  },
   {
     id: "numbers",
     parent: "ingilizce",
