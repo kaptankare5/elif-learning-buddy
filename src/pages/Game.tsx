@@ -28,6 +28,7 @@ const Game = () => {
     case "flappy": return <FlappyGame />;
     case "puzzle": return <PuzzleGame />;
     case "runner": return <RunnerGame />;
+    case "lanerunner": return <LaneRunnerGame />;
     default: return <Navigate to="/oyunlar" replace />;
   }
 };
