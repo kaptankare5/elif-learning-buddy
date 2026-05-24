@@ -245,6 +245,27 @@ const LaneRunnerGame = () => {
           {/* Çim alanı */}
           <div className="absolute left-0 right-0 bottom-0 top-[22%] bg-gradient-to-b from-[hsl(110_55%_55%)] to-[hsl(115_60%_42%)]" />
 
+          {/* 3D Yol zemini — rotateX ile gerçek perspektif */}
+          <div
+            className="absolute left-1/2 -translate-x-1/2 overflow-hidden"
+            style={{
+              top: "22%",
+              width: "180%",
+              height: "120%",
+              transform: "rotateX(62deg)",
+              transformOrigin: "50% 0%",
+              backgroundImage: `
+                linear-gradient(to bottom, hsl(30 35% 50%), hsl(28 40% 38%)),
+                repeating-linear-gradient(to bottom, transparent 0 60px, hsl(0 0% 100% / 0.85) 60px 80px),
+                linear-gradient(to right, transparent 0 49.4%, hsl(0 0% 100% / 0.6) 49.4% 50.6%, transparent 50.6% 100%)
+              `,
+              backgroundBlendMode: "normal, screen, normal",
+              backgroundSize: "100% 100%, 100% 140px, 100% 100%",
+              animation: paused ? undefined : "ground-scroll 0.6s linear infinite",
+              boxShadow: "inset 0 30px 60px rgba(0,0,0,0.35)",
+            }}
+          />
+
           {/* YOL — perspektif trapez */}
           <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 w-full h-full">
             <defs>
