@@ -77,6 +77,14 @@ const PuzzleGame = () => {
 
         <div className="mb-3 flex items-center justify-between text-sm font-bold">
           <span>⭐ {score}</span>
+          <button
+            onClick={sayItem}
+            disabled={!item}
+            className="rounded-full bg-primary text-primary-foreground px-3 py-1.5 shadow-soft border-2 border-primary font-bold flex items-center gap-1 disabled:opacity-40"
+            aria-label="Nesnenin adını dinle"
+          >
+            <Volume2 className="h-4 w-4" /> Dinle
+          </button>
           <span className="text-muted-foreground">{N}×{N} • {age ? `${age} yaş` : ""}</span>
         </div>
 
