@@ -289,17 +289,18 @@ const FlappyGame = () => {
         <div
           onPointerDown={(e) => { e.preventDefault(); flap(); }}
           className="relative w-full overflow-hidden rounded-2xl shadow-card border-4 border-info/40 bg-gradient-to-b from-info/10 via-background to-success/10 select-none touch-none"
-          style={{ aspectRatio: "5 / 6", maxHeight: "60vh", margin: "0 auto" }}
+          style={{ aspectRatio: "5 / 6", maxHeight: "60vh", margin: "0 auto", contain: "layout paint size" }}
         >
           {/* Bird */}
           <div
-            className="absolute flex items-center justify-center text-3xl transition-transform"
+            className="absolute flex items-center justify-center text-3xl"
             style={{
               left: `${BIRD_X}%`,
               top: `${birdY}%`,
               width: `${HIT_R * 2}%`,
               height: `${HIT_R * 2}%`,
-              transform: `translate(-50%, -50%) scaleX(-1) rotate(${Math.max(-30, Math.min(60, -vel * 8))}deg)`,
+              transform: `translate3d(-50%, -50%, 0) scaleX(-1) rotate(${Math.max(-30, Math.min(60, -vel * 8))}deg)`,
+              willChange: "transform, top",
             }}
           >
             🐦
@@ -320,8 +321,9 @@ const FlappyGame = () => {
                 top: `${l.y}%`,
                 width: `${HIT_R * 2}%`,
                 height: `${HIT_R * 2}%`,
-                transform: "translate(-50%, -50%)",
+                transform: "translate3d(-50%, -50%, 0)",
                 fontSize: "min(6vw, 28px)",
+                willChange: "left",
               }}
             >
               {l.item.emoji}
