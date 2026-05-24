@@ -266,29 +266,7 @@ const LaneRunnerGame = () => {
             }}
           />
 
-          {/* YOL — perspektif trapez */}
-          <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 w-full h-full">
-            <defs>
-              <linearGradient id="road" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="hsl(35 25% 60%)" />
-                <stop offset="100%" stopColor="hsl(30 35% 45%)" />
-              </linearGradient>
-            </defs>
-            {/* Yol gövdesi */}
-            <polygon points="42,22 58,22 82,88 18,88" fill="url(#road)" />
-            {/* Yol kenarları */}
-            <line x1="42" y1="22" x2="18" y2="88" stroke="hsl(40 50% 80%)" strokeWidth="0.6" />
-            <line x1="58" y1="22" x2="82" y2="88" stroke="hsl(40 50% 80%)" strokeWidth="0.6" />
-            {/* Orta şerit — animasyonlu kesik çizgi */}
-            <line
-              x1="50" y1="22" x2="50" y2="88"
-              stroke="white" strokeWidth="0.8"
-              strokeDasharray="5 4"
-              className={paused ? "" : "animate-road-dash"}
-              style={{ strokeDashoffset: 0 }}
-            />
-            {/* Çit/ağaç simgeleri yolda yan yan */}
-          </svg>
+          {/* (3D yol artık üstte CSS perspective ile çiziliyor) */}
 
           {/* Yan ağaçlar — perspektifte 4-5 tane */}
           {[
