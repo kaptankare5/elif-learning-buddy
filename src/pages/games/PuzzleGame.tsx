@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
-import { playItem, playFeedback } from "@/lib/audio";
+import { playItem, playFeedback, playSpeech } from "@/lib/audio";
 import { gamePool, shuffle } from "./_shared";
 import { useAge } from "@/lib/age";
 import type { ContentItem } from "@/data/types";
