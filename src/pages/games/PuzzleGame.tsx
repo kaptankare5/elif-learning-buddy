@@ -5,6 +5,7 @@ import { gamePool, shuffle } from "./_shared";
 import { useAge } from "@/lib/age";
 import type { ContentItem } from "@/data/types";
 import { cn } from "@/lib/utils";
+import { Volume2 } from "lucide-react";
 
 /**
  * Yapboz — yaşa göre:
@@ -60,11 +61,14 @@ const PuzzleGame = () => {
       setSolved(true);
       setScore((s) => s + 1);
       if (item) {
-        // Önce nesnenin adı, sonra olumlu geri bildirim
-        playItem(item).then(() => playFeedback(true));
+        // Önce olumlu sinyal, sonra nesnenin adını seslendir
+        playFeedback(true);
+        setTimeout(() => { void playItem(item); }, 350);
       }
     }
   };
+
+  const sayItem = () => { if (item) void playItem(item); };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-warning/15 to-background">
@@ -73,6 +77,14 @@ const PuzzleGame = () => {
 
         <div className="mb-3 flex items-center justify-between text-sm font-bold">
           <span>⭐ {score}</span>
+          <button
+            onClick={sayItem}
+            disabled={!item}
+            className="rounded-full bg-primary text-primary-foreground px-3 py-1.5 shadow-soft border-2 border-primary font-bold flex items-center gap-1 disabled:opacity-40"
+            aria-label="Nesnenin adını dinle"
+          >
+            <Volume2 className="h-4 w-4" /> Dinle
+          </button>
           <span className="text-muted-foreground">{N}×{N} • {age ? `${age} yaş` : ""}</span>
         </div>
 
