@@ -32,8 +32,8 @@ let UID = 1;
 let POP_UID = 1;
 
 function askTarget(item: ContentItem): Promise<void> {
-  const text = item.lang === "en" ? `Where is the ${item.speech}?` : `${item.speech} nerede?`;
-  return playSpeech(text, item.lang);
+  // Önce nesnenin adını seslendir (MP3 varsa onu kullanır)
+  return playSpeech(item.speech, item.lang);
 }
 
 const RunnerGame = () => {
