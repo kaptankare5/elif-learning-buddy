@@ -225,7 +225,7 @@ const LaneRunnerGame = () => {
 
         <div
           className="relative w-full overflow-hidden rounded-2xl shadow-card border-4 border-indigo-400/50 select-none touch-none"
-          style={{ aspectRatio: "4 / 5", maxHeight: "62vh", margin: "0 auto" }}
+          style={{ aspectRatio: "4 / 5", maxHeight: "62vh", margin: "0 auto", perspective: "700px", perspectiveOrigin: "50% 30%" }}
         >
           {/* Gökyüzü */}
           <div className="absolute inset-0 bg-gradient-to-b from-[hsl(210_85%_72%)] via-[hsl(200_90%_84%)] to-[hsl(95_55%_72%)]" />
