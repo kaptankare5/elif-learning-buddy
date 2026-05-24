@@ -1,4 +1,30 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
+
+const ShipSvg = memo(() => (
+  <svg viewBox="0 0 100 100" className="w-full h-full">
+    <defs>
+      <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#7dd3fc" />
+        <stop offset="100%" stopColor="#3b82f6" />
+      </linearGradient>
+      <linearGradient id="flame" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#fde047" />
+        <stop offset="100%" stopColor="#ef4444" stopOpacity="0" />
+      </linearGradient>
+    </defs>
+    <path d="M38 78 Q50 100 62 78 Z" fill="url(#flame)">
+      <animate attributeName="d" dur="0.18s" repeatCount="indefinite"
+        values="M38 78 Q50 100 62 78 Z; M40 78 Q50 95 60 78 Z; M38 78 Q50 100 62 78 Z" />
+    </path>
+    <path d="M50 10 Q72 40 70 72 Q60 80 50 80 Q40 80 30 72 Q28 40 50 10 Z"
+      fill="url(#body)" stroke="#1e3a8a" strokeWidth="2" />
+    <path d="M30 60 L14 78 L30 72 Z" fill="#6366f1" stroke="#1e3a8a" strokeWidth="2" />
+    <path d="M70 60 L86 78 L70 72 Z" fill="#6366f1" stroke="#1e3a8a" strokeWidth="2" />
+    <circle cx="50" cy="40" r="10" fill="#fef3c7" stroke="#1e3a8a" strokeWidth="2" />
+    <circle cx="47" cy="37" r="3" fill="white" opacity="0.9" />
+  </svg>
+));
+ShipSvg.displayName = "ShipSvg";
 import { PageHeader } from "@/components/PageHeader";
 import { playFeedback, playSpeech } from "@/lib/audio";
 import { gamePool, pickN, shuffle } from "./_shared";
