@@ -90,33 +90,38 @@ const FlappyGame = () => {
 
   // Quiz kaldırıldı — artık sadece harf yutma var
 
-  // Ana döngü
+  // Ana döngü — requestAnimationFrame + delta-bazlı (mobilde daha akıcı)
   useEffect(() => {
     if (gameOver || paused) return;
-    const id = setInterval(() => {
+    let rafId = 0;
+    let last = performance.now();
+    let acc = 0;
+    const HIT_SQ = HIT_THRESH * HIT_THRESH;
+    const TARGET_SQ = (HIT_THRESH + 2) * (HIT_THRESH + 2);
+    const NEAR_PLUS_SQ = (HIT_THRESH + 4) * (HIT_THRESH + 4);
+
+    const step = () => {
       tickRef.current += 1;
 
       // Bird fizik
       const nv = velRef.current + GRAVITY;
       const ny = yRef.current + nv;
       if (ny > H - 4) {
-        setGameOver(true); playFeedback(false); return;
+        setGameOver(true); playFeedback(false); return true;
       }
       if (ny < 0) { setBirdY(0); setVel(0); }
       else { setBirdY(ny); setVel(nv); }
 
-      // Spawn — bazen 2, bazen 3 harf, üst üste binmeyecek + duvar oluşturmayacak
+      // Spawn
       if (tickRef.current % SPAWN_EVERY === 0 && targetRef.current) {
         setLetters((prev) => {
           if (prev.length >= MAX_LETTERS) return prev;
-          // Sağ kenara yakın mevcut harflerin y'leri (yeni dalgayla çakışabilir)
           const nearXs = prev.filter((p) => p.x > 100 - NEAR_DX * 2).map((p) => p.y);
           const allSlots = [15, 35, 55, 75];
           const freeSlots = shuffle(allSlots).filter(
-            (s) => nearXs.every((ny) => Math.abs(ny - s) >= MIN_DY),
+            (s) => nearXs.every((ny2) => Math.abs(ny2 - s) >= MIN_DY),
           );
-          if (freeSlots.length === 0) return prev; // sıkışıksa atla
-          // En fazla 2 harf, aralarında MIN_DY garantili → dikey boşluk her zaman var (duvar yok)
+          if (freeSlots.length === 0) return prev;
           const desired = Math.random() < 0.5 ? 1 : 2;
           const count = Math.min(desired, freeSlots.length, MAX_LETTERS - prev.length);
           const chosenSlots: number[] = [];
@@ -128,7 +133,6 @@ const FlappyGame = () => {
           const pool = gamePool();
           const wrongs = pickN(pool.filter((p) => p.id !== targetRef.current!.id), chosenSlots.length - 1);
           const items = shuffle([targetRef.current!, ...wrongs]).slice(0, chosenSlots.length);
-          // Tek harf ise %50 ihtimalle yanlış olsun (yoksa hep doğru olur)
           if (chosenSlots.length === 1 && Math.random() < 0.5 && wrongs.length === 0) {
             const w = pickN(pool.filter((p) => p.id !== targetRef.current!.id), 1);
             if (w.length) items[0] = w[0];
@@ -146,10 +150,9 @@ const FlappyGame = () => {
         });
       }
 
-      // Hareket + çarpışma
+      // Hareket + çarpışma (squared distance)
       setLetters((prev) => {
         const curTargetId = targetRef.current?.id;
-        // Önce hareket ettir
         const moved: Letter[] = [];
         let missedTarget = false;
         for (const l of prev) {
@@ -159,29 +162,25 @@ const FlappyGame = () => {
             if (l.item.id === curTargetId) missedTarget = true;
             continue;
           }
-          // isTarget'ı dinamik güncelle (hedef değişmiş olabilir)
           moved.push({ ...l, x: nx, isTarget: l.item.id === curTargetId });
         }
 
-        // Çarpışma adaylarını topla; hedefi öncele
-        const TARGET_THRESH = HIT_THRESH + 2;
         let collidedTarget: Letter | null = null;
         let collidedWrong: Letter | null = null;
         let bestTargetD = Infinity;
         let bestWrongD = Infinity;
+        const by = yRef.current;
         for (const l of moved) {
           const dx = l.x - BIRD_X;
-          const dy = l.y - yRef.current;
-          const d = Math.hypot(dx, dy);
+          const dy = l.y - by;
+          const d2 = dx * dx + dy * dy;
           if (l.isTarget) {
-            if (d < TARGET_THRESH && d < bestTargetD) { bestTargetD = d; collidedTarget = l; }
+            if (d2 < TARGET_SQ && d2 < bestTargetD) { bestTargetD = d2; collidedTarget = l; }
           } else {
-            if (d < HIT_THRESH && d < bestWrongD) { bestWrongD = d; collidedWrong = l; }
+            if (d2 < HIT_SQ && d2 < bestWrongD) { bestWrongD = d2; collidedWrong = l; }
           }
         }
-        // Hedef yakındaysa yanlışı yok say (oyuncu hedefe gidiyordu)
         if (collidedTarget) collidedWrong = null;
-        // Ek koruma: hedef harf yatayca kuşa yakınsa, aynı an yanlış da çarpsa yok say
         if (!collidedTarget && collidedWrong) {
           const nearTarget = moved.find(
             (l) => l.isTarget && Math.abs(l.x - BIRD_X) < 14,
@@ -196,11 +195,9 @@ const FlappyGame = () => {
           recordLetterMastery(collidedTarget.item.id, true);
           playSpeech(collidedTarget.item.speech);
           setScore((s) => s + 1);
-          // Doğru yenince ekran TEMİZLENMEZ — yanlış harfler engel olarak kalır.
-          // Sadece kuşa çok yakın yanlışları temizle (anlık yan çarpışmayı engelle).
           next = next.filter((l) => {
-            const d = Math.hypot(l.x - BIRD_X, l.y - yRef.current);
-            return d > HIT_THRESH + 4;
+            const dx = l.x - BIRD_X, dy = l.y - by;
+            return dx * dx + dy * dy > NEAR_PLUS_SQ;
           });
           setEaten((e) => e + 1);
           setTimeout(pickTarget, 250);
@@ -229,8 +226,25 @@ const FlappyGame = () => {
         }
         return next;
       });
-    }, TICK_MS);
-    return () => clearInterval(id);
+      return false;
+    };
+
+    const loop = (now: number) => {
+      const dt = now - last;
+      last = now;
+      acc += dt;
+      // Sabit adımlı simülasyon — düşük FPS'te bile tutarlı
+      let guard = 0;
+      while (acc >= TICK_MS && guard < 5) {
+        const stop = step();
+        acc -= TICK_MS;
+        guard++;
+        if (stop) return;
+      }
+      rafId = requestAnimationFrame(loop);
+    };
+    rafId = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(rafId);
   }, [gameOver, paused, pickTarget]);
 
   const reset = () => {
