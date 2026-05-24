@@ -99,8 +99,10 @@ const RunnerGame = () => {
     setRoundItems(items);
     targetRef.current = tgt;
     roundItemsRef.current = items;
-    // Ekrandaki düşmanları temizle ki eski elin nesneleri kalmasın
-    setEnemies([]);
+    // Uçan Kuş mantığı: ekrandaki nesneleri silme, sadece isTarget bayraklarını
+    // yeni hedefe göre güncelle. Yeni hedef bu eldeki nesneler arasında yoksa
+    // mevcutlar decoy olarak kalır; doğal akışla aşağı düşerler.
+    setEnemies((arr) => arr.map((e) => ({ ...e, isTarget: e.item.id === tgt.id })));
     roundLockRef.current = false;
     if (!silent) {
       await askTarget(tgt);
