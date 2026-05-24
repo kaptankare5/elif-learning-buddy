@@ -7,13 +7,13 @@ import type { ContentItem } from "@/data/types";
 import { cn } from "@/lib/utils";
 
 /**
- * Yapboz oyunu — yaşa göre NxN parçalı emoji/resim yapbozu.
- * Tap-to-swap mekanik: oyuncu önce bir parçaya, sonra diğerine dokunur, takas olur.
- * Bittiğinde nesnenin sesi söylenir.
+ * Yapboz — yaşa göre:
+ *   3-4 yaş → 2x2  (4 parça)
+ *   5-6 yaş → 4x4  (16 parça)
+ * Tap-to-swap. Bittiğinde nesnenin adı seslendirilir.
  */
-function gridForAge(age: number): number {
-  if (age <= 4) return 2; // 4 parça
-  if (age === 5) return 3; // 9 parça
+function gridForAge(age: number | null): number {
+  if (!age || age <= 4) return 2; // 4 parça
   return 4; // 16 parça
 }
 
@@ -26,7 +26,7 @@ const PuzzleGame = () => {
     [],
   );
   const [item, setItem] = useState<ContentItem | null>(null);
-  const [tiles, setTiles] = useState<number[]>([]); // value = original index
+  const [tiles, setTiles] = useState<number[]>([]);
   const [first, setFirst] = useState<number | null>(null);
   const [solved, setSolved] = useState(false);
   const [score, setScore] = useState(0);
@@ -39,7 +39,6 @@ const PuzzleGame = () => {
     setItem(it);
     const total = N * N;
     let arr = Array.from({ length: total }, (_, i) => i);
-    // İyi karıştır — zaten çözülmüş olmasın
     do { arr = shuffle(arr); } while (arr.every((v, i) => v === i));
     setTiles(arr);
     setFirst(null);
@@ -52,21 +51,19 @@ const PuzzleGame = () => {
     if (solved) return;
     if (first === null) { setFirst(i); return; }
     if (first === i) { setFirst(null); return; }
-    setTiles((prev) => {
-      const next = [...prev];
-      [next[first], next[i]] = [next[i], next[first]];
-      // Çözüm kontrolü
-      if (next.every((v, idx) => v === idx)) {
-        setSolved(true);
-        setScore((s) => s + 1);
-        if (item) {
-          setTimeout(() => playItem(item), 200);
-          setTimeout(() => playFeedback(true), 1400);
-        }
-      }
-      return next;
-    });
+    const next = [...tiles];
+    [next[first], next[i]] = [next[i], next[first]];
+    setTiles(next);
     setFirst(null);
+
+    if (next.every((v, idx) => v === idx)) {
+      setSolved(true);
+      setScore((s) => s + 1);
+      if (item) {
+        // Önce nesnenin adı, sonra olumlu geri bildirim
+        playItem(item).then(() => playFeedback(true));
+      }
+    }
   };
 
   return (
@@ -76,12 +73,13 @@ const PuzzleGame = () => {
 
         <div className="mb-3 flex items-center justify-between text-sm font-bold">
           <span>⭐ {score}</span>
-          <span className="text-muted-foreground">{N}×{N}</span>
+          <span className="text-muted-foreground">{N}×{N} • {age ? `${age} yaş` : ""}</span>
         </div>
 
         <div
           ref={sizeRef}
           className="relative mx-auto aspect-square w-full max-w-sm rounded-3xl bg-card border-4 border-warning/40 shadow-card p-2 overflow-hidden"
+          style={{ ["--tile" as string]: `calc((min(100vw - 2rem, 24rem) - 1rem) / ${N})` }}
         >
           <div
             className="grid gap-1 h-full w-full"
@@ -109,17 +107,13 @@ const PuzzleGame = () => {
                   {item?.emoji && (
                     <span
                       aria-hidden
-                      className="absolute leading-none select-none"
+                      className="absolute inset-0 leading-none select-none flex items-center justify-center"
                       style={{
-                        fontSize: `${N * 100}%`,
-                        // Konteyner = tile boyutu; emojiyi N× büyüt ve doğru parçayı göster
-                        top: `-${row * 100}%`,
-                        left: `-${col * 100}%`,
                         width: `${N * 100}%`,
                         height: `${N * 100}%`,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
+                        top: `-${row * 100}%`,
+                        left: `-${col * 100}%`,
+                        fontSize: `calc(var(--tile) * ${N * 0.95})`,
                       }}
                     >
                       {item.emoji}
@@ -133,6 +127,7 @@ const PuzzleGame = () => {
           {solved && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-success/85 backdrop-blur-sm animate-bounce-in">
               <div className="text-7xl mb-2">{item?.emoji}</div>
+              <div className="text-2xl font-extrabold text-white mb-1">{item?.label}</div>
               <div className="text-3xl font-extrabold text-white text-shadow-soft mb-4">
                 🎉 Aferin!
               </div>

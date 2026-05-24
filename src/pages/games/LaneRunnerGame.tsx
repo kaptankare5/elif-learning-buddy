@@ -225,7 +225,7 @@ const LaneRunnerGame = () => {
 
         <div
           className="relative w-full overflow-hidden rounded-2xl shadow-card border-4 border-indigo-400/50 select-none touch-none"
-          style={{ aspectRatio: "4 / 5", maxHeight: "62vh", margin: "0 auto" }}
+          style={{ aspectRatio: "4 / 5", maxHeight: "62vh", margin: "0 auto", perspective: "700px", perspectiveOrigin: "50% 30%" }}
         >
           {/* Gökyüzü */}
           <div className="absolute inset-0 bg-gradient-to-b from-[hsl(210_85%_72%)] via-[hsl(200_90%_84%)] to-[hsl(95_55%_72%)]" />
@@ -245,29 +245,28 @@ const LaneRunnerGame = () => {
           {/* Çim alanı */}
           <div className="absolute left-0 right-0 bottom-0 top-[22%] bg-gradient-to-b from-[hsl(110_55%_55%)] to-[hsl(115_60%_42%)]" />
 
-          {/* YOL — perspektif trapez */}
-          <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 w-full h-full">
-            <defs>
-              <linearGradient id="road" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="hsl(35 25% 60%)" />
-                <stop offset="100%" stopColor="hsl(30 35% 45%)" />
-              </linearGradient>
-            </defs>
-            {/* Yol gövdesi */}
-            <polygon points="42,22 58,22 82,88 18,88" fill="url(#road)" />
-            {/* Yol kenarları */}
-            <line x1="42" y1="22" x2="18" y2="88" stroke="hsl(40 50% 80%)" strokeWidth="0.6" />
-            <line x1="58" y1="22" x2="82" y2="88" stroke="hsl(40 50% 80%)" strokeWidth="0.6" />
-            {/* Orta şerit — animasyonlu kesik çizgi */}
-            <line
-              x1="50" y1="22" x2="50" y2="88"
-              stroke="white" strokeWidth="0.8"
-              strokeDasharray="5 4"
-              className={paused ? "" : "animate-road-dash"}
-              style={{ strokeDashoffset: 0 }}
-            />
-            {/* Çit/ağaç simgeleri yolda yan yan */}
-          </svg>
+          {/* 3D Yol zemini — rotateX ile gerçek perspektif */}
+          <div
+            className="absolute left-1/2 -translate-x-1/2 overflow-hidden"
+            style={{
+              top: "22%",
+              width: "180%",
+              height: "120%",
+              transform: "rotateX(62deg)",
+              transformOrigin: "50% 0%",
+              backgroundImage: `
+                linear-gradient(to bottom, hsl(30 35% 50%), hsl(28 40% 38%)),
+                repeating-linear-gradient(to bottom, transparent 0 60px, hsl(0 0% 100% / 0.85) 60px 80px),
+                linear-gradient(to right, transparent 0 49.4%, hsl(0 0% 100% / 0.6) 49.4% 50.6%, transparent 50.6% 100%)
+              `,
+              backgroundBlendMode: "normal, screen, normal",
+              backgroundSize: "100% 100%, 100% 140px, 100% 100%",
+              animation: paused ? undefined : "ground-scroll 0.6s linear infinite",
+              boxShadow: "inset 0 30px 60px rgba(0,0,0,0.35)",
+            }}
+          />
+
+          {/* (3D yol artık üstte CSS perspective ile çiziliyor) */}
 
           {/* Yan ağaçlar — perspektifte 4-5 tane */}
           {[
