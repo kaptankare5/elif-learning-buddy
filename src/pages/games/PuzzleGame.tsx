@@ -61,11 +61,14 @@ const PuzzleGame = () => {
       setSolved(true);
       setScore((s) => s + 1);
       if (item) {
-        // Önce nesnenin adı, sonra olumlu geri bildirim
-        playItem(item).then(() => playFeedback(true));
+        // Önce olumlu sinyal, sonra nesnenin adını seslendir
+        playFeedback(true);
+        setTimeout(() => { void playItem(item); }, 350);
       }
     }
   };
+
+  const sayItem = () => { if (item) void playItem(item); };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-warning/15 to-background">
