@@ -5,6 +5,7 @@ import { gamePool, shuffle } from "./_shared";
 import { useAge } from "@/lib/age";
 import type { ContentItem } from "@/data/types";
 import { cn } from "@/lib/utils";
+import { Volume2 } from "lucide-react";
 
 /**
  * Yapboz — yaşa göre:

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { playFeedback, playSpeech } from "@/lib/audio";
-import { gamePool, pickN } from "./_shared";
+import { gamePool, pickN, shuffle } from "./_shared";
 import { pickNextLetter, recordSrsAnswer } from "@/data/srs";
 import type { ContentItem } from "@/data/types";
 import { cn } from "@/lib/utils";
@@ -9,18 +9,20 @@ import { Heart, Volume2, ChevronLeft, ChevronRight } from "lucide-react";
 
 /**
  * 🚀 Uzay Savaşı — eğitici nişancı.
- * Hedefi yalnızca sesle söyler. Düşman gemiye çarparsa can gider.
+ * Her el rastgele 4 nesne seçilir, biri hedef. Düşmanlar bu 4 nesneden gelir.
+ * Hedefi yalnızca sesle söyler. Yanlış vurursa veya gemiye çarparsa: can − ve yeni soru.
  */
 const TICK_MS = 32;
-const SHIP_W = 14; // %
-const SHIP_H = 12; // %
-const ENEMY_SIZE = 10; // %
+const SHIP_W = 14;
+const SHIP_H = 12;
+const ENEMY_SIZE = 10;
 const ENEMY_FALL = 0.35;
 const BULLET_SPEED = 2.2;
 const SHIP_SPEED = 1.8;
 const SRS_TOPIC = "space-shooter";
 const MAX_ENEMIES = 5;
-const SHIP_TOP = 86; // ship center Y (%)
+const SHIP_TOP = 86;
+const ROUND_SIZE = 4; // her elde 4 nesne
 
 interface Enemy { uid: number; x: number; y: number; item: ContentItem; isTarget: boolean }
 interface Bullet { uid: number; x: number; y: number }
@@ -29,7 +31,6 @@ interface Pop { id: number; x: number; y: number; text: string; good: boolean }
 let UID = 1;
 let POP_UID = 1;
 
-// Hedefi sadece sesle sorar. Speech bitince callback çağrılır.
 function askTarget(item: ContentItem): Promise<void> {
   const text = item.lang === "en" ? `Where is the ${item.speech}?` : `${item.speech} nerede?`;
   return playSpeech(text, item.lang);
@@ -40,6 +41,7 @@ const RunnerGame = () => {
   const [enemies, setEnemies] = useState<Enemy[]>([]);
   const [bullets, setBullets] = useState<Bullet[]>([]);
   const [target, setTarget] = useState<ContentItem | null>(null);
+  const [roundItems, setRoundItems] = useState<ContentItem[]>([]);
   const [score, setScore] = useState(0);
   const [combo, setCombo] = useState(0);
   const [lives, setLives] = useState(3);
@@ -50,23 +52,32 @@ const RunnerGame = () => {
 
   const shipXRef = useRef(50); shipXRef.current = shipX;
   const targetRef = useRef<ContentItem | null>(null); targetRef.current = target;
+  const roundItemsRef = useRef<ContentItem[]>([]); roundItemsRef.current = roundItems;
   const pausedRef = useRef(true); pausedRef.current = paused;
   const enemiesRef = useRef<Enemy[]>([]); enemiesRef.current = enemies;
-  const announcingRef = useRef(false);
+  const roundLockRef = useRef(false); // aynı el içinde çift tetiklemeyi önler
   const tickRef = useRef(0);
   const moveDirRef = useRef<-1 | 0 | 1>(0);
   const lastShotRef = useRef(0);
 
-  const nextRound = useCallback(async () => {
+  const nextRound = useCallback(async (silent = false) => {
     const pool = gamePool();
     if (pool.length === 0) return;
+    // Hedefi SRS ile seç
     const id = pickNextLetter("games", SRS_TOPIC, pool.map((p) => p.id));
-    const item = pool.find((p) => p.id === id) || pool[0];
-    setTarget(item);
-    if (!pausedRef.current) {
-      announcingRef.current = true;
-      await askTarget(item);
-      announcingRef.current = false;
+    const tgt = pool.find((p) => p.id === id) || pool[0];
+    // El nesneleri: hedef + 3 rastgele yanlış (toplam 4)
+    const others = pickN(pool.filter((p) => p.id !== tgt.id), Math.max(0, ROUND_SIZE - 1));
+    const items = shuffle([tgt, ...others]);
+    setTarget(tgt);
+    setRoundItems(items);
+    targetRef.current = tgt;
+    roundItemsRef.current = items;
+    // Ekrandaki düşmanları temizle ki eski elin nesneleri kalmasın
+    setEnemies([]);
+    roundLockRef.current = false;
+    if (!silent) {
+      await askTarget(tgt);
     }
   }, []);
 
@@ -77,34 +88,48 @@ const RunnerGame = () => {
   };
   const flashFx = (k: "good" | "bad") => { setFlash(k); setTimeout(() => setFlash(null), 200); };
 
-  const loseLife = useCallback(() => {
+  const loseLifeAndRenew = useCallback(() => {
+    if (roundLockRef.current) return;
+    roundLockRef.current = true;
     playFeedback(false);
     setCombo(0);
     flashFx("bad");
     setLives((l) => {
       const nl = l - 1;
-      if (nl <= 0) setGameOver(true);
+      if (nl <= 0) { setGameOver(true); return nl; }
+      // yeni soruya geç
+      setTimeout(() => { void nextRound(); }, 400);
       return nl;
     });
-  }, []);
+  }, [nextRound]);
+
+  const startGame = useCallback(() => {
+    if (!pausedRef.current) return;
+    pausedRef.current = false;
+    setPaused(false);
+    void nextRound();
+  }, [nextRound]);
 
   const fire = useCallback(() => {
     if (gameOver) return;
-    if (pausedRef.current) { setPaused(false); void nextRound(); return; }
+    if (pausedRef.current) { startGame(); return; }
     const now = Date.now();
     if (now - lastShotRef.current < 220) return;
     lastShotRef.current = now;
     setBullets((b) => [...b, { uid: UID++, x: shipXRef.current, y: SHIP_TOP - SHIP_H / 2 }]);
-  }, [gameOver, nextRound]);
+  }, [gameOver, startGame]);
 
-  const startMove = (dir: -1 | 1) => { moveDirRef.current = dir; if (pausedRef.current) { setPaused(false); void nextRound(); } };
+  const startMove = (dir: -1 | 1) => {
+    moveDirRef.current = dir;
+    if (pausedRef.current) startGame();
+  };
   const stopMove = () => { moveDirRef.current = 0; };
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.code === "Space") { e.preventDefault(); fire(); }
-      if (e.code === "ArrowLeft" || e.code === "KeyA") { e.preventDefault(); moveDirRef.current = -1; if (pausedRef.current) { setPaused(false); void nextRound(); } }
-      if (e.code === "ArrowRight" || e.code === "KeyD") { e.preventDefault(); moveDirRef.current = 1; if (pausedRef.current) { setPaused(false); void nextRound(); } }
+      if (e.code === "ArrowLeft" || e.code === "KeyA") { e.preventDefault(); startMove(-1); }
+      if (e.code === "ArrowRight" || e.code === "KeyD") { e.preventDefault(); startMove(1); }
     };
     const up = (e: KeyboardEvent) => {
       if (["ArrowLeft", "ArrowRight", "KeyA", "KeyD"].includes(e.code)) moveDirRef.current = 0;
@@ -112,7 +137,8 @@ const RunnerGame = () => {
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
     return () => { window.removeEventListener("keydown", down); window.removeEventListener("keyup", up); };
-  }, [fire, nextRound]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fire]);
 
   // Ana döngü
   useEffect(() => {
@@ -126,12 +152,15 @@ const RunnerGame = () => {
 
       const spawnEvery = Math.max(35, 70 - Math.floor(score * 0.5));
       if (tickRef.current % spawnEvery === 0 && enemiesRef.current.length < MAX_ENEMIES) {
-        const pool = gamePool();
         const t = targetRef.current;
-        if (t && pool.length > 1) {
+        const ri = roundItemsRef.current;
+        if (t && ri.length > 0) {
           const hasTarget = enemiesRef.current.some((e) => e.isTarget);
           const putTarget = !hasTarget && Math.random() < 0.55;
-          const item = putTarget ? t : pickN(pool.filter((p) => p.id !== t.id), 1)[0] || t;
+          const others = ri.filter((p) => p.id !== t.id);
+          const item = putTarget
+            ? t
+            : (others.length > 0 ? others[Math.floor(Math.random() * others.length)] : t);
           setEnemies((arr) => [...arr, {
             uid: UID++,
             x: 10 + Math.random() * 80,
@@ -142,15 +171,13 @@ const RunnerGame = () => {
         }
       }
 
-      // Düşmanları indir; gemiye çarpan can götürür.
+      // Düşmanları indir; gemiye çarpan can götürür ve soruyu yeniler.
       setEnemies((arr) => {
         let collided = false;
-        let lostTargetMissed = false;
         const survivors: Enemy[] = [];
         const sx = shipXRef.current;
         for (const e of arr) {
           const ny = e.y + ENEMY_FALL;
-          // çarpışma: gemi kutusu içinde mi?
           const hitsShip =
             Math.abs(e.x - sx) < (SHIP_W / 2 + ENEMY_SIZE / 2 - 2) &&
             Math.abs(ny - SHIP_TOP) < (SHIP_H / 2 + ENEMY_SIZE / 2 - 2);
@@ -159,19 +186,10 @@ const RunnerGame = () => {
             if (e.isTarget && targetRef.current) recordSrsAnswer("games", SRS_TOPIC, targetRef.current.id, false);
             continue;
           }
-          if (ny > 100) {
-            if (e.isTarget) lostTargetMissed = true;
-            continue;
-          }
+          if (ny > 100) continue;
           survivors.push({ ...e, y: ny });
         }
-        if (collided) {
-          loseLife();
-        }
-        if (lostTargetMissed && !collided) {
-          // hedef ekrandan kaçtı → yeni hedefe geç (ses kesilmesin diye gecikmeli)
-          setTimeout(() => { void nextRound(); }, 200);
-        }
+        if (collided) loseLifeAndRenew();
         return survivors;
       });
 
@@ -200,34 +218,33 @@ const RunnerGame = () => {
         }
         if (removeUids.size > 0) setEnemies((arr) => arr.filter((e) => !removeUids.has(e.uid)));
 
-        if (hitTarget && targetRef.current) {
+        if (hitTarget && targetRef.current && !roundLockRef.current) {
+          roundLockRef.current = true;
           const t = targetRef.current;
           recordSrsAnswer("games", SRS_TOPIC, t.id, true);
           setScore((s) => s + 3);
           setCombo((c) => c + 1);
           flashFx("good");
-          // Önce nesnenin adını söyle, BİTİNCE yeni soruya geç.
           (async () => {
-            announcingRef.current = true;
             await playSpeech(t.speech, t.lang);
-            announcingRef.current = false;
             void nextRound();
           })();
-        }
-        if (hitWrong && !hitTarget) {
+        } else if (hitWrong && !hitTarget) {
           if (targetRef.current) recordSrsAnswer("games", SRS_TOPIC, targetRef.current.id, false);
-          loseLife();
+          loseLifeAndRenew();
         }
         return moved;
       });
     }, TICK_MS);
     return () => clearInterval(id);
-  }, [gameOver, paused, score, nextRound, loseLife]);
+  }, [gameOver, paused, score, nextRound, loseLifeAndRenew]);
 
   const reset = () => {
-    setShipX(50); setEnemies([]); setBullets([]); setTarget(null);
+    setShipX(50); setEnemies([]); setBullets([]); setTarget(null); setRoundItems([]);
     setScore(0); setCombo(0); setLives(3); setGameOver(false); setPaused(true);
+    pausedRef.current = true;
     setPops([]); UID = 1; POP_UID = 1; tickRef.current = 0; moveDirRef.current = 0;
+    roundLockRef.current = false;
   };
 
   const replayQuestion = () => {
@@ -290,7 +307,6 @@ const RunnerGame = () => {
                 transform: "translate(-50%, -50%)" }} />
           ))}
 
-          {/* Futuristik, yukarı bakan çocuk dostu uzay gemisi (SVG) */}
           <div className="absolute"
             style={{ left: `${shipX}%`, top: `${SHIP_TOP}%`, transform: "translate(-50%, -50%)",
               width: `${SHIP_W}%`, aspectRatio: "1 / 1", zIndex: 50,
@@ -306,18 +322,14 @@ const RunnerGame = () => {
                   <stop offset="100%" stopColor="#ef4444" stopOpacity="0" />
                 </linearGradient>
               </defs>
-              {/* alevler */}
               <path d="M38 78 Q50 100 62 78 Z" fill="url(#flame)">
                 <animate attributeName="d" dur="0.18s" repeatCount="indefinite"
                   values="M38 78 Q50 100 62 78 Z; M40 78 Q50 95 60 78 Z; M38 78 Q50 100 62 78 Z" />
               </path>
-              {/* gövde */}
               <path d="M50 10 Q72 40 70 72 Q60 80 50 80 Q40 80 30 72 Q28 40 50 10 Z"
                 fill="url(#body)" stroke="#1e3a8a" strokeWidth="2" />
-              {/* kanatlar */}
               <path d="M30 60 L14 78 L30 72 Z" fill="#6366f1" stroke="#1e3a8a" strokeWidth="2" />
               <path d="M70 60 L86 78 L70 72 Z" fill="#6366f1" stroke="#1e3a8a" strokeWidth="2" />
-              {/* kokpit */}
               <circle cx="50" cy="40" r="10" fill="#fef3c7" stroke="#1e3a8a" strokeWidth="2" />
               <circle cx="47" cy="37" r="3" fill="white" opacity="0.9" />
             </svg>
@@ -343,7 +355,7 @@ const RunnerGame = () => {
               <div className="text-6xl mb-3 animate-bounce">🚀</div>
               <div className="text-2xl font-extrabold text-info mb-1">Hazır?</div>
               <div className="text-xs font-bold text-muted-foreground mb-1">◀ ▶ hareket • Space ateş</div>
-              <button onClick={fire} className="rounded-full bg-primary text-primary-foreground px-8 py-3 font-extrabold shadow-elegant animate-pulse mt-3">
+              <button onClick={() => startGame()} className="rounded-full bg-primary text-primary-foreground px-8 py-3 font-extrabold shadow-elegant animate-pulse mt-3">
                 ▶ Başla
               </button>
             </div>
