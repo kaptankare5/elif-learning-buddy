@@ -330,7 +330,8 @@ const RunnerGame = () => {
         <div
           className="relative w-full overflow-hidden rounded-2xl shadow-card border-4 border-indigo-500/60 select-none touch-none"
           style={{ aspectRatio: "5 / 6", maxHeight: "60vh", margin: "0 auto",
-            background: "radial-gradient(ellipse at top, hsl(250 60% 25%), hsl(240 70% 8%) 75%)" }}
+            background: "radial-gradient(ellipse at top, hsl(250 60% 25%), hsl(240 70% 8%) 75%)",
+            contain: "layout paint size" }}
         >
           <div className="absolute inset-0 pointer-events-none opacity-80"
             style={{ backgroundImage: `radial-gradient(white 1px, transparent 1px), radial-gradient(white 1px, transparent 1px)`,
@@ -338,8 +339,9 @@ const RunnerGame = () => {
 
           {enemies.map((e) => (
             <div key={e.uid} className="absolute leading-none"
-              style={{ left: `${e.x}%`, top: `${e.y}%`, transform: "translate(-50%, -50%)",
-                fontSize: "40px", filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.6))" }}>
+              style={{ left: `${e.x}%`, top: `${e.y}%`, transform: "translate3d(-50%, -50%, 0)",
+                fontSize: "40px", filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.6))",
+                willChange: "top" }}>
               {e.isTarget && (<div className="absolute -inset-2 rounded-full border-4 border-warning/70 animate-pulse" />)}
               <span className="animate-float">{e.item.emoji}</span>
             </div>
@@ -348,35 +350,15 @@ const RunnerGame = () => {
           {bullets.map((b) => (
             <div key={b.uid} className="absolute rounded-full bg-yellow-300 shadow-[0_0_12px_rgba(255,230,80,0.9)]"
               style={{ left: `${b.x}%`, top: `${b.y}%`, width: "8px", height: "16px",
-                transform: "translate(-50%, -50%)" }} />
+                transform: "translate3d(-50%, -50%, 0)", willChange: "top" }} />
           ))}
 
           <div className="absolute"
-            style={{ left: `${shipX}%`, top: `${SHIP_TOP}%`, transform: "translate(-50%, -50%)",
+            style={{ left: `${shipX}%`, top: `${SHIP_TOP}%`, transform: "translate3d(-50%, -50%, 0)",
               width: `${SHIP_W}%`, aspectRatio: "1 / 1", zIndex: 50,
-              filter: "drop-shadow(0 6px 14px rgba(80,200,255,0.65))" }}>
-            <svg viewBox="0 0 100 100" className="w-full h-full">
-              <defs>
-                <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#7dd3fc" />
-                  <stop offset="100%" stopColor="#3b82f6" />
-                </linearGradient>
-                <linearGradient id="flame" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#fde047" />
-                  <stop offset="100%" stopColor="#ef4444" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              <path d="M38 78 Q50 100 62 78 Z" fill="url(#flame)">
-                <animate attributeName="d" dur="0.18s" repeatCount="indefinite"
-                  values="M38 78 Q50 100 62 78 Z; M40 78 Q50 95 60 78 Z; M38 78 Q50 100 62 78 Z" />
-              </path>
-              <path d="M50 10 Q72 40 70 72 Q60 80 50 80 Q40 80 30 72 Q28 40 50 10 Z"
-                fill="url(#body)" stroke="#1e3a8a" strokeWidth="2" />
-              <path d="M30 60 L14 78 L30 72 Z" fill="#6366f1" stroke="#1e3a8a" strokeWidth="2" />
-              <path d="M70 60 L86 78 L70 72 Z" fill="#6366f1" stroke="#1e3a8a" strokeWidth="2" />
-              <circle cx="50" cy="40" r="10" fill="#fef3c7" stroke="#1e3a8a" strokeWidth="2" />
-              <circle cx="47" cy="37" r="3" fill="white" opacity="0.9" />
-            </svg>
+              filter: "drop-shadow(0 6px 14px rgba(80,200,255,0.65))",
+              willChange: "left" }}>
+            <ShipSvg />
           </div>
 
           {pops.map((p) => (
