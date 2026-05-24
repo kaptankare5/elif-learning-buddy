@@ -140,10 +140,14 @@ const RunnerGame = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fire]);
 
-  // Ana döngü
+  // Ana döngü — requestAnimationFrame + sabit adım
   useEffect(() => {
     if (gameOver || paused) return;
-    const id = setInterval(() => {
+    let rafId = 0;
+    let last = performance.now();
+    let acc = 0;
+
+    const step = () => {
       tickRef.current += 1;
 
       if (moveDirRef.current !== 0) {
@@ -171,7 +175,7 @@ const RunnerGame = () => {
         }
       }
 
-      // Düşmanları indir; gemiye çarpan can götürür ve soruyu yeniler.
+      // Düşmanları indir
       setEnemies((arr) => {
         let collided = false;
         const survivors: Enemy[] = [];
@@ -235,8 +239,22 @@ const RunnerGame = () => {
         }
         return moved;
       });
-    }, TICK_MS);
-    return () => clearInterval(id);
+    };
+
+    const loop = (now: number) => {
+      const dt = now - last;
+      last = now;
+      acc += dt;
+      let guard = 0;
+      while (acc >= TICK_MS && guard < 5) {
+        step();
+        acc -= TICK_MS;
+        guard++;
+      }
+      rafId = requestAnimationFrame(loop);
+    };
+    rafId = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(rafId);
   }, [gameOver, paused, score, nextRound, loseLifeAndRenew]);
 
   const reset = () => {
