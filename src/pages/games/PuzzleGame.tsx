@@ -61,9 +61,12 @@ const PuzzleGame = () => {
       setSolved(true);
       setScore((s) => s + 1);
       if (item) {
-        // Önce olumlu sinyal, sonra nesnenin adını seslendir
+        // Olumlu ses → "Tebrikler!" → nesnenin adı
         playFeedback(true);
-        setTimeout(() => { void playItem(item); }, 350);
+        setTimeout(async () => {
+          await playSpeech("Tebrikler!", "tr");
+          void playItem(item);
+        }, 300);
       }
     }
   };
