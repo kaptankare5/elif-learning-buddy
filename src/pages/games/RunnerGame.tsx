@@ -32,8 +32,8 @@ let UID = 1;
 let POP_UID = 1;
 
 function askTarget(item: ContentItem): Promise<void> {
-  const text = item.lang === "en" ? `Where is the ${item.speech}?` : `${item.speech} nerede?`;
-  return playSpeech(text, item.lang);
+  // Önce nesnenin adını seslendir (MP3 varsa onu kullanır)
+  return playSpeech(item.speech, item.lang);
 }
 
 const RunnerGame = () => {
@@ -375,20 +375,24 @@ const RunnerGame = () => {
 
         <div className="mt-4 grid grid-cols-3 gap-2">
           <button
-            onPointerDown={(e) => { e.preventDefault(); startMove(-1); }}
-            onPointerUp={stopMove} onPointerLeave={stopMove} onPointerCancel={stopMove}
-            className="rounded-2xl bg-secondary text-secondary-foreground py-5 font-extrabold shadow-soft active:scale-95 flex items-center justify-center">
+            onPointerDown={(e) => { e.preventDefault(); (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); startMove(-1); }}
+            onPointerUp={(e) => { try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId); } catch { /* */ } stopMove(); }}
+            onPointerCancel={stopMove}
+            onContextMenu={(e) => e.preventDefault()}
+            className="rounded-2xl bg-secondary text-secondary-foreground py-5 font-extrabold shadow-soft active:scale-95 flex items-center justify-center touch-none select-none">
             <ChevronLeft className="h-7 w-7" />
           </button>
           <button
             onPointerDown={(e) => { e.preventDefault(); fire(); }}
-            className="rounded-2xl bg-primary text-primary-foreground py-5 font-extrabold shadow-soft active:scale-95 text-xl">
+            className="rounded-2xl bg-primary text-primary-foreground py-5 font-extrabold shadow-soft active:scale-95 text-xl touch-none select-none">
             🔥 ATEŞ
           </button>
           <button
-            onPointerDown={(e) => { e.preventDefault(); startMove(1); }}
-            onPointerUp={stopMove} onPointerLeave={stopMove} onPointerCancel={stopMove}
-            className="rounded-2xl bg-secondary text-secondary-foreground py-5 font-extrabold shadow-soft active:scale-95 flex items-center justify-center">
+            onPointerDown={(e) => { e.preventDefault(); (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); startMove(1); }}
+            onPointerUp={(e) => { try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId); } catch { /* */ } stopMove(); }}
+            onPointerCancel={stopMove}
+            onContextMenu={(e) => e.preventDefault()}
+            className="rounded-2xl bg-secondary text-secondary-foreground py-5 font-extrabold shadow-soft active:scale-95 flex items-center justify-center touch-none select-none">
             <ChevronRight className="h-7 w-7" />
           </button>
         </div>
