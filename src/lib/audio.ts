@@ -86,10 +86,41 @@ export function playItem(item: ContentItem): Promise<void> {
   return playSpeech(item.speech, item.lang);
 }
 
+// Kısa "ding" (doğru) / "buzz" (yanlış) sesi — WebAudio ile sentezlenir.
+let _audioCtx: AudioContext | null = null;
+function getCtx(): AudioContext | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const Ctor = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (!Ctor) return null;
+    if (!_audioCtx) _audioCtx = new Ctor();
+    if (_audioCtx.state === "suspended") _audioCtx.resume().catch(() => {});
+    return _audioCtx;
+  } catch { return null; }
+}
+
+function tone(freq: number, dur: number, type: OscillatorType, startOffset = 0, gain = 0.18) {
+  const ctx = getCtx();
+  if (!ctx) return;
+  const t0 = ctx.currentTime + startOffset;
+  const osc = ctx.createOscillator();
+  const g = ctx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, t0);
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(gain, t0 + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  osc.connect(g).connect(ctx.destination);
+  osc.start(t0);
+  osc.stop(t0 + dur + 0.02);
+}
+
 export async function playFeedback(positive: boolean) {
-  const phrases = positive
-    ? ["Aferin!", "Harika!", "Süpersin!", "Doğru!", "Bravo!", "Çok güzel!"]
-    : ["Bir daha dene"];
-  const phrase = phrases[Math.floor(Math.random() * phrases.length)];
-  await playSpeech(phrase, "tr");
+  if (positive) {
+    tone(880, 0.12, "triangle", 0, 0.2);
+    tone(1318, 0.16, "triangle", 0.09, 0.2);
+  } else {
+    tone(220, 0.18, "square", 0, 0.14);
+    tone(160, 0.22, "square", 0.08, 0.12);
+  }
 }
