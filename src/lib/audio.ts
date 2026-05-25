@@ -12,7 +12,12 @@ function getSharedAudio(): HTMLAudioElement {
     sharedAudio = new Audio();
     sharedAudio.preload = "auto";
     sharedAudio.addEventListener("ended", () => finishCurrent());
-    sharedAudio.addEventListener("error", () => finishCurrent());
+    sharedAudio.addEventListener("error", () => {
+      // Element bozulduysa sıfırla — sonraki çağrıda yenisi oluşturulur
+      try { sharedAudio?.removeAttribute("src"); } catch { /* ignore */ }
+      sharedAudio = null;
+      finishCurrent();
+    });
   }
   return sharedAudio;
 }
@@ -21,14 +26,16 @@ function finishCurrent() {
   if (currentTimer) { clearTimeout(currentTimer); currentTimer = null; }
   const r = currentResolve;
   currentResolve = null;
-  if (r) r();
+  if (r) {
+    try { r(); } catch { /* ignore */ }
+  }
 }
 
 function stopCurrent() {
   try {
     if (sharedAudio) {
       sharedAudio.pause();
-      sharedAudio.currentTime = 0;
+      try { sharedAudio.currentTime = 0; } catch { /* ignore */ }
     }
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
