@@ -3,46 +3,59 @@
 import manifest from "../../public/audio/manifest.json";
 import type { ContentItem, Lang } from "@/data/types";
 
-let sharedAudio: HTMLAudioElement | null = null;
+let activeAudio: HTMLAudioElement | null = null;
+let activeUtterance: SpeechSynthesisUtterance | null = null;
 let currentResolve: (() => void) | null = null;
+let currentCleanup: (() => void) | null = null;
 let currentTimer: ReturnType<typeof setTimeout> | null = null;
 let playToken = 0;
+let unlockInstalled = false;
 
-function getSharedAudio(): HTMLAudioElement {
-  if (!sharedAudio) {
-    sharedAudio = new Audio();
-    sharedAudio.preload = "auto";
-    sharedAudio.addEventListener("ended", () => finishCurrent());
-    sharedAudio.addEventListener("error", () => {
-      // Element bozulduysa sıfırla — sonraki çağrıda yenisi oluşturulur
-      try { sharedAudio?.removeAttribute("src"); } catch { /* ignore */ }
-      sharedAudio = null;
-      finishCurrent();
-    });
-  }
-  return sharedAudio;
+function cleanupActiveAudio(audio?: HTMLAudioElement | null) {
+  const target = audio ?? activeAudio;
+  if (!target) return;
+  try {
+    target.pause();
+    target.removeAttribute("src");
+    target.load();
+  } catch { /* ignore */ }
+  if (!audio || target === activeAudio) activeAudio = null;
 }
 
 function finishCurrent() {
-  if (currentTimer) { clearTimeout(currentTimer); currentTimer = null; }
-  const r = currentResolve;
+  if (currentTimer) {
+    clearTimeout(currentTimer);
+    currentTimer = null;
+  }
+  const cleanup = currentCleanup;
+  currentCleanup = null;
+  if (cleanup) {
+    try { cleanup(); } catch { /* ignore */ }
+  }
+  const resolve = currentResolve;
   currentResolve = null;
-  if (r) {
-    try { r(); } catch { /* ignore */ }
+  if (resolve) {
+    try { resolve(); } catch { /* ignore */ }
   }
 }
 
-function stopCurrent() {
+function stopCurrent(invalidate = true) {
+  if (invalidate) playToken += 1;
   try {
-    if (sharedAudio) {
-      sharedAudio.pause();
-      try { sharedAudio.currentTime = 0; } catch { /* ignore */ }
-    }
+    cleanupActiveAudio();
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
     }
   } catch { /* ignore */ }
+  activeUtterance = null;
   finishCurrent();
+}
+
+function setPlaybackTimeout(token: number, ms = 10000) {
+  if (currentTimer) clearTimeout(currentTimer);
+  currentTimer = setTimeout(() => {
+    if (token === playToken) stopCurrent(false);
+  }, ms);
 }
 
 // Case-insensitive lookup cache
@@ -68,52 +81,139 @@ function lookupKey(text: string, lang?: Lang): { lang: Lang; key: string } | nul
   return null;
 }
 
+function speakWithSynthesis(text: string, lang: Lang | undefined, token: number): Promise<void> {
+  return new Promise((resolve) => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+      resolve();
+      return;
+    }
+
+    try {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = lang === "en" ? "en-US" : "tr-TR";
+      utterance.rate = 0.95;
+
+      const settle = () => {
+        if (token !== playToken) {
+          resolve();
+          return;
+        }
+        activeUtterance = null;
+        stopCurrent(false);
+        resolve();
+      };
+
+      activeUtterance = utterance;
+      currentResolve = resolve;
+      currentCleanup = () => {
+        activeUtterance = null;
+      };
+
+      utterance.onend = settle;
+      utterance.onerror = settle;
+      setPlaybackTimeout(token, 12000);
+      window.speechSynthesis.speak(utterance);
+    } catch {
+      stopCurrent(false);
+      resolve();
+    }
+  });
+}
+
 // Resolve only when the played audio actually ends (or fails).
 export function playSpeech(text: string, lang?: Lang): Promise<void> {
-  stopCurrent();
+  stopCurrent(true);
+  const token = playToken;
   const found = lookupKey(text, lang);
+
   if (!found) {
-    return new Promise((resolve) => {
-      if (typeof window === "undefined" || !("speechSynthesis" in window)) { resolve(); return; }
-      try {
-        const u = new SpeechSynthesisUtterance(text);
-        u.lang = lang === "en" ? "en-US" : "tr-TR";
-        u.rate = 0.95;
-        u.onend = () => resolve();
-        u.onerror = () => resolve();
-        window.speechSynthesis.speak(u);
-      } catch { resolve(); }
-    });
+    return speakWithSynthesis(text, lang, token);
   }
+
   const url = `/audio/${found.lang}/${found.key}.mp3`;
   return new Promise<void>((resolve) => {
     try {
-      const audio = getSharedAudio();
+      const audio = new Audio(url);
+      audio.preload = "auto";
+      audio.playsInline = true;
+      activeAudio = audio;
+
       currentResolve = resolve;
-      const myToken = ++playToken;
-      audio.src = url;
-      try { audio.currentTime = 0; } catch { /* ignore */ }
-      const p = audio.play();
-      if (p && typeof p.catch === "function") {
-        p.catch((e: { name?: string }) => {
-          // Yalnızca bu çağrı hâlâ aktif ise sonlandır — yoksa yeni çalan sesi öldürmeyiz
-          if (myToken !== playToken) return;
+      currentCleanup = () => cleanupActiveAudio(audio);
+
+      const settle = () => {
+        if (token !== playToken) {
+          resolve();
+          return;
+        }
+        stopCurrent(false);
+      };
+
+      audio.addEventListener("ended", settle, { once: true });
+      audio.addEventListener("error", () => {
+        if (token !== playToken) {
+          resolve();
+          return;
+        }
+        void speakWithSynthesis(text, lang, token);
+      }, { once: true });
+
+      setPlaybackTimeout(token);
+      const playPromise = audio.play();
+      if (playPromise && typeof playPromise.catch === "function") {
+        playPromise.catch((e: { name?: string }) => {
+          if (token !== playToken) return;
           if (e?.name !== "AbortError") console.warn("audio play failed", text, e);
-          finishCurrent();
+          void speakWithSynthesis(text, lang, token);
         });
       }
-      currentTimer = setTimeout(() => {
-        if (myToken === playToken) finishCurrent();
-      }, 8000);
     } catch {
-      finishCurrent();
-      resolve();
+      void speakWithSynthesis(text, lang, token);
     }
   });
 }
 
 export function playItem(item: ContentItem): Promise<void> {
   return playSpeech(item.speech, item.lang);
+}
+
+// İlk kullanıcı etkileşiminde ses katmanını aç.
+export function installAudioUnlock() {
+  if (typeof window === "undefined" || unlockInstalled) return;
+  unlockInstalled = true;
+
+  const unlock = () => {
+    primeAudio();
+    window.removeEventListener("pointerdown", unlock, true);
+    window.removeEventListener("keydown", unlock, true);
+    window.removeEventListener("touchstart", unlock, true);
+  };
+
+  window.addEventListener("pointerdown", unlock, { capture: true, passive: true });
+  window.addEventListener("keydown", unlock, { capture: true });
+  window.addEventListener("touchstart", unlock, { capture: true, passive: true });
+}
+
+export function primeAudio() {
+  try {
+    const ctx = getCtx();
+    if (ctx && ctx.state !== "running") ctx.resume().catch(() => {});
+
+    const audio = new Audio();
+    audio.preload = "none";
+    audio.muted = true;
+    audio.playsInline = true;
+    const p = audio.play();
+    if (p && typeof p.catch === "function") p.catch(() => {});
+    queueMicrotask(() => {
+      try {
+        audio.pause();
+        audio.removeAttribute("src");
+        audio.load();
+      } catch { /* ignore */ }
+    });
+  } catch { /* ignore */ }
 }
 
 // Kısa "ding" (doğru) / "buzz" (yanlış) sesi — WebAudio ile sentezlenir.
@@ -123,8 +223,8 @@ function getCtx(): AudioContext | null {
   try {
     const Ctor = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     if (!Ctor) return null;
-    if (!_audioCtx) _audioCtx = new Ctor();
-    if (_audioCtx.state === "suspended") _audioCtx.resume().catch(() => {});
+    if (!_audioCtx || _audioCtx.state === "closed") _audioCtx = new Ctor();
+    if (_audioCtx.state !== "running") _audioCtx.resume().catch(() => {});
     return _audioCtx;
   } catch { return null; }
 }
