@@ -6,6 +6,7 @@ import type { ContentItem, Lang } from "@/data/types";
 let sharedAudio: HTMLAudioElement | null = null;
 let currentResolve: (() => void) | null = null;
 let currentTimer: ReturnType<typeof setTimeout> | null = null;
+let playToken = 0;
 
 function getSharedAudio(): HTMLAudioElement {
   if (!sharedAudio) {
