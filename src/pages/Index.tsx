@@ -14,9 +14,9 @@ const Index = () => {
       <div className="relative min-h-screen overflow-hidden bg-gradient-to-b from-secondary/40 via-background to-primary-soft/40">
         <main className="container relative mx-auto max-w-2xl px-4 pb-16 pt-12">
           <div className="mb-6 text-center animate-bounce-in">
-            <div className="text-7xl mb-3 animate-float">🦉</div>
+            <div className="text-7xl mb-3 animate-float">🐱</div>
             <h1 className="mb-2 text-4xl font-extrabold tracking-tight text-primary text-shadow-soft">
-              Mini Akıl
+              Endless Mum
             </h1>
             <p className="text-base font-semibold text-muted-foreground">
               MEB Okul Öncesi Programı
@@ -56,7 +56,7 @@ const Index = () => {
 
         <div className="mb-4 text-center animate-bounce-in">
           <h1 className="mb-1 text-4xl font-extrabold tracking-tight text-primary text-shadow-soft">
-            Mini Akıl
+            Endless Mum
           </h1>
           <p className="text-sm font-semibold text-muted-foreground">
             5 Alan • Türkiye Yüzyılı Maarif Modeli
@@ -66,7 +66,7 @@ const Index = () => {
         <AgeBadge />
 
         <div className="mb-6 flex justify-center">
-          <div className="text-7xl animate-float" aria-hidden>🦉</div>
+          <div className="text-7xl animate-float" aria-hidden>🐱</div>
         </div>
 
         <nav className="grid grid-cols-2 gap-3 mb-6">
