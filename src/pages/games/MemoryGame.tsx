@@ -47,7 +47,6 @@ const MemoryGame = () => {
     if (first.item.id === c.item.id) {
       setCards((cs) => cs.map((x) => x.item.id === c.item.id ? { ...x, matched: true, flipped: true } : x));
       await playItem(c.item);
-      await playFeedback(true);
       setFirst(null); setBusy(false);
     } else {
       await playItem(c.item);
