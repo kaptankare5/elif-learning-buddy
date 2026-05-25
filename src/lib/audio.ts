@@ -136,7 +136,7 @@ export function playSpeech(text: string, lang?: Lang): Promise<void> {
     try {
       const audio = new Audio(url);
       audio.preload = "auto";
-      audio.playsInline = true;
+      audio.setAttribute("playsinline", "true");
       activeAudio = audio;
 
       currentResolve = resolve;
@@ -203,7 +203,7 @@ export function primeAudio() {
     const audio = new Audio();
     audio.preload = "none";
     audio.muted = true;
-    audio.playsInline = true;
+    audio.setAttribute("playsinline", "true");
     const p = audio.play();
     if (p && typeof p.catch === "function") p.catch(() => {});
     queueMicrotask(() => {
