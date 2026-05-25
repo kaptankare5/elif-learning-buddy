@@ -6,13 +6,19 @@ import type { ContentItem, Lang } from "@/data/types";
 let sharedAudio: HTMLAudioElement | null = null;
 let currentResolve: (() => void) | null = null;
 let currentTimer: ReturnType<typeof setTimeout> | null = null;
+let playToken = 0;
 
 function getSharedAudio(): HTMLAudioElement {
   if (!sharedAudio) {
     sharedAudio = new Audio();
     sharedAudio.preload = "auto";
     sharedAudio.addEventListener("ended", () => finishCurrent());
-    sharedAudio.addEventListener("error", () => finishCurrent());
+    sharedAudio.addEventListener("error", () => {
+      // Element bozulduysa sıfırla — sonraki çağrıda yenisi oluşturulur
+      try { sharedAudio?.removeAttribute("src"); } catch { /* ignore */ }
+      sharedAudio = null;
+      finishCurrent();
+    });
   }
   return sharedAudio;
 }
@@ -21,14 +27,16 @@ function finishCurrent() {
   if (currentTimer) { clearTimeout(currentTimer); currentTimer = null; }
   const r = currentResolve;
   currentResolve = null;
-  if (r) r();
+  if (r) {
+    try { r(); } catch { /* ignore */ }
+  }
 }
 
 function stopCurrent() {
   try {
     if (sharedAudio) {
       sharedAudio.pause();
-      sharedAudio.currentTime = 0;
+      try { sharedAudio.currentTime = 0; } catch { /* ignore */ }
     }
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
@@ -82,16 +90,21 @@ export function playSpeech(text: string, lang?: Lang): Promise<void> {
     try {
       const audio = getSharedAudio();
       currentResolve = resolve;
+      const myToken = ++playToken;
       audio.src = url;
-      audio.currentTime = 0;
+      try { audio.currentTime = 0; } catch { /* ignore */ }
       const p = audio.play();
       if (p && typeof p.catch === "function") {
         p.catch((e: { name?: string }) => {
+          // Yalnızca bu çağrı hâlâ aktif ise sonlandır — yoksa yeni çalan sesi öldürmeyiz
+          if (myToken !== playToken) return;
           if (e?.name !== "AbortError") console.warn("audio play failed", text, e);
           finishCurrent();
         });
       }
-      currentTimer = setTimeout(() => finishCurrent(), 8000);
+      currentTimer = setTimeout(() => {
+        if (myToken === playToken) finishCurrent();
+      }, 8000);
     } catch {
       finishCurrent();
       resolve();

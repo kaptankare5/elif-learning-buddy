@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { SUBJECTS } from "@/data/subjects";
-import { Sparkles, Gamepad2 } from "lucide-react";
+import { Sparkles } from "lucide-react";
+import { LangToggle } from "@/components/LangToggle";
 import { useAge, AGE_LABELS } from "@/lib/age";
 import { AgePicker, AgeBadge } from "@/components/AgePicker";
 import { topicForAge } from "@/lib/age";
@@ -84,23 +85,17 @@ const Index = () => {
           ))}
         </nav>
 
-        <div className="grid grid-cols-2 gap-3">
-          <Link
-            to="/oyunlar"
-            className="flex items-center justify-center gap-2 rounded-3xl bg-gradient-to-r from-topic-purple to-pink p-5 text-white shadow-card transition-bouncy hover:-translate-y-1 hover:shadow-elegant"
-          >
-            <Gamepad2 className="h-6 w-6" />
-            <span className="text-lg font-extrabold text-shadow-soft">Oyunlar</span>
-            <span className="text-xl">🎮</span>
-          </Link>
+        <div className="flex flex-col items-center gap-3">
+          <LangToggle />
           <Link
             to="/ilerleme"
-            className="flex items-center justify-center gap-2 rounded-3xl bg-gradient-to-r from-info to-primary p-5 text-white shadow-card transition-bouncy hover:-translate-y-1 hover:shadow-elegant"
+            className="w-full flex items-center justify-center gap-2 rounded-3xl bg-gradient-to-r from-info to-primary p-5 text-white shadow-card transition-bouncy hover:-translate-y-1 hover:shadow-elegant"
           >
             <span className="text-2xl">📈</span>
             <span className="text-lg font-extrabold text-shadow-soft">İlerleme</span>
           </Link>
         </div>
+
 
         <p className="mt-6 text-center text-xs font-semibold text-muted-foreground">
           {AGE_LABELS[age]} • {visibleSubjects.reduce((a, s) => a + s.topicCount, 0)} Konu • Eğlenceli Oyunlar

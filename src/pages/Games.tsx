@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { PageHeader } from "@/components/PageHeader";
-import { LangToggle } from "@/components/LangToggle";
+
 
 const GAMES = [
   { id: "puzzle", title: "Yapboz", emoji: "🧩", color: "from-warning to-topic-pink", desc: "Parçaları birleştir, sesi duy" },
@@ -22,9 +22,6 @@ const Games = () => {
       <main className="container mx-auto max-w-2xl px-4 pb-16">
         <PageHeader title="🎮 Oyunlar" backTo="/" centered />
 
-        <div className="flex justify-center mb-4">
-          <LangToggle />
-        </div>
 
         <p className="text-center text-muted-foreground font-semibold mb-6">
           Hangi oyunu oynamak istersin?
