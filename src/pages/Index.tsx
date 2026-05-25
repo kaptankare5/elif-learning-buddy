@@ -36,7 +36,7 @@ const Index = () => {
   const visibleSubjects = SUBJECTS.map((s) => ({
     ...s,
     topicCount: s.topics.filter((t) => topicForAge(t, age)).length,
-  })).filter((s) => s.topicCount > 0);
+  })).filter((s) => s.topicCount > 0 && s.id !== "turkce");
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-b from-secondary/40 via-background to-primary-soft/40">
@@ -83,10 +83,18 @@ const Index = () => {
               <p className="text-[11px] font-medium opacity-90 px-1">{s.topicCount} konu</p>
             </Link>
           ))}
+          <Link
+            to="/oyunlar"
+            className="bg-gradient-to-br from-warning to-topic-pink group flex flex-col items-center justify-center gap-2 rounded-3xl p-5 text-center text-white shadow-card transition-bouncy hover:-translate-y-1 hover:shadow-elegant min-h-[130px] animate-bounce-in"
+            style={{ animationDelay: `${visibleSubjects.length * 80}ms` }}
+          >
+            <div className="text-5xl mb-1 transition-transform group-hover:scale-110">🎮</div>
+            <h2 className="text-base font-extrabold text-shadow-soft">Oyunlar</h2>
+            <p className="text-[11px] font-medium opacity-90 px-1">Eğlenceli oyunlar</p>
+          </Link>
         </nav>
 
         <div className="flex flex-col items-center gap-3">
-          <LangToggle />
           <Link
             to="/ilerleme"
             className="w-full flex items-center justify-center gap-2 rounded-3xl bg-gradient-to-r from-info to-primary p-5 text-white shadow-card transition-bouncy hover:-translate-y-1 hover:shadow-elegant"
