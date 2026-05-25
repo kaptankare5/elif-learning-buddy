@@ -89,16 +89,21 @@ export function playSpeech(text: string, lang?: Lang): Promise<void> {
     try {
       const audio = getSharedAudio();
       currentResolve = resolve;
+      const myToken = ++playToken;
       audio.src = url;
-      audio.currentTime = 0;
+      try { audio.currentTime = 0; } catch { /* ignore */ }
       const p = audio.play();
       if (p && typeof p.catch === "function") {
         p.catch((e: { name?: string }) => {
+          // Yalnızca bu çağrı hâlâ aktif ise sonlandır — yoksa yeni çalan sesi öldürmeyiz
+          if (myToken !== playToken) return;
           if (e?.name !== "AbortError") console.warn("audio play failed", text, e);
           finishCurrent();
         });
       }
-      currentTimer = setTimeout(() => finishCurrent(), 8000);
+      currentTimer = setTimeout(() => {
+        if (myToken === playToken) finishCurrent();
+      }, 8000);
     } catch {
       finishCurrent();
       resolve();
