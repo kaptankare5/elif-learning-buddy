@@ -13,6 +13,7 @@ import Settings from "./pages/Settings.tsx";
 import Auth from "./pages/Auth.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import { AuthProvider } from "@/hooks/useAuth";
+import { BottomNav } from "@/components/BottomNav";
 
 const queryClient = new QueryClient();
 
