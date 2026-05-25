@@ -36,8 +36,9 @@ const SRS_TOPIC = "sorter-game";
 const SorterGame = () => {
   const [board, setBoard] = useState(() => buildBox());
   const [target, setTarget] = useState<ContentItem | null>(null);
-  const [progress, setProgress] = useState(0); // doğru tıklanan hedef sayısı (0..3)
+  const [progress, setProgress] = useState(0);
   const [score, setScore] = useState(0);
+  const [level, setLevel] = useState(1);
   const [busy, setBusy] = useState(false);
 
   const remainingTypes = useMemo(
@@ -54,51 +55,73 @@ const SorterGame = () => {
     [board.cells]
   );
 
-  // Hedef yoksa veya hedef tükendiyse yeni hedef seç + sesini çal
+  // İlk hedef — sadece hedef yokken ve oyun bitmemişken
   useEffect(() => {
-    if (won) return;
-    const targetGone = !target || !remainingTypes.some((t) => t.id === target.id);
-    if (targetGone && remainingTypes.length > 0) {
+    if (won || target || busy) return;
+    if (remainingTypes.length > 0) {
       const next = remainingTypes[Math.floor(Math.random() * remainingTypes.length)];
       setTarget(next);
       setProgress(0);
       setTimeout(() => playItem(next), 300);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [board.cells, won]);
+  }, [won, target, busy, remainingTypes.length]);
+
+  // Kazanınca otomatik yeni seviye
+  useEffect(() => {
+    if (!won) return;
+    playFeedback(true);
+    playSpeech("Tebrikler!", "tr");
+    const t = setTimeout(() => {
+      setBoard(buildBox());
+      setTarget(null);
+      setProgress(0);
+      setLevel((l) => l + 1);
+    }, 2200);
+    return () => clearTimeout(t);
+  }, [won]);
 
   useEffect(() => {
-    const h = () => { setBoard(buildBox()); setScore(0); setTarget(null); setProgress(0); };
+    const h = () => { setBoard(buildBox()); setScore(0); setTarget(null); setProgress(0); setLevel(1); };
     window.addEventListener("games-lang-change", h);
     return () => window.removeEventListener("games-lang-change", h);
   }, []);
 
-  const reset = () => { setBoard(buildBox()); setScore(0); setBusy(false); setTarget(null); setProgress(0); };
+  const reset = () => { setBoard(buildBox()); setScore(0); setBusy(false); setTarget(null); setProgress(0); setLevel(1); };
 
   const tap = async (c: Cell) => {
     if (busy || c.cleared || !target) return;
     if (c.item.id === target.id) {
-      // doğru
       setBoard((b) => ({ ...b, cells: b.cells.map((x) => x.uid === c.uid ? { ...x, cleared: true } : x) }));
       const newProgress = progress + 1;
       setProgress(newProgress);
       playFeedback(true);
       if (newProgress >= PER_TYPE) {
-        // hedef tamamlandı → sesini söyle, SRS'ye doğru olarak yaz
         setBusy(true);
-        playItem(target);
-        recordSrsAnswer("games", SRS_TOPIC, target.id, true);
-        recordLetterMastery(target.id, true);
+        const completed = target;
+        setTarget(null); // effect tetiklenmesin
+        playItem(completed);
+        recordSrsAnswer("games", SRS_TOPIC, completed.id, true);
+        recordLetterMastery(completed.id, true);
         setScore((s) => s + 1);
-        // sesin bitmesini bekle, sonra temizlenen hücreleri kaldır + yeni hedef
         setTimeout(() => {
-          setBoard((b) => ({ ...b, cells: b.cells.filter((x) => x.item.id !== target.id) }));
-          setTarget(null);
+          setBoard((b) => {
+            const newCells = b.cells.filter((x) => x.item.id !== completed.id);
+            const leftMap: Record<string, ContentItem> = {};
+            newCells.forEach((x) => { if (!x.cleared) leftMap[x.item.id] = x.item; });
+            const left = Object.values(leftMap);
+            if (left.length > 0) {
+              const next = left[Math.floor(Math.random() * left.length)];
+              setTarget(next);
+              setProgress(0);
+              setTimeout(() => playItem(next), 250);
+            }
+            return { ...b, cells: newCells };
+          });
           setBusy(false);
         }, 1300);
       }
     } else {
-      // yanlış → titreşim+ses, SRS'ye yanlış olarak yaz
       setBusy(true);
       recordSrsAnswer("games", SRS_TOPIC, target.id, false);
       recordLetterMastery(target.id, false);
@@ -120,10 +143,14 @@ const SorterGame = () => {
           <LangToggle />
         </div>
 
-        <div className="mb-3 grid grid-cols-2 gap-2 text-center">
+        <div className="mb-3 grid grid-cols-3 gap-2 text-center">
           <div className="rounded-xl bg-card p-2 shadow-soft border-2 border-primary/30">
+            <div className="text-[10px] font-bold text-muted-foreground">Seviye</div>
+            <div className="text-xl font-extrabold text-primary">{level}</div>
+          </div>
+          <div className="rounded-xl bg-card p-2 shadow-soft border-2 border-warning/30">
             <div className="text-[10px] font-bold text-muted-foreground">Temizlenen</div>
-            <div className="text-xl font-extrabold text-primary">{score}</div>
+            <div className="text-xl font-extrabold text-warning">{score}</div>
           </div>
           <div className="rounded-xl bg-card p-2 shadow-soft border-2 border-success/30">
             <div className="text-[10px] font-bold text-muted-foreground">Kalan</div>

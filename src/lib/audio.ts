@@ -3,19 +3,38 @@
 import manifest from "../../public/audio/manifest.json";
 import type { ContentItem, Lang } from "@/data/types";
 
-let currentAudio: HTMLAudioElement | null = null;
+let sharedAudio: HTMLAudioElement | null = null;
+let currentResolve: (() => void) | null = null;
+let currentTimer: ReturnType<typeof setTimeout> | null = null;
+
+function getSharedAudio(): HTMLAudioElement {
+  if (!sharedAudio) {
+    sharedAudio = new Audio();
+    sharedAudio.preload = "auto";
+    sharedAudio.addEventListener("ended", () => finishCurrent());
+    sharedAudio.addEventListener("error", () => finishCurrent());
+  }
+  return sharedAudio;
+}
+
+function finishCurrent() {
+  if (currentTimer) { clearTimeout(currentTimer); currentTimer = null; }
+  const r = currentResolve;
+  currentResolve = null;
+  if (r) r();
+}
 
 function stopCurrent() {
   try {
-    if (currentAudio) {
-      currentAudio.pause();
-      currentAudio.src = "";
-      currentAudio = null;
+    if (sharedAudio) {
+      sharedAudio.pause();
+      sharedAudio.currentTime = 0;
     }
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
     }
   } catch { /* ignore */ }
+  finishCurrent();
 }
 
 // Case-insensitive lookup cache
@@ -41,13 +60,11 @@ function lookupKey(text: string, lang?: Lang): { lang: Lang; key: string } | nul
   return null;
 }
 
-
 // Resolve only when the played audio actually ends (or fails).
 export function playSpeech(text: string, lang?: Lang): Promise<void> {
   stopCurrent();
   const found = lookupKey(text, lang);
   if (!found) {
-    console.warn(`[audio] no mp3 for ${lang ?? "auto"}::${text} → TTS fallback`);
     return new Promise((resolve) => {
       if (typeof window === "undefined" || !("speechSynthesis" in window)) { resolve(); return; }
       try {
@@ -63,20 +80,20 @@ export function playSpeech(text: string, lang?: Lang): Promise<void> {
   const url = `/audio/${found.lang}/${found.key}.mp3`;
   return new Promise<void>((resolve) => {
     try {
-      const audio = new Audio(url);
-      audio.preload = "auto";
-      currentAudio = audio;
-      let done = false;
-      const finish = () => { if (done) return; done = true; resolve(); };
-      audio.addEventListener("ended", finish);
-      audio.addEventListener("error", finish);
-      audio.play().catch((e: { name?: string }) => {
-        if (e?.name !== "AbortError") console.warn("audio play failed", text, e);
-        finish();
-      });
-      // Safety: max 8s
-      setTimeout(finish, 8000);
+      const audio = getSharedAudio();
+      currentResolve = resolve;
+      audio.src = url;
+      audio.currentTime = 0;
+      const p = audio.play();
+      if (p && typeof p.catch === "function") {
+        p.catch((e: { name?: string }) => {
+          if (e?.name !== "AbortError") console.warn("audio play failed", text, e);
+          finishCurrent();
+        });
+      }
+      currentTimer = setTimeout(() => finishCurrent(), 8000);
     } catch {
+      finishCurrent();
       resolve();
     }
   });

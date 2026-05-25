@@ -83,28 +83,24 @@ const NeckGame = () => {
             </div>
           )}
 
-          {/* Zürafa: kafa + boyun + gövde */}
-          <div className="relative flex flex-col items-center pb-4">
-            {/* Kafa */}
-            <div
-              className="text-7xl leading-none transition-none"
-              style={{ marginBottom: -8 }}
-            >
+          {/* Zürafa: gövde sabit altta, boyun yukarı uzar, kafa boynun ucunda */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center">
+            {/* Kafa — boynun üstüne otur */}
+            <div className="text-7xl leading-none" style={{ marginBottom: -10 }}>
               🦒
             </div>
-            {/* Boyun (yükseklik state'e bağlı) */}
+            {/* Boyun — yukarı doğru uzar */}
             <div
               className="w-6 rounded-full bg-gradient-to-b from-yellow-400 to-yellow-600 shadow-md border-2 border-yellow-700/40"
               style={{ height: neck, transition: "height 60ms linear" }}
             />
-            {/* Gövde */}
+            {/* Gövde — sabit */}
             <div className="-mt-3 h-20 w-32 rounded-[40%] bg-gradient-to-b from-yellow-400 to-yellow-600 border-2 border-yellow-700/40 shadow-md flex items-end justify-around pb-1">
               <div className="h-6 w-2 rounded-b bg-yellow-700" />
               <div className="h-6 w-2 rounded-b bg-yellow-700" />
               <div className="h-6 w-2 rounded-b bg-yellow-700" />
               <div className="h-6 w-2 rounded-b bg-yellow-700" />
             </div>
-            {/* Çim */}
             <div className="mt-1 text-3xl">🌿🌿🌱🌿</div>
           </div>
 

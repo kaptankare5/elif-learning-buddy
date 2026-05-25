@@ -48,30 +48,63 @@ const ProgressPage = () => {
                   }
                   const pct = ids.length ? Math.round((touched / ids.length) * 100) : 0;
                   return (
-                    <Link
-                      key={t.id}
-                      to={`/konu/${s.id}/${t.id}`}
-                      className="flex items-center gap-3 rounded-2xl bg-muted/50 p-3 transition-bouncy hover:bg-muted"
-                    >
-                      <span className="text-2xl">{t.emoji}</span>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-bold text-sm truncate">{t.title}</div>
-                        <div className="mt-1 h-2 rounded-full bg-background overflow-hidden">
-                          <div className="h-full bg-gradient-to-r from-info via-primary to-success" style={{ width: `${pct}%` }} />
+                    <details key={t.id} className="group rounded-2xl bg-muted/50 overflow-hidden">
+                      <summary className="flex items-center gap-3 p-3 cursor-pointer list-none transition-bouncy hover:bg-muted">
+                        <span className="text-2xl">{t.emoji}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-bold text-sm truncate">{t.title}</div>
+                          <div className="mt-1 h-2 rounded-full bg-background overflow-hidden">
+                            <div className="h-full bg-gradient-to-r from-info via-primary to-success" style={{ width: `${pct}%` }} />
+                          </div>
+                          <div className="mt-1 text-[10px] text-muted-foreground font-semibold">
+                            {touched}/{ids.length} öğe • %{pct}
+                          </div>
                         </div>
+                        <div className="flex gap-1 text-[10px] font-bold">
+                          {[1, 2, 3, 4].map((l) => (
+                            <span key={l} className={cn("rounded px-1 py-0.5",
+                              l === 1 && "bg-info/20 text-info",
+                              l === 2 && "bg-warning/20 text-warning",
+                              l === 3 && "bg-secondary text-secondary-foreground",
+                              l === 4 && "bg-success/20 text-success")}>
+                              {counts[l as Level]}
+                            </span>
+                          ))}
+                        </div>
+                        <span className="text-muted-foreground text-xs group-open:rotate-180 transition-transform">▼</span>
+                      </summary>
+                      <div className="px-3 pb-3 pt-1">
+                        <div className="grid grid-cols-2 gap-1.5 mb-2">
+                          {t.items.map((it) => {
+                            const e = srs[it.id];
+                            const lv = (e?.level as Level) ?? 0;
+                            return (
+                              <div key={it.id} className={cn(
+                                "flex items-center gap-2 rounded-lg px-2 py-1 text-xs bg-card border",
+                                lv === 0 && "border-border/40 opacity-60",
+                                lv === 1 && "border-info/40",
+                                lv === 2 && "border-warning/40",
+                                lv === 3 && "border-secondary",
+                                lv === 4 && "border-success/40",
+                              )}>
+                                <span className="text-lg">{it.emoji}</span>
+                                <span className="flex-1 truncate font-semibold">{it.label}</span>
+                                {lv > 0 && (
+                                  <span className={cn("text-[9px] font-bold rounded px-1",
+                                    lv === 1 && "bg-info/20 text-info",
+                                    lv === 2 && "bg-warning/20 text-warning",
+                                    lv === 3 && "bg-secondary text-secondary-foreground",
+                                    lv === 4 && "bg-success/20 text-success")}>L{lv}</span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <Link to={`/konu/${s.id}/${t.id}`} className="block text-center text-xs font-bold text-primary py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20">
+                          Konuya git →
+                        </Link>
                       </div>
-                      <div className="flex gap-1 text-[10px] font-bold">
-                        {[1, 2, 3, 4].map((l) => (
-                          <span key={l} className={cn("rounded px-1 py-0.5",
-                            l === 1 && "bg-info/20 text-info",
-                            l === 2 && "bg-warning/20 text-warning",
-                            l === 3 && "bg-secondary text-secondary-foreground",
-                            l === 4 && "bg-success/20 text-success")}>
-                            {counts[l as Level]}
-                          </span>
-                        ))}
-                      </div>
-                    </Link>
+                    </details>
                   );
                 })}
               </div>
