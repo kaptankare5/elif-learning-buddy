@@ -101,7 +101,6 @@ function speakWithSynthesis(text: string, lang: Lang | undefined, token: number)
         }
         activeUtterance = null;
         stopCurrent(false);
-        resolve();
       };
 
       activeUtterance = utterance;
