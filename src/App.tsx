@@ -35,6 +35,7 @@ const App = () => (
             <Route path="/ayarlar" element={<Settings />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <BottomNav />
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

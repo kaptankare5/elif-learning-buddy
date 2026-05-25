@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import { BookOpen, Gamepad2, TrendingUp, Home } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -10,6 +10,10 @@ const items = [
 ];
 
 export function BottomNav() {
+  const loc = useLocation();
+  // Oyun içinde gösterme (sadece oyun listesi sayfasında göster)
+  if (/^\/oyunlar\/[^/]+/.test(loc.pathname)) return null;
+  if (loc.pathname === "/giris") return null;
   return (
     <nav
       className="fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur border-t-2 border-primary/20 shadow-elegant"
