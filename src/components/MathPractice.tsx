@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { ContentTopic } from "@/data/types";
 import { playSpeech, playFeedback } from "@/lib/audio";
 import { cn } from "@/lib/utils";
@@ -75,8 +75,14 @@ export function MathPractice({ topic }: Props) {
   const [q, setQ] = useState<Q>(() => genQuestion(topic.id));
   const [picked, setPicked] = useState<number | null>(null);
   const [stars, setStars] = useState(0);
+  const lastTopicIdRef = useRef(topic.id);
 
-  useEffect(() => { setQ(genQuestion(topic.id)); setPicked(null); }, [topic.id]);
+  useEffect(() => {
+    if (lastTopicIdRef.current === topic.id) return;
+    lastTopicIdRef.current = topic.id;
+    setQ(genQuestion(topic.id));
+    setPicked(null);
+  }, [topic.id]);
   useEffect(() => { playSpeech(q.speech, "tr"); }, [q.speech]);
 
   const choose = async (n: number) => {
