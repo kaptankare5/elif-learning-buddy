@@ -76,7 +76,14 @@ const Topic = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q?.target?.id, mode]);
 
+  const { isPremium } = useSubscription();
+
   if (!subject || !topic) return <Navigate to="/" replace />;
+
+  // Premium konuya kilitli erişim
+  if (!isTopicFree(subject.id, topic.id) && !isPremium) {
+    return <Navigate to="/abonelik" replace />;
+  }
 
   // İnteraktif anasınıfı oyunları
   if (topic.interactiveGame === "neck") return <NeckGame />;
