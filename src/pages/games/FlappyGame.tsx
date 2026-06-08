@@ -303,7 +303,7 @@ const FlappyGame = () => {
               willChange: "transform, top",
             }}
           >
-            🐦
+            🐤
           </div>
 
           {/* Letters */}
