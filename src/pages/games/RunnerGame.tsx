@@ -250,7 +250,9 @@ const RunnerGame = () => {
           const ny = b.y - BULLET_SPEED;
           if (ny < -3) continue;
           let consumed = false;
-          for (const e of cur) {
+          // Hedefe öncelik ver — doğru harf yanlışların arkasında kalmasın
+          const ordered = [...cur].sort((a, z) => (z.isTarget ? 1 : 0) - (a.isTarget ? 1 : 0));
+          for (const e of ordered) {
             if (removeUids.has(e.uid)) continue;
             if (Math.abs(e.x - b.x) < ENEMY_SIZE / 2 + 2 && Math.abs(e.y - ny) < ENEMY_SIZE / 2 + 2) {
               removeUids.add(e.uid);
