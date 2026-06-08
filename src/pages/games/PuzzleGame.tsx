@@ -10,12 +10,12 @@ import { Volume2 } from "lucide-react";
 /**
  * Yapboz — yaşa göre:
  *   3-4 yaş → 2x2  (4 parça)
- *   5-6 yaş → 4x4  (16 parça)
+ *   5-6 yaş → 3x3  (9 parça)
  * Tap-to-swap. Bittiğinde nesnenin adı seslendirilir.
  */
 function gridForAge(age: number | null): number {
   if (!age || age <= 4) return 2; // 4 parça
-  return 4; // 16 parça
+  return 3; // 9 parça
 }
 
 const PuzzleGame = () => {
