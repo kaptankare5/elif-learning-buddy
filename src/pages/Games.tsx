@@ -13,7 +13,7 @@ const GAMES = [
   { id: "balloon", title: "Balon Patlatma", emoji: "🎈", color: "from-topic-blue to-info", desc: "Doğru balonu patlat" },
   { id: "sorter", title: "Kutu Boşalt", emoji: "📦", color: "from-topic-doga to-success", desc: "Sorulan harfi seç, kutuyu boşalt" },
   { id: "triple", title: "Üçlü Eşle", emoji: "🧩", color: "from-topic-blue to-primary", desc: "3'lü eşle, sesi duy" },
-  { id: "flappy", title: "Uçan Kuş", emoji: "🐦", color: "from-info to-primary", desc: "Doğru harfi yut, sorulara cevap ver" },
+  { id: "flappy", title: "Uçan Kuş", emoji: "🐤", color: "from-info to-primary", desc: "Doğru harfi yut, sorulara cevap ver" },
   { id: "quiz", title: "Hızlı Quiz", emoji: "⚡", color: "from-topic-doga to-success", desc: "60 saniyede skor" },
 ];
 
