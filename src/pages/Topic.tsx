@@ -18,6 +18,8 @@ import {
 } from "@/data/srs";
 import { cn } from "@/lib/utils";
 import { useAge, itemsForAge } from "@/lib/age";
+import { useSubscription } from "@/hooks/useSubscription";
+import { isTopicFree } from "@/lib/premium";
 
 type Mode = "pratik" | "kart";
 
