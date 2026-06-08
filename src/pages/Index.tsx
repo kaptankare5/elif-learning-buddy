@@ -1,10 +1,11 @@
 import { Link } from "react-router-dom";
 import { SUBJECTS } from "@/data/subjects";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Crown } from "lucide-react";
 import { LangToggle } from "@/components/LangToggle";
 import { useAge, AGE_LABELS } from "@/lib/age";
 import { AgePicker, AgeBadge } from "@/components/AgePicker";
 import { topicForAge } from "@/lib/age";
+import { useSubscription } from "@/hooks/useSubscription";
 
 const Index = () => {
   const [age] = useAge();
