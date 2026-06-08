@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { setGamePremium } from "@/pages/games/_shared";
 
 interface SubscriptionState {
   isPremium: boolean;
