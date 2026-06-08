@@ -193,13 +193,27 @@ const RunnerGame = () => {
           const item = putTarget
             ? t
             : (others.length > 0 ? others[Math.floor(Math.random() * others.length)] : t);
-          setEnemies((arr) => [...arr, {
-            uid: UID++,
-            x: 10 + Math.random() * 80,
-            y: -5,
-            item,
-            isTarget: item.id === t.id,
-          }]);
+          // Üst kısımda mevcut düşmanlarla dikey çakışmayı engelle
+          // (doğru harfin önüne yanlış resim gelmesin)
+          const MIN_DX = ENEMY_SIZE + 2;
+          const topEnemies = enemiesRef.current.filter((e) => e.y < 25);
+          let x = 10 + Math.random() * 80;
+          let tries = 0;
+          while (tries < 8 && topEnemies.some((e) => Math.abs(e.x - x) < MIN_DX)) {
+            x = 10 + Math.random() * 80;
+            tries++;
+          }
+          if (topEnemies.some((e) => Math.abs(e.x - x) < MIN_DX)) {
+            // çakışıyorsa bu turu atla
+          } else {
+            setEnemies((arr) => [...arr, {
+              uid: UID++,
+              x,
+              y: -5,
+              item,
+              isTarget: item.id === t.id,
+            }]);
+          }
         }
       }
 
@@ -236,7 +250,9 @@ const RunnerGame = () => {
           const ny = b.y - BULLET_SPEED;
           if (ny < -3) continue;
           let consumed = false;
-          for (const e of cur) {
+          // Hedefe öncelik ver — doğru harf yanlışların arkasında kalmasın
+          const ordered = [...cur].sort((a, z) => (z.isTarget ? 1 : 0) - (a.isTarget ? 1 : 0));
+          for (const e of ordered) {
             if (removeUids.has(e.uid)) continue;
             if (Math.abs(e.x - b.x) < ENEMY_SIZE / 2 + 2 && Math.abs(e.y - ny) < ENEMY_SIZE / 2 + 2) {
               removeUids.add(e.uid);
@@ -343,7 +359,7 @@ const RunnerGame = () => {
             <div key={e.uid} className="absolute leading-none"
               style={{ left: `${e.x}%`, top: `${e.y}%`, transform: "translate3d(-50%, -50%, 0)",
                 fontSize: "40px", filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.6))",
-                willChange: "top" }}>
+                willChange: "top", zIndex: e.isTarget ? 20 : 5 }}>
               {e.isTarget && (<div className="absolute -inset-2 rounded-full border-4 border-warning/70 animate-pulse" />)}
               <span className="animate-float">{e.item.emoji}</span>
             </div>

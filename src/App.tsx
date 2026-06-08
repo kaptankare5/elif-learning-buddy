@@ -12,8 +12,10 @@ import Game from "./pages/Game.tsx";
 import Progress from "./pages/Progress.tsx";
 import Settings from "./pages/Settings.tsx";
 import Auth from "./pages/Auth.tsx";
+import Paywall from "./pages/Paywall.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import { AuthProvider } from "@/hooks/useAuth";
+import { SubscriptionProvider } from "@/hooks/useSubscription";
 import { BottomNav } from "@/components/BottomNav";
 import { installAudioUnlock } from "@/lib/audio";
 
@@ -30,18 +32,21 @@ const AppShell = () => {
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/giris" element={<Auth />} />
-            <Route path="/konu/:subjectId" element={<Subject />} />
-            <Route path="/konu/:subjectId/:topicId" element={<Topic />} />
-            <Route path="/oyunlar" element={<Games />} />
-            <Route path="/oyunlar/:gameId" element={<Game />} />
-            <Route path="/ilerleme" element={<Progress />} />
-            <Route path="/ayarlar" element={<Settings />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          <BottomNav />
+          <SubscriptionProvider>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/giris" element={<Auth />} />
+              <Route path="/abonelik" element={<Paywall />} />
+              <Route path="/konu/:subjectId" element={<Subject />} />
+              <Route path="/konu/:subjectId/:topicId" element={<Topic />} />
+              <Route path="/oyunlar" element={<Games />} />
+              <Route path="/oyunlar/:gameId" element={<Game />} />
+              <Route path="/ilerleme" element={<Progress />} />
+              <Route path="/ayarlar" element={<Settings />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+            <BottomNav />
+          </SubscriptionProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

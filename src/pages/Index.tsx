@@ -1,13 +1,15 @@
 import { Link } from "react-router-dom";
 import { SUBJECTS } from "@/data/subjects";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Crown } from "lucide-react";
 import { LangToggle } from "@/components/LangToggle";
 import { useAge, AGE_LABELS } from "@/lib/age";
 import { AgePicker, AgeBadge } from "@/components/AgePicker";
 import { topicForAge } from "@/lib/age";
+import { useSubscription } from "@/hooks/useSubscription";
 
 const Index = () => {
   const [age] = useAge();
+  const { isPremium } = useSubscription();
 
   // İlk açılış: yaş seçimi
   if (!age) {
@@ -102,6 +104,25 @@ const Index = () => {
             <span className="text-2xl">📈</span>
             <span className="text-lg font-extrabold text-shadow-soft">İlerleme</span>
           </Link>
+
+          {!isPremium && (
+            <Link
+              to="/abonelik"
+              className="w-full flex items-center justify-center gap-2 rounded-3xl bg-gradient-to-r from-warning to-primary p-5 text-white shadow-card transition-bouncy hover:-translate-y-1 hover:shadow-elegant animate-pulse"
+            >
+              <Crown className="h-6 w-6" />
+              <span className="text-lg font-extrabold text-shadow-soft">Premium'a Geç</span>
+            </Link>
+          )}
+          {isPremium && (
+            <Link
+              to="/abonelik"
+              className="w-full flex items-center justify-center gap-2 rounded-3xl bg-gradient-to-r from-success to-primary p-5 text-white shadow-card"
+            >
+              <Crown className="h-6 w-6" />
+              <span className="text-lg font-extrabold text-shadow-soft">👑 Premium Aktif</span>
+            </Link>
+          )}
         </div>
 
 
