@@ -257,7 +257,7 @@ const FlappyGame = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-info/15 to-background">
       <main className="container mx-auto max-w-xl px-4 pb-16">
-        <PageHeader title="🐦 Uçan Kuş" backTo="/oyunlar" centered onReset={reset} />
+        <PageHeader title="🐤 Uçan Kuş" backTo="/oyunlar" centered onReset={reset} />
 
         <div className="mb-3 grid grid-cols-3 gap-2 text-center">
           <div className="rounded-xl bg-card p-2 shadow-soft border-2 border-success/30">
