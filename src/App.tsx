@@ -32,18 +32,21 @@ const AppShell = () => {
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/giris" element={<Auth />} />
-            <Route path="/konu/:subjectId" element={<Subject />} />
-            <Route path="/konu/:subjectId/:topicId" element={<Topic />} />
-            <Route path="/oyunlar" element={<Games />} />
-            <Route path="/oyunlar/:gameId" element={<Game />} />
-            <Route path="/ilerleme" element={<Progress />} />
-            <Route path="/ayarlar" element={<Settings />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          <BottomNav />
+          <SubscriptionProvider>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/giris" element={<Auth />} />
+              <Route path="/abonelik" element={<Paywall />} />
+              <Route path="/konu/:subjectId" element={<Subject />} />
+              <Route path="/konu/:subjectId/:topicId" element={<Topic />} />
+              <Route path="/oyunlar" element={<Games />} />
+              <Route path="/oyunlar/:gameId" element={<Game />} />
+              <Route path="/ilerleme" element={<Progress />} />
+              <Route path="/ayarlar" element={<Settings />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+            <BottomNav />
+          </SubscriptionProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
