@@ -359,7 +359,7 @@ const RunnerGame = () => {
             <div key={e.uid} className="absolute leading-none"
               style={{ left: `${e.x}%`, top: `${e.y}%`, transform: "translate3d(-50%, -50%, 0)",
                 fontSize: "40px", filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.6))",
-                willChange: "top" }}>
+                willChange: "top", zIndex: e.isTarget ? 20 : 5 }}>
               {e.isTarget && (<div className="absolute -inset-2 rounded-full border-4 border-warning/70 animate-pulse" />)}
               <span className="animate-float">{e.item.emoji}</span>
             </div>
