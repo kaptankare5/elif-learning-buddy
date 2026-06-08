@@ -50,6 +50,10 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.id, authLoading]);
 
+  useEffect(() => {
+    setGamePremium(isPremium);
+  }, [isPremium]);
+
   const value = useMemo(
     () => ({ isPremium, loading, expiresAt, refresh: fetchStatus }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
