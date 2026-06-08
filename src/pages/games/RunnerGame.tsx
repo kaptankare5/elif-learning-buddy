@@ -193,13 +193,27 @@ const RunnerGame = () => {
           const item = putTarget
             ? t
             : (others.length > 0 ? others[Math.floor(Math.random() * others.length)] : t);
-          setEnemies((arr) => [...arr, {
-            uid: UID++,
-            x: 10 + Math.random() * 80,
-            y: -5,
-            item,
-            isTarget: item.id === t.id,
-          }]);
+          // Üst kısımda mevcut düşmanlarla dikey çakışmayı engelle
+          // (doğru harfin önüne yanlış resim gelmesin)
+          const MIN_DX = ENEMY_SIZE + 2;
+          const topEnemies = enemiesRef.current.filter((e) => e.y < 25);
+          let x = 10 + Math.random() * 80;
+          let tries = 0;
+          while (tries < 8 && topEnemies.some((e) => Math.abs(e.x - x) < MIN_DX)) {
+            x = 10 + Math.random() * 80;
+            tries++;
+          }
+          if (topEnemies.some((e) => Math.abs(e.x - x) < MIN_DX)) {
+            // çakışıyorsa bu turu atla
+          } else {
+            setEnemies((arr) => [...arr, {
+              uid: UID++,
+              x,
+              y: -5,
+              item,
+              isTarget: item.id === t.id,
+            }]);
+          }
         }
       }
 
