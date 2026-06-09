@@ -5,6 +5,7 @@ import { playItem, playFeedback } from "@/lib/audio";
 import { cn } from "@/lib/utils";
 import { Volume2 } from "lucide-react";
 import { gamePool, shuffle } from "./_shared";
+import { recordGameAnswer } from "@/lib/gameProgress";
 import type { ContentItem } from "@/data/types";
 
 interface Q { target: ContentItem; options: ContentItem[]; }
@@ -40,6 +41,7 @@ const QuizGame = () => {
     setPicked(item.id);
     const correct = item.id === q.target.id;
     if (correct) setScore((s) => s + 1);
+    recordGameAnswer(q.target, correct);
     await playFeedback(correct);
     setTimeout(() => { setQ(makeQ()); setPicked(null); }, 700);
   };

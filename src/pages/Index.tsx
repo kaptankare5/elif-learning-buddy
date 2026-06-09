@@ -35,10 +35,14 @@ const Index = () => {
     );
   }
 
-  const visibleSubjects = SUBJECTS.map((s) => ({
+  const allVisible = SUBJECTS.map((s) => ({
     ...s,
     topicCount: s.topics.filter((t) => topicForAge(t, age)).length,
   })).filter((s) => s.topicCount > 0 && s.id !== "turkce");
+
+  // İstenen tile sırası: İngilizce → Oyunlar → Matematik → Kavramlar → Doğa
+  const order: string[] = ["ingilizce", "oyunlar", "matematik", "kavramlar", "doga"];
+  const subjMap = new Map(allVisible.map((s) => [s.id, s]));
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-b from-secondary/40 via-background to-primary-soft/40">
@@ -73,27 +77,36 @@ const Index = () => {
         </div>
 
         <nav className="grid grid-cols-2 gap-3 mb-6">
-          {visibleSubjects.map((s, i) => (
-            <Link
-              key={s.id}
-              to={`/konu/${s.id}`}
-              className={`${s.bgVar} group flex flex-col items-center justify-center gap-2 rounded-3xl p-5 text-center text-white shadow-card transition-bouncy hover:-translate-y-1 hover:shadow-elegant min-h-[130px] animate-bounce-in`}
-              style={{ animationDelay: `${i * 80}ms` }}
-            >
-              <div className="text-5xl mb-1 transition-transform group-hover:scale-110">{s.emoji}</div>
-              <h2 className="text-base font-extrabold text-shadow-soft">{s.title}</h2>
-              <p className="text-[11px] font-medium opacity-90 px-1">{s.topicCount} konu</p>
-            </Link>
-          ))}
-          <Link
-            to="/oyunlar"
-            className="bg-gradient-to-br from-warning to-topic-pink group flex flex-col items-center justify-center gap-2 rounded-3xl p-5 text-center text-white shadow-card transition-bouncy hover:-translate-y-1 hover:shadow-elegant min-h-[130px] animate-bounce-in"
-            style={{ animationDelay: `${visibleSubjects.length * 80}ms` }}
-          >
-            <div className="text-5xl mb-1 transition-transform group-hover:scale-110">🎮</div>
-            <h2 className="text-base font-extrabold text-shadow-soft">Oyunlar</h2>
-            <p className="text-[11px] font-medium opacity-90 px-1">Eğlenceli oyunlar</p>
-          </Link>
+          {order.map((tileId, i) => {
+            if (tileId === "oyunlar") {
+              return (
+                <Link
+                  key="oyunlar"
+                  to="/oyunlar"
+                  className="bg-gradient-to-br from-warning to-topic-pink group flex flex-col items-center justify-center gap-2 rounded-3xl p-5 text-center text-white shadow-card transition-bouncy hover:-translate-y-1 hover:shadow-elegant min-h-[130px] animate-bounce-in"
+                  style={{ animationDelay: `${i * 80}ms` }}
+                >
+                  <div className="text-5xl mb-1 transition-transform group-hover:scale-110">🎮</div>
+                  <h2 className="text-base font-extrabold text-shadow-soft">Oyunlar</h2>
+                  <p className="text-[11px] font-medium opacity-90 px-1">Eğlenceli oyunlar</p>
+                </Link>
+              );
+            }
+            const s = subjMap.get(tileId as never);
+            if (!s) return null;
+            return (
+              <Link
+                key={s.id}
+                to={`/konu/${s.id}`}
+                className={`${s.bgVar} group flex flex-col items-center justify-center gap-2 rounded-3xl p-5 text-center text-white shadow-card transition-bouncy hover:-translate-y-1 hover:shadow-elegant min-h-[130px] animate-bounce-in`}
+                style={{ animationDelay: `${i * 80}ms` }}
+              >
+                <div className="text-5xl mb-1 transition-transform group-hover:scale-110">{s.emoji}</div>
+                <h2 className="text-base font-extrabold text-shadow-soft">{s.title}</h2>
+                <p className="text-[11px] font-medium opacity-90 px-1">{s.topicCount} konu</p>
+              </Link>
+            );
+          })}
         </nav>
 
         <div className="flex flex-col items-center gap-3">
@@ -127,7 +140,7 @@ const Index = () => {
 
 
         <p className="mt-6 text-center text-xs font-semibold text-muted-foreground">
-          {AGE_LABELS[age]} • {visibleSubjects.reduce((a, s) => a + s.topicCount, 0)} Konu • Eğlenceli Oyunlar
+          {AGE_LABELS[age]} • {allVisible.reduce((a, s) => a + s.topicCount, 0)} Konu • Eğlenceli Oyunlar
         </p>
       </main>
     </div>

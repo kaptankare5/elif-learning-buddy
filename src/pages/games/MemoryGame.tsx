@@ -4,6 +4,7 @@ import { LangToggle } from "@/components/LangToggle";
 import { playItem, playFeedback } from "@/lib/audio";
 import { cn } from "@/lib/utils";
 import { gamePool, pickN, shuffle } from "./_shared";
+import { recordGameAnswer } from "@/lib/gameProgress";
 import type { ContentItem } from "@/data/types";
 
 interface Card { uid: string; item: ContentItem; flipped: boolean; matched: boolean; variant: "a" | "b"; }
@@ -44,7 +45,9 @@ const MemoryGame = () => {
     }
     setMoves((m) => m + 1);
     setBusy(true);
-    if (first.item.id === c.item.id) {
+    const isMatch = first.item.id === c.item.id;
+    recordGameAnswer(c.item, isMatch);
+    if (isMatch) {
       setCards((cs) => cs.map((x) => x.item.id === c.item.id ? { ...x, matched: true, flipped: true } : x));
       await playItem(c.item);
       setFirst(null); setBusy(false);

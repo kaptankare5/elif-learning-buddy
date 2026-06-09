@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { Volume2 } from "lucide-react";
 import { gamePool, shuffle, pickN } from "./_shared";
 import { pickNextLetter, recordSrsAnswer, recordLetterMastery } from "@/data/srs";
+import { recordGameAnswer } from "@/lib/gameProgress";
 const SRS_TOPIC = "balloon-game";
 import type { ContentItem } from "@/data/types";
 
@@ -84,6 +85,7 @@ const BalloonGame = () => {
     const correct = b.item.id === target.id;
     recordSrsAnswer("games", SRS_TOPIC, target.id, correct);
     recordLetterMastery(target.id, correct);
+    recordGameAnswer(target, correct);
     if (correct) {
       setScore((s) => s + 1);
       await playFeedback(true);

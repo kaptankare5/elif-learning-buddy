@@ -64,3 +64,15 @@ export function flattenItems(): ContentItem[] {
 export function findItem(id: string): ContentItem | undefined {
   return flattenItems().find((it) => it.id === id);
 }
+
+// İlerleme entegrasyonu için: bir itemın hangi konuya ait olduğunu bul
+export function findTopicOfItem(itemId: string): { subjectId: SubjectId; topicId: string } | undefined {
+  for (const s of SUBJECTS) {
+    for (const t of s.topics) {
+      if (t.items.some((it) => it.id === itemId)) {
+        return { subjectId: s.id, topicId: t.id };
+      }
+    }
+  }
+  return undefined;
+}
