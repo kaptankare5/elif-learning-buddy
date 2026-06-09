@@ -1,23 +1,45 @@
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/PageHeader";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useAuth } from "@/hooks/useAuth";
 import { Check, Lock, Crown, Sparkles } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface Plan {
+  id: string;
+  name: string;
+  price: number; // TL toplam
+  per: string;   // "ay", "3 ay", "yıl", "tek seferlik"
+  monthly?: string; // "₺33/ay"
+  badge?: string;
+  highlight?: boolean;
+}
+
+// Türkiye çocuk eğitim uygulaması fiyat araştırması:
+// Aylık paketler genelde 49-99 TL aralığında, yıllık paketlerde %40-50 indirim
+// (örn. Khan Academy Kids ücretsiz; Lingokids ~$8-15/ay, yerel pazar 50-90 TL/ay)
+const PLANS: Plan[] = [
+  { id: "monthly",   name: "Aylık",      price: 59,  per: "ay",         monthly: "₺59/ay" },
+  { id: "quarterly", name: "3 Aylık",    price: 149, per: "3 ay",       monthly: "₺49,67/ay", badge: "%16 indirim" },
+  { id: "yearly",    name: "Yıllık",     price: 399, per: "yıl",        monthly: "₺33,25/ay", badge: "%43 indirim", highlight: true },
+  { id: "lifetime",  name: "Ömür Boyu",  price: 999, per: "tek seferlik", monthly: "Tek ödeme", badge: "En avantajlı" },
+];
 
 const Paywall = () => {
-  const { isPremium, loading, expiresAt } = useSubscription();
+  const { isPremium, isAdmin, loading, expiresAt, plan } = useSubscription();
   const { session } = useAuth();
   const navigate = useNavigate();
+  const [selected, setSelected] = useState<string>("yearly");
 
   const handleSubscribe = () => {
     if (!session) {
       navigate("/giris");
       return;
     }
-    // Capacitor entegrasyonu sonrası Google Play Billing burada tetiklenecek.
-    // window.cordova?.plugins?.InAppPurchase / RevenueCat vb.
+    const p = PLANS.find((x) => x.id === selected);
     alert(
-      "Abonelik satın alma uygulamanın mobil sürümünde aktif olacaktır.\n\n(Google Play Billing entegrasyonu Capacitor ile eklenecek.)",
+      `"${p?.name}" planı (${p?.price}₺) — abonelik satın alma mobil sürümde aktif olacaktır.\n\n(Google Play Billing entegrasyonu Capacitor ile eklenecek.)`,
     );
   };
 
@@ -30,12 +52,19 @@ const Paywall = () => {
           <p className="text-center text-muted-foreground font-bold py-12">Yükleniyor…</p>
         ) : isPremium ? (
           <div className="rounded-3xl bg-card p-6 shadow-card border-4 border-success/40 text-center animate-bounce-in">
-            <div className="text-6xl mb-3">👑</div>
-            <h1 className="text-2xl font-extrabold text-success mb-2">Premium Aktif!</h1>
+            <div className="text-6xl mb-3">{isAdmin ? "🛡️" : "👑"}</div>
+            <h1 className="text-2xl font-extrabold text-success mb-2">
+              {isAdmin ? "Yönetici Erişimi" : "Premium Aktif!"}
+            </h1>
             <p className="text-sm font-bold text-muted-foreground mb-4">
               Tüm konular ve oyunlar açık.
             </p>
-            {expiresAt && (
+            {plan && !isAdmin && (
+              <p className="text-xs font-semibold text-muted-foreground">
+                Plan: {PLANS.find((p) => p.id === plan)?.name || plan}
+              </p>
+            )}
+            {expiresAt && !isAdmin && (
               <p className="text-xs font-semibold text-muted-foreground">
                 Bitiş: {new Date(expiresAt).toLocaleDateString("tr-TR")}
               </p>
@@ -75,10 +104,48 @@ const Paywall = () => {
               </ul>
             </div>
 
-            <div className="rounded-3xl bg-card p-5 shadow-card border-4 border-warning/40 mb-5 text-center">
-              <div className="text-xs font-bold text-muted-foreground uppercase">Aylık</div>
-              <div className="text-4xl font-extrabold text-primary mt-1">₺49<span className="text-base text-muted-foreground">/ay</span></div>
-              <p className="text-xs font-semibold text-muted-foreground mt-1">İstediğin zaman iptal edebilirsin</p>
+            <h2 className="text-base font-extrabold text-foreground mb-2 px-1">Plan seç</h2>
+            <div className="space-y-2 mb-5">
+              {PLANS.map((p) => {
+                const isSel = selected === p.id;
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => setSelected(p.id)}
+                    className={cn(
+                      "w-full text-left rounded-2xl p-4 border-4 shadow-card transition-bouncy flex items-center gap-3",
+                      isSel
+                        ? "bg-primary/10 border-primary"
+                        : "bg-card border-border/40 hover:border-primary/40",
+                      p.highlight && !isSel && "border-warning/50",
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "h-6 w-6 rounded-full border-4 shrink-0 flex items-center justify-center",
+                        isSel ? "border-primary bg-primary" : "border-muted-foreground/40",
+                      )}
+                    >
+                      {isSel && <Check className="h-3.5 w-3.5 text-primary-foreground" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-extrabold text-base text-foreground">{p.name}</span>
+                        {p.badge && (
+                          <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-warning/20 text-warning">
+                            {p.badge}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs font-bold text-muted-foreground">{p.monthly}</div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className="text-xl font-extrabold text-primary">₺{p.price}</div>
+                      <div className="text-[10px] font-bold text-muted-foreground">/ {p.per}</div>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
 
             <button
@@ -89,7 +156,7 @@ const Paywall = () => {
             </button>
 
             <p className="mt-4 text-center text-[11px] text-muted-foreground">
-              Satın alma Google Play üzerinden gerçekleşir. Otomatik yenilenir, istediğin zaman iptal edebilirsin.
+              Satın alma Google Play üzerinden gerçekleşir. Aboneliği istediğin zaman iptal edebilirsin.
             </p>
           </>
         )}

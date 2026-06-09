@@ -5,6 +5,7 @@ import { playItem, playSpeech, playFeedback } from "@/lib/audio";
 import { cn } from "@/lib/utils";
 import { gamePool, getGameLang, pickN, shuffle } from "./_shared";
 import { recordSrsAnswer, recordLetterMastery } from "@/data/srs";
+import { recordGameAnswer } from "@/lib/gameProgress";
 import type { ContentItem } from "@/data/types";
 
 // =============================================================
@@ -103,6 +104,7 @@ const SorterGame = () => {
         playItem(completed);
         recordSrsAnswer("games", SRS_TOPIC, completed.id, true);
         recordLetterMastery(completed.id, true);
+        recordGameAnswer(completed, true);
         setScore((s) => s + 1);
         setTimeout(() => {
           setBoard((b) => {
@@ -125,6 +127,7 @@ const SorterGame = () => {
       setBusy(true);
       recordSrsAnswer("games", SRS_TOPIC, target.id, false);
       recordLetterMastery(target.id, false);
+      recordGameAnswer(target, false);
       await playFeedback(false);
       setBoard((b) => ({ ...b, cells: b.cells.map((x) => x.uid === c.uid ? { ...x, wrong: true } : x) }));
       setTimeout(() => {
