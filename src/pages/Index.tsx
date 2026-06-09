@@ -92,7 +92,7 @@ const Index = () => {
                 </Link>
               );
             }
-            const s = subjMap.get(tileId);
+            const s = subjMap.get(tileId as never);
             if (!s) return null;
             return (
               <Link
