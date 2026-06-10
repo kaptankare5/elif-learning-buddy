@@ -120,7 +120,7 @@ const BalloonGame = () => {
 
         <div className="bg-card rounded-2xl p-3 mb-3 shadow-card border-2 border-primary/20 text-center">
           <p className="text-xs font-bold text-muted-foreground">Sesi dinle, doğru balonu patlat:</p>
-          <p className="text-5xl mt-1">{target?.emoji || "🔊"}</p>
+          <button onClick={() => target && playItem(target)} className="text-5xl mt-1" aria-label="Tekrar dinle">🔊</button>
         </div>
 
         <div className="relative bg-gradient-to-b from-info/10 to-info/30 rounded-3xl shadow-card border-4 border-info/30 overflow-hidden" style={{ height: "60vh" }}>
