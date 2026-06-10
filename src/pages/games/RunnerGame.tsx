@@ -29,6 +29,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { playFeedback, playSpeech } from "@/lib/audio";
 import { gamePool, pickN, shuffle } from "./_shared";
 import { pickNextLetter, recordSrsAnswer, getLetterLevel } from "@/data/srs";
+import { recordGameAnswer } from "@/lib/gameProgress";
 import { useGameMode } from "@/lib/gameMode";
 import type { ContentItem } from "@/data/types";
 import { cn } from "@/lib/utils";
@@ -232,7 +233,7 @@ const RunnerGame = () => {
             Math.abs(ny - SHIP_TOP) < (SHIP_H / 2 + ENEMY_SIZE / 2 - 2);
           if (hitsShip) {
             collided = true;
-            if (e.isTarget && targetRef.current) recordSrsAnswer("games", SRS_TOPIC, targetRef.current.id, false);
+            if (e.isTarget && targetRef.current) { recordSrsAnswer("games", SRS_TOPIC, targetRef.current.id, false); recordGameAnswer(targetRef.current, false); }
             continue;
           }
           if (ny > 100) continue;
@@ -273,6 +274,7 @@ const RunnerGame = () => {
           roundLockRef.current = true;
           const t = targetRef.current;
           recordSrsAnswer("games", SRS_TOPIC, t.id, true);
+          recordGameAnswer(t, true);
           setScore((s) => s + 3);
           setCombo((c) => c + 1);
           flashFx("good");
@@ -281,7 +283,7 @@ const RunnerGame = () => {
             void nextRound();
           })();
         } else if (hitWrong && !hitTarget) {
-          if (targetRef.current) recordSrsAnswer("games", SRS_TOPIC, targetRef.current.id, false);
+          if (targetRef.current) { recordSrsAnswer("games", SRS_TOPIC, targetRef.current.id, false); recordGameAnswer(targetRef.current, false); }
           loseLifeAndRenew();
         }
         return moved;
