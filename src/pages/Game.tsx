@@ -1,4 +1,5 @@
 import { useParams, Navigate } from "react-router-dom";
+import { useLockBodyScroll } from "@/hooks/useLockBodyScroll";
 import QuizGame from "./games/QuizGame";
 import MemoryGame from "./games/MemoryGame";
 import BalloonGame from "./games/BalloonGame";
@@ -13,6 +14,7 @@ import RunnerGame from "./games/RunnerGame";
 const GAMES = ["memory", "balloon", "sorter", "match3", "triple", "quiz", "snake", "flappy", "puzzle", "runner"] as const;
 
 const Game = () => {
+  useLockBodyScroll();
   const { gameId } = useParams<{ gameId: string }>();
   if (!GAMES.includes(gameId as typeof GAMES[number])) return <Navigate to="/oyunlar" replace />;
 
