@@ -21,7 +21,7 @@ const GAMES = [
 const Games = () => {
   const [mode] = useGameMode();
   const visible = mode === "super" ? GAMES.filter((g) => SUPER_MODE_GAMES.has(g.id)) : GAMES;
-
+  return (
     <div className="min-h-screen bg-gradient-to-b from-primary-soft/40 to-background">
       <main className="container mx-auto max-w-2xl px-4 pb-16">
         <PageHeader title="🎮 Oyunlar" backTo="/" centered />
@@ -31,11 +31,11 @@ const Games = () => {
         </div>
 
         <p className="text-center text-muted-foreground font-semibold mb-6">
-          Hangi oyunu oynamak istersin?
+          {mode === "super" ? "⚡ Süper Öğrenme Modu — sıkı çalış!" : "Hangi oyunu oynamak istersin?"}
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {GAMES.map((g, i) => (
+          {visible.map((g, i) => (
             <Link
               key={g.id}
               to={`/oyunlar/${g.id}`}
