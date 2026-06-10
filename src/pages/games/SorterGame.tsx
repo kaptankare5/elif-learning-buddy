@@ -4,7 +4,8 @@ import { LangToggle } from "@/components/LangToggle";
 import { playItem, playSpeech, playFeedback } from "@/lib/audio";
 import { cn } from "@/lib/utils";
 import { gamePool, getGameLang, pickN, shuffle } from "./_shared";
-import { recordSrsAnswer, recordLetterMastery } from "@/data/srs";
+import { recordSrsAnswer, recordLetterMastery, getLetterLevel } from "@/data/srs";
+import { useGameMode } from "@/lib/gameMode";
 import { recordGameAnswer } from "@/lib/gameProgress";
 import type { ContentItem } from "@/data/types";
 
@@ -35,12 +36,16 @@ function buildBox(): { cells: Cell[]; types: ContentItem[] } {
 const SRS_TOPIC = "sorter-game";
 
 const SorterGame = () => {
+  const [mode] = useGameMode();
+  const isSuper = mode === "super";
   const [board, setBoard] = useState(() => buildBox());
   const [target, setTarget] = useState<ContentItem | null>(null);
   const [progress, setProgress] = useState(0);
   const [score, setScore] = useState(0);
   const [level, setLevel] = useState(1);
   const [busy, setBusy] = useState(false);
+  const targetLevel = target ? getLetterLevel("games", SRS_TOPIC, target.id) : 1;
+  const showHint = isSuper && targetLevel === 1; // süper modda L1'de etrafı parlasın
 
   const remainingTypes = useMemo(
     () => {
@@ -194,21 +199,25 @@ const SorterGame = () => {
         ) : (
           <div className="rounded-3xl bg-gradient-to-br from-warning/30 to-warning/10 border-8 border-warning/60 shadow-card p-3">
             <div className="grid grid-cols-3 gap-2">
-              {board.cells.map((c) => (
-                <button
-                  key={c.uid}
-                  onClick={() => tap(c)}
-                  disabled={c.cleared}
-                  className={cn(
-                    "aspect-square rounded-2xl flex items-center justify-center text-4xl shadow-soft border-4 transition-bouncy",
-                    c.cleared ? "opacity-0 pointer-events-none" :
-                      c.wrong ? "bg-destructive/30 border-destructive animate-pop" :
-                        "bg-card border-primary/20 hover:-translate-y-1 active:scale-95",
-                  )}
-                >
-                  {!c.cleared && <span>{c.item.emoji}</span>}
-                </button>
-              ))}
+              {board.cells.map((c) => {
+                const highlight = showHint && target && c.item.id === target.id && !c.cleared;
+                return (
+                  <button
+                    key={c.uid}
+                    onClick={() => tap(c)}
+                    disabled={c.cleared}
+                    className={cn(
+                      "aspect-square rounded-2xl flex items-center justify-center text-4xl shadow-soft border-4 transition-bouncy",
+                      c.cleared ? "opacity-0 pointer-events-none" :
+                        c.wrong ? "bg-destructive/30 border-destructive animate-pop" :
+                          highlight ? "bg-warning/30 border-warning ring-4 ring-warning/60 animate-pulse" :
+                            "bg-card border-primary/20 hover:-translate-y-1 active:scale-95",
+                    )}
+                  >
+                    {!c.cleared && <span>{c.item.emoji}</span>}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}

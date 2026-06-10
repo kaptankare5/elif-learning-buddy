@@ -2,7 +2,8 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { playItem, playFeedback, playSpeech } from "@/lib/audio";
 import { gamePool, shuffle, pickN } from "./_shared";
-import { pickNextLetter, recordSrsAnswer, recordLetterMastery } from "@/data/srs";
+import { pickNextLetter, recordSrsAnswer, recordLetterMastery, getLetterLevel } from "@/data/srs";
+import { useGameMode } from "@/lib/gameMode";
 import type { ContentItem } from "@/data/types";
 import { cn } from "@/lib/utils";
 import { Volume2 } from "lucide-react";
@@ -11,6 +12,7 @@ const COLS = 14;
 const ROWS = 18;
 const TICK_MS = 260;
 const SRS_TOPIC = "snake-game";
+const SWIPE_MIN = 24; // px — bu kadar kaydırınca yön değişir
 
 type Cell = { x: number; y: number };
 type Dir = { x: number; y: number };
@@ -33,6 +35,9 @@ function randCell(taken: Cell[]): Cell {
 }
 
 const SnakeGame = () => {
+  const [mode] = useGameMode();
+  const isSuper = mode === "super";
+
   const [snake, setSnake] = useState<Cell[]>([{ x: 5, y: 9 }, { x: 4, y: 9 }, { x: 3, y: 9 }]);
   const [dir, setDir] = useState<Dir>({ x: 1, y: 0 });
   const dirRef = useRef(dir);
@@ -43,6 +48,10 @@ const SnakeGame = () => {
   const [score, setScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
   const [paused, setPaused] = useState(true);
+
+  // Süper modda hedef harfin SRS seviyesi — sadece L1'de halka göster
+  const targetLevel = quiz ? getLetterLevel("games", SRS_TOPIC, quiz.target.id) : 1;
+  const showHint = !isSuper || targetLevel === 1;
 
   const newFood = useCallback((occupied: Cell[]) => {
     const pool = gamePool();
@@ -73,10 +82,11 @@ const SnakeGame = () => {
     playItem(target);
   }, []);
 
-  // Init
+  // Init — süper modda direkt quiz başlasın
   useEffect(() => {
-    newFood([{ x: 5, y: 9 }, { x: 4, y: 9 }, { x: 3, y: 9 }]);
-  }, [newFood]);
+    const initial = [{ x: 5, y: 9 }, { x: 4, y: 9 }, { x: 3, y: 9 }];
+    if (isSuper) startQuiz(initial); else newFood(initial);
+  }, [isSuper, newFood, startQuiz]);
 
   // Keyboard
   useEffect(() => {
@@ -99,13 +109,11 @@ const SnakeGame = () => {
         const head = prev[0];
         const d = dirRef.current;
         const next: Cell = { x: head.x + d.x, y: head.y + d.y };
-        // Walls
         if (next.x < 0 || next.x >= COLS || next.y < 0 || next.y >= ROWS) {
           setGameOver(true);
           playFeedback(false);
           return prev;
         }
-        // Self
         if (prev.some((c) => c.x === next.x && c.y === next.y)) {
           setGameOver(true);
           playFeedback(false);
@@ -128,7 +136,9 @@ const SnakeGame = () => {
               playFeedback(true);
               setQuiz(null);
               setEaten(0);
-              setTimeout(() => newFood(newSnake), 0);
+              // Süper modda her zaman quiz; normalde yiyeceğe dön
+              if (isSuper) setTimeout(() => startQuiz(newSnake), 0);
+              else setTimeout(() => newFood(newSnake), 0);
             } else {
               playFeedback(false);
               setGameOver(true);
@@ -142,7 +152,6 @@ const SnakeGame = () => {
           const newEaten = eaten + 1;
           setEaten(newEaten);
           if (newEaten >= 4) {
-            // 4. nesnenin sesi bitsin diye sınavı geciktir
             setPaused(true);
             setTimeout(() => { setPaused(false); startQuiz(newSnake); }, 1600);
           } else {
@@ -155,119 +164,135 @@ const SnakeGame = () => {
       });
     }, TICK_MS);
     return () => clearInterval(id);
-  }, [gameOver, paused, food, quiz, eaten, newFood, startQuiz]);
+  }, [gameOver, paused, food, quiz, eaten, newFood, startQuiz, isSuper]);
 
   const reset = () => {
-    setSnake([{ x: 5, y: 9 }, { x: 4, y: 9 }, { x: 3, y: 9 }]);
+    const initial = [{ x: 5, y: 9 }, { x: 4, y: 9 }, { x: 3, y: 9 }];
+    setSnake(initial);
     setDir({ x: 1, y: 0 });
     setEaten(0);
     setScore(0);
     setGameOver(false);
     setPaused(true);
     setQuiz(null);
-    newFood([{ x: 5, y: 9 }, { x: 4, y: 9 }, { x: 3, y: 9 }]);
+    setFood(null);
+    if (isSuper) startQuiz(initial); else newFood(initial);
   };
 
-  const turn = (nd: Dir) => {
+  const turn = useCallback((nd: Dir) => {
     if (gameOver) return;
     if (paused) setPaused(false);
     const d = dirRef.current;
     if ((nd.x !== 0 && d.x === 0) || (nd.y !== 0 && d.y === 0)) setDir(nd);
+  }, [gameOver, paused]);
+
+  // Swipe (touch + pointer) — board üzerinde kaydırma ile yön değiştir
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const onTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0]; touchStartRef.current = { x: t.clientX, y: t.clientY };
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    const s = touchStartRef.current; if (!s) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - s.x; const dy = t.clientY - s.y;
+    const ax = Math.abs(dx); const ay = Math.abs(dy);
+    if (Math.max(ax, ay) < SWIPE_MIN) {
+      // basit dokunuş → başlat / duraklat
+      if (paused && !gameOver) setPaused(false);
+      touchStartRef.current = null;
+      return;
+    }
+    if (ax > ay) turn({ x: dx > 0 ? 1 : -1, y: 0 });
+    else turn({ x: 0, y: dy > 0 ? 1 : -1 });
+    touchStartRef.current = null;
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-success/10 to-background">
-      <main className="container mx-auto max-w-xl px-4 pb-16">
-        <PageHeader title="🐍 Yılan Oyunu" backTo="/oyunlar" centered onReset={reset} />
+    <div className="h-screen overflow-hidden bg-gradient-to-b from-success/10 to-background flex flex-col">
+      <main className="container mx-auto max-w-xl px-3 flex-1 flex flex-col min-h-0">
+        <PageHeader title="🐍 Yılan" backTo="/oyunlar" centered onReset={reset} />
 
-        <div className="mb-3 grid grid-cols-3 gap-2 text-center">
-          <div className="rounded-xl bg-card p-2 shadow-soft border-2 border-success/30">
+        <div className="mb-2 grid grid-cols-3 gap-2 text-center shrink-0">
+          <div className="rounded-xl bg-card p-1.5 shadow-soft border-2 border-success/30">
             <div className="text-[10px] font-bold text-muted-foreground">Puan</div>
-            <div className="text-xl font-extrabold text-success">{score}</div>
+            <div className="text-lg font-extrabold text-success leading-tight">{score}</div>
           </div>
-          <div className="rounded-xl bg-card p-2 shadow-soft border-2 border-info/30">
-            <div className="text-[10px] font-bold text-muted-foreground">Yenen</div>
-            <div className="text-xl font-extrabold text-info">{eaten}</div>
+          <div className="rounded-xl bg-card p-1.5 shadow-soft border-2 border-info/30">
+            <div className="text-[10px] font-bold text-muted-foreground">{isSuper ? "Mod" : "Yenen"}</div>
+            <div className="text-lg font-extrabold text-info leading-tight">{isSuper ? "⚡" : eaten}</div>
           </div>
           <button
             onClick={() => quiz && playItem(quiz.target)}
             disabled={!quiz}
-            className="rounded-xl bg-primary text-primary-foreground p-2 shadow-soft border-2 border-primary font-bold flex items-center justify-center gap-1 disabled:opacity-40"
+            className="rounded-xl bg-primary text-primary-foreground p-1.5 shadow-soft border-2 border-primary font-bold flex items-center justify-center gap-1 disabled:opacity-40"
           >
             <Volume2 className="h-4 w-4" /> Dinle
           </button>
         </div>
 
         <div className={cn(
-          "rounded-2xl p-3 mb-3 border-2 text-center min-h-[72px] flex flex-col justify-center transition-colors",
+          "rounded-xl p-2 mb-2 border-2 text-center shrink-0 transition-colors",
           quiz ? "bg-warning/20 border-warning" : "bg-card border-border",
         )}>
           {quiz ? (
-            <>
-              <p className="text-xs font-bold text-muted-foreground">🎯 Doğru harfi ye!</p>
-              <p className="text-sm font-extrabold text-foreground">Sesi dinle ve doğru olanı yakala</p>
-            </>
+            <p className="text-xs font-extrabold text-foreground">🎯 Sesi dinle, doğru harfi ye!</p>
           ) : (
-            <>
-              <p className="text-xs font-bold text-muted-foreground">🐍 Yılanı yönlendir</p>
-              <p className="text-sm font-extrabold text-foreground">Harfleri ye — 4 harften sonra sınav gelir</p>
-            </>
+            <p className="text-xs font-extrabold text-foreground">🐍 Harfleri ye — 4 harfte bir sınav</p>
           )}
         </div>
 
         <div
-          className="relative bg-gradient-to-b from-success/5 to-success/20 rounded-2xl shadow-card border-4 border-success/30 overflow-hidden mx-auto"
+          onTouchStart={onTouchStart}
+          onTouchEnd={onTouchEnd}
+          className="relative bg-gradient-to-b from-success/5 to-success/20 rounded-2xl shadow-card border-4 border-success/30 overflow-hidden mx-auto select-none touch-none"
           style={{
             aspectRatio: `${COLS} / ${ROWS}`,
             width: "100%",
-            maxWidth: "min(100%, 60vh)",
+            maxWidth: "min(100%, 55vh)",
+            maxHeight: "55vh",
           }}
         >
-          {/* Snake */}
           {snake.map((c, i) => (
             <div
               key={i}
-              className={cn(
-                "absolute rounded-md",
-                i === 0 ? "bg-success" : "bg-success/70",
-              )}
+              className={cn("absolute rounded-md", i === 0 ? "bg-success" : "bg-success/70")}
               style={{
-                left: `${(c.x / COLS) * 100}%`,
-                top: `${(c.y / ROWS) * 100}%`,
-                width: `${100 / COLS}%`,
-                height: `${100 / ROWS}%`,
+                left: `${(c.x / COLS) * 100}%`, top: `${(c.y / ROWS) * 100}%`,
+                width: `${100 / COLS}%`, height: `${100 / ROWS}%`,
               }}
             />
           ))}
-          {/* Food */}
           {food && (
             <div
               className="absolute flex items-center justify-center bg-warning/30 rounded-md border-2 border-warning"
               style={{
-                left: `${(food.pos.x / COLS) * 100}%`,
-                top: `${(food.pos.y / ROWS) * 100}%`,
-                width: `${100 / COLS}%`,
-                height: `${100 / ROWS}%`,
+                left: `${(food.pos.x / COLS) * 100}%`, top: `${(food.pos.y / ROWS) * 100}%`,
+                width: `${100 / COLS}%`, height: `${100 / ROWS}%`,
               }}
             >
               <span className="text-lg font-extrabold leading-none">{food.item.emoji}</span>
             </div>
           )}
-          {/* Quiz options */}
-          {quiz && quiz.options.map((opt, i) => (
-            <div
-              key={i}
-              className="absolute flex items-center justify-center bg-info/30 rounded-md border-2 border-info"
-              style={{
-                left: `${(opt.pos.x / COLS) * 100}%`,
-                top: `${(opt.pos.y / ROWS) * 100}%`,
-                width: `${100 / COLS}%`,
-                height: `${100 / ROWS}%`,
-              }}
-            >
-              <span className="text-lg font-extrabold leading-none">{opt.item.emoji}</span>
-            </div>
-          ))}
+          {quiz && quiz.options.map((opt, i) => {
+            const isCorrect = opt.item.id === quiz.target.id;
+            return (
+              <div
+                key={i}
+                className={cn(
+                  "absolute flex items-center justify-center rounded-md border-2",
+                  isCorrect && showHint
+                    ? "bg-warning/40 border-warning ring-4 ring-warning/60 animate-pulse"
+                    : "bg-info/30 border-info"
+                )}
+                style={{
+                  left: `${(opt.pos.x / COLS) * 100}%`, top: `${(opt.pos.y / ROWS) * 100}%`,
+                  width: `${100 / COLS}%`, height: `${100 / ROWS}%`,
+                }}
+              >
+                <span className="text-lg font-extrabold leading-none">{opt.item.emoji}</span>
+              </div>
+            );
+          })}
           {!gameOver && paused && (
             <button
               onClick={() => setPaused(false)}
@@ -275,7 +300,9 @@ const SnakeGame = () => {
             >
               <div className="text-5xl mb-2">🐍</div>
               <div className="text-xl font-extrabold text-success mb-1">Hazır?</div>
-              <div className="text-sm font-bold text-muted-foreground">Başlamak için bir yöne bas</div>
+              <div className="text-xs font-bold text-muted-foreground px-4 text-center">
+                Ekrana parmağını sürükle (↑↓←→) ya da bir yöne bas
+              </div>
             </button>
           )}
           {gameOver && (
@@ -290,17 +317,17 @@ const SnakeGame = () => {
           )}
         </div>
 
-        {/* D-pad */}
-        <div className="mt-4 flex flex-col items-center gap-2 select-none">
-          <button onClick={() => turn({ x: 0, y: -1 })} className="w-16 h-16 rounded-2xl bg-card shadow-card border-2 border-border text-2xl font-extrabold active:scale-90">▲</button>
-          <div className="flex gap-2">
-            <button onClick={() => turn({ x: -1, y: 0 })} className="w-16 h-16 rounded-2xl bg-card shadow-card border-2 border-border text-2xl font-extrabold active:scale-90">◀</button>
-            <button onClick={() => setPaused((p) => !p)} className="w-16 h-16 rounded-2xl bg-muted shadow-card border-2 border-border text-sm font-extrabold active:scale-90">
+        {/* Yedek D-pad — mobil/masaüstü her ikisinde de çalışsın */}
+        <div className="mt-2 flex flex-col items-center gap-1 select-none shrink-0">
+          <button onClick={() => turn({ x: 0, y: -1 })} className="w-12 h-12 rounded-2xl bg-card shadow-card border-2 border-border text-xl font-extrabold active:scale-90">▲</button>
+          <div className="flex gap-1">
+            <button onClick={() => turn({ x: -1, y: 0 })} className="w-12 h-12 rounded-2xl bg-card shadow-card border-2 border-border text-xl font-extrabold active:scale-90">◀</button>
+            <button onClick={() => setPaused((p) => !p)} className="w-12 h-12 rounded-2xl bg-muted shadow-card border-2 border-border text-xs font-extrabold active:scale-90">
               {paused ? "▶" : "II"}
             </button>
-            <button onClick={() => turn({ x: 1, y: 0 })} className="w-16 h-16 rounded-2xl bg-card shadow-card border-2 border-border text-2xl font-extrabold active:scale-90">▶</button>
+            <button onClick={() => turn({ x: 1, y: 0 })} className="w-12 h-12 rounded-2xl bg-card shadow-card border-2 border-border text-xl font-extrabold active:scale-90">▶</button>
           </div>
-          <button onClick={() => turn({ x: 0, y: 1 })} className="w-16 h-16 rounded-2xl bg-card shadow-card border-2 border-border text-2xl font-extrabold active:scale-90">▼</button>
+          <button onClick={() => turn({ x: 0, y: 1 })} className="w-12 h-12 rounded-2xl bg-card shadow-card border-2 border-border text-xl font-extrabold active:scale-90">▼</button>
         </div>
       </main>
     </div>
