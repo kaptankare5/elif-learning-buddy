@@ -28,7 +28,8 @@ ShipSvg.displayName = "ShipSvg";
 import { PageHeader } from "@/components/PageHeader";
 import { playFeedback, playSpeech } from "@/lib/audio";
 import { gamePool, pickN, shuffle } from "./_shared";
-import { pickNextLetter, recordSrsAnswer } from "@/data/srs";
+import { pickNextLetter, recordSrsAnswer, getLetterLevel } from "@/data/srs";
+import { useGameMode } from "@/lib/gameMode";
 import type { ContentItem } from "@/data/types";
 import { cn } from "@/lib/utils";
 import { Heart, Volume2, ChevronLeft, ChevronRight } from "lucide-react";
@@ -63,6 +64,8 @@ function askTarget(item: ContentItem): Promise<void> {
 }
 
 const RunnerGame = () => {
+  const [mode] = useGameMode();
+  const isSuper = mode === "super";
   const [shipX, setShipX] = useState(50);
   const [enemies, setEnemies] = useState<Enemy[]>([]);
   const [bullets, setBullets] = useState<Bullet[]>([]);
@@ -360,7 +363,7 @@ const RunnerGame = () => {
               style={{ left: `${e.x}%`, top: `${e.y}%`, transform: "translate3d(-50%, -50%, 0)",
                 fontSize: "40px", filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.6))",
                 willChange: "top", zIndex: e.isTarget ? 20 : 5 }}>
-              {e.isTarget && (<div className="absolute -inset-2 rounded-full border-4 border-warning/70 animate-pulse" />)}
+              {e.isTarget && (!isSuper || getLetterLevel("games", SRS_TOPIC, e.item.id) === 1) && (<div className="absolute -inset-2 rounded-full border-4 border-warning/70 animate-pulse" />)}
               <span className="animate-float">{e.item.emoji}</span>
             </div>
           ))}
