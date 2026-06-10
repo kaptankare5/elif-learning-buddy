@@ -2,7 +2,9 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { playItem, playFeedback, playSpeech } from "@/lib/audio";
 import { gamePool, shuffle, pickN } from "./_shared";
-import { pickNextLetter, recordSrsAnswer, recordLetterMastery } from "@/data/srs";
+import { pickNextLetter, recordSrsAnswer, recordLetterMastery, getLetterLevel } from "@/data/srs";
+import { recordGameAnswer } from "@/lib/gameProgress";
+import { useGameMode } from "@/lib/gameMode";
 import type { ContentItem } from "@/data/types";
 import { cn } from "@/lib/utils";
 import { Volume2, Heart } from "lucide-react";
@@ -40,6 +42,8 @@ interface Letter {
 let UID = 1;
 
 const FlappyGame = () => {
+  const [mode] = useGameMode();
+  const isSuper = mode === "super";
   const [birdY, setBirdY] = useState(40);
   const [vel, setVel] = useState(0);
   const [letters, setLetters] = useState<Letter[]>([]);
@@ -193,6 +197,7 @@ const FlappyGame = () => {
         if (collidedTarget) {
           recordSrsAnswer("games", SRS_TOPIC, collidedTarget.item.id, true);
           recordLetterMastery(collidedTarget.item.id, true);
+          recordGameAnswer(collidedTarget.item, true);
           playSpeech(collidedTarget.item.speech);
           setScore((s) => s + 1);
           next = next.filter((l) => {
@@ -206,6 +211,7 @@ const FlappyGame = () => {
         if (collidedWrong) {
           recordSrsAnswer("games", SRS_TOPIC, targetRef.current!.id, false);
           recordLetterMastery(targetRef.current!.id, false);
+          recordGameAnswer(targetRef.current!, false);
           playFeedback(false);
           setLives((l) => {
             const nl = l - 1;
@@ -216,6 +222,7 @@ const FlappyGame = () => {
         if (missedTarget) {
           recordSrsAnswer("games", SRS_TOPIC, targetRef.current!.id, false);
           recordLetterMastery(targetRef.current!.id, false);
+          recordGameAnswer(targetRef.current!, false);
           playFeedback(false);
           setLives((l) => {
             const nl = l - 1;
@@ -307,28 +314,32 @@ const FlappyGame = () => {
           </div>
 
           {/* Letters */}
-          {letters.map((l) => (
-            <div
-              key={l.uid}
-              className={cn(
-                "absolute flex items-center justify-center rounded-full font-extrabold border-2 shadow-soft",
-                l.isTarget
-                  ? "bg-warning/30 border-warning text-foreground"
-                  : "bg-card border-border text-foreground",
-              )}
-              style={{
-                left: `${l.x}%`,
-                top: `${l.y}%`,
-                width: `${HIT_R * 2}%`,
-                height: `${HIT_R * 2}%`,
-                transform: "translate3d(-50%, -50%, 0)",
-                fontSize: "min(6vw, 28px)",
-                willChange: "left",
-              }}
-            >
-              {l.item.emoji}
-            </div>
-          ))}
+          {letters.map((l) => {
+            const lvl = getLetterLevel("games", SRS_TOPIC, l.item.id);
+            const showRing = l.isTarget && (!isSuper || lvl === 1);
+            return (
+              <div
+                key={l.uid}
+                className={cn(
+                  "absolute flex items-center justify-center rounded-full font-extrabold border-2 shadow-soft",
+                  showRing
+                    ? "bg-warning/30 border-warning text-foreground"
+                    : "bg-card border-border text-foreground",
+                )}
+                style={{
+                  left: `${l.x}%`,
+                  top: `${l.y}%`,
+                  width: `${HIT_R * 2}%`,
+                  height: `${HIT_R * 2}%`,
+                  transform: "translate3d(-50%, -50%, 0)",
+                  fontSize: "min(6vw, 28px)",
+                  willChange: "left",
+                }}
+              >
+                {l.item.emoji}
+              </div>
+            );
+          })}
 
           {/* Quiz kaldırıldı */}
 
