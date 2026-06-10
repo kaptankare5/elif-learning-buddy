@@ -272,7 +272,7 @@ const SnakeGame = () => {
             >
               <span className="text-lg font-extrabold leading-none">{food.item.emoji}</span>
             </div>
-          ))}
+          )}
           {quiz && quiz.options.map((opt, i) => {
             const isCorrect = opt.item.id === quiz.target.id;
             return (
