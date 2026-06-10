@@ -314,28 +314,32 @@ const FlappyGame = () => {
           </div>
 
           {/* Letters */}
-          {letters.map((l) => (
-            <div
-              key={l.uid}
-              className={cn(
-                "absolute flex items-center justify-center rounded-full font-extrabold border-2 shadow-soft",
-                l.isTarget
-                  ? "bg-warning/30 border-warning text-foreground"
-                  : "bg-card border-border text-foreground",
-              )}
-              style={{
-                left: `${l.x}%`,
-                top: `${l.y}%`,
-                width: `${HIT_R * 2}%`,
-                height: `${HIT_R * 2}%`,
-                transform: "translate3d(-50%, -50%, 0)",
-                fontSize: "min(6vw, 28px)",
-                willChange: "left",
-              }}
-            >
-              {l.item.emoji}
-            </div>
-          ))}
+          {letters.map((l) => {
+            const lvl = getLetterLevel("games", SRS_TOPIC, l.item.id);
+            const showRing = l.isTarget && (!isSuper || lvl === 1);
+            return (
+              <div
+                key={l.uid}
+                className={cn(
+                  "absolute flex items-center justify-center rounded-full font-extrabold border-2 shadow-soft",
+                  showRing
+                    ? "bg-warning/30 border-warning text-foreground"
+                    : "bg-card border-border text-foreground",
+                )}
+                style={{
+                  left: `${l.x}%`,
+                  top: `${l.y}%`,
+                  width: `${HIT_R * 2}%`,
+                  height: `${HIT_R * 2}%`,
+                  transform: "translate3d(-50%, -50%, 0)",
+                  fontSize: "min(6vw, 28px)",
+                  willChange: "left",
+                }}
+              >
+                {l.item.emoji}
+              </div>
+            );
+          })}
 
           {/* Quiz kaldırıldı */}
 
