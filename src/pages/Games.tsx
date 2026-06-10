@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { PageHeader } from "@/components/PageHeader";
 import { LangToggle } from "@/components/LangToggle";
+import { useGameMode, SUPER_MODE_GAMES } from "@/lib/gameMode";
 
 
 const GAMES = [
@@ -18,7 +19,9 @@ const GAMES = [
 ];
 
 const Games = () => {
-  return (
+  const [mode] = useGameMode();
+  const visible = mode === "super" ? GAMES.filter((g) => SUPER_MODE_GAMES.has(g.id)) : GAMES;
+
     <div className="min-h-screen bg-gradient-to-b from-primary-soft/40 to-background">
       <main className="container mx-auto max-w-2xl px-4 pb-16">
         <PageHeader title="🎮 Oyunlar" backTo="/" centered />
