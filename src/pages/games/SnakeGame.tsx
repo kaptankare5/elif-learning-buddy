@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { playItem, playFeedback, playSpeech } from "@/lib/audio";
 import { gamePool, shuffle, pickN } from "./_shared";
 import { pickNextLetter, recordSrsAnswer, recordLetterMastery, getLetterLevel } from "@/data/srs";
+import { recordGameAnswer } from "@/lib/gameProgress";
 import { useGameMode } from "@/lib/gameMode";
 import type { ContentItem } from "@/data/types";
 import { cn } from "@/lib/utils";
@@ -130,6 +131,7 @@ const SnakeGame = () => {
             const correct = opt.item.id === quiz.target.id;
             recordSrsAnswer("games", SRS_TOPIC, quiz.target.id, correct);
             recordLetterMastery(quiz.target.id, correct);
+            recordGameAnswer(quiz.target, correct);
             if (correct) {
               grew = true;
               setScore((s) => s + 5);
