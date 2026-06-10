@@ -163,6 +163,12 @@ export function getTopicSrs(ns: Namespace, topicId: string): TopicSrs {
   return load(ns)[topicId] || {};
 }
 
+// Belirli bir harfin/itemin mevcut SRS seviyesi (1-4). Kayıt yoksa 1.
+export function getLetterLevel(ns: Namespace, topicId: string, letterId: string): Level {
+  const t = load(ns)[topicId];
+  return (t?.[letterId]?.level ?? 1) as Level;
+}
+
 export function resetTopicSrs(ns: Namespace, topicId: string) {
   const s = load(ns);
   delete s[topicId];
