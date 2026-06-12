@@ -136,7 +136,7 @@ export function playSpeech(text: string, lang?: Lang, opts?: { gain?: number }):
     try {
       const audio = new Audio(url);
       audio.preload = "auto";
-      audio.crossOrigin = "anonymous";
+      // Aynı origin: crossOrigin ayarlamıyoruz; MediaElementSource yine de çalışır.
       audio.setAttribute("playsinline", "true");
       activeAudio = audio;
 
