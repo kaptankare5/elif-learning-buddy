@@ -8,7 +8,7 @@ const GAMES = [
   { id: "puzzle", title: "Yapboz", emoji: "🧩", color: "from-warning to-topic-pink", desc: "Parçaları birleştir, sesi duy" },
   { id: "runner", title: "Uzay Savaşı", emoji: "🚀", color: "from-indigo-500 to-fuchsia-500", desc: "Doğru hedefi vur, yanlışı vurma" },
   
-  { id: "memory", title: "Hafıza Kartları", emoji: "🧠", color: "from-topic-pink to-pink", desc: "Eşleşenleri bul" },
+  { id: "memory", title: "Hafıza Kartları", emoji: "🃏", color: "from-topic-pink to-pink", desc: "Eşleşenleri bul" },
   { id: "match3", title: "Üçlü Eşleştir", emoji: "🍬", color: "from-topic-pink to-warning", desc: "3'lü dizip patlat" },
   { id: "snake", title: "Yılan Oyunu", emoji: "🐍", color: "from-success to-topic-doga", desc: "Harfleri ye, sınavı geç" },
   { id: "balloon", title: "Balon Patlatma", emoji: "🎈", color: "from-topic-blue to-info", desc: "Doğru balonu patlat" },
