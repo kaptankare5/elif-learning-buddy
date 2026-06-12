@@ -121,7 +121,7 @@ function speakWithSynthesis(text: string, lang: Lang | undefined, token: number)
 }
 
 // Resolve only when the played audio actually ends (or fails).
-export function playSpeech(text: string, lang?: Lang): Promise<void> {
+export function playSpeech(text: string, lang?: Lang, opts?: { gain?: number }): Promise<void> {
   stopCurrent(true);
   const token = playToken;
   const found = lookupKey(text, lang);
@@ -131,30 +131,44 @@ export function playSpeech(text: string, lang?: Lang): Promise<void> {
   }
 
   const url = `/audio/${found.lang}/${found.key}.mp3`;
+  const gain = opts?.gain && opts.gain > 1 ? opts.gain : 1;
   return new Promise<void>((resolve) => {
     try {
       const audio = new Audio(url);
       audio.preload = "auto";
+      // Aynı origin: crossOrigin ayarlamıyoruz; MediaElementSource yine de çalışır.
       audio.setAttribute("playsinline", "true");
       activeAudio = audio;
 
+      // WebAudio gain boost (volume > 1 için)
+      let ctxNodes: { src: MediaElementAudioSourceNode; g: GainNode } | null = null;
+      if (gain > 1) {
+        const ctx = getCtx();
+        if (ctx) {
+          try {
+            const src = ctx.createMediaElementSource(audio);
+            const g = ctx.createGain();
+            g.gain.value = gain;
+            src.connect(g).connect(ctx.destination);
+            ctxNodes = { src, g };
+          } catch { /* fallback to normal volume */ }
+        }
+      }
+
       currentResolve = resolve;
-      currentCleanup = () => cleanupActiveAudio(audio);
+      currentCleanup = () => {
+        cleanupActiveAudio(audio);
+        if (ctxNodes) { try { ctxNodes.src.disconnect(); ctxNodes.g.disconnect(); } catch { /* ignore */ } }
+      };
 
       const settle = () => {
-        if (token !== playToken) {
-          resolve();
-          return;
-        }
+        if (token !== playToken) { resolve(); return; }
         stopCurrent(false);
       };
 
       audio.addEventListener("ended", settle, { once: true });
       audio.addEventListener("error", () => {
-        if (token !== playToken) {
-          resolve();
-          return;
-        }
+        if (token !== playToken) { resolve(); return; }
         void speakWithSynthesis(text, lang, token);
       }, { once: true });
 
@@ -174,7 +188,7 @@ export function playSpeech(text: string, lang?: Lang): Promise<void> {
 }
 
 export function playItem(item: ContentItem): Promise<void> {
-  return playSpeech(item.speech, item.lang);
+  return playSpeech(item.speech, item.lang, { gain: item.audioGain });
 }
 
 // İlk kullanıcı etkileşiminde ses katmanını aç.

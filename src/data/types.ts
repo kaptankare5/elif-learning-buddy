@@ -26,6 +26,8 @@ export interface ContentItem {
   value?: number;
   // Renk anahtarı (rengler için: "red" | "blue" | "yellow" | ...)
   colorKey?: string;
+  // Ses çalarken uygulanacak ek kazanç (1 = normal, >1 = yükselt). MP3 sessiz kaldıysa kullanılır.
+  audioGain?: number;
 }
 
 // Konu / kategori (örn. "Türkçe > Harfler")

@@ -8,7 +8,11 @@ const NUMBER_NAMES_TR = [
   "on bir", "on iki", "on üç", "on dört", "on beş", "on altı", "on yedi", "on sekiz", "on dokuz", "yirmi",
 ];
 
-const NUMBER_EMOJIS = ["", "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"];
+// 1-10: keycap emoji; 11-20: dolu daire içinde sayı karakteri (görsel)
+const NUMBER_EMOJIS = [
+  "", "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟",
+  "⑪", "⑫", "⑬", "⑭", "⑮", "⑯", "⑰", "⑱", "⑲", "⑳",
+];
 
 export const matematikTopics: ContentTopic[] = [
   {
@@ -25,7 +29,7 @@ export const matematikTopics: ContentTopic[] = [
       speech: NUMBER_NAMES_TR[n] || String(n),
       lang: "tr" as const,
       value: n,
-      emoji: n <= 10 ? NUMBER_EMOJIS[n] : undefined,
+      emoji: NUMBER_EMOJIS[n],
     })),
   },
   {
@@ -37,14 +41,14 @@ export const matematikTopics: ContentTopic[] = [
     practiceMode: "visual",
     ages: [3,4,5,6],
     items: [
-      { id: "sekil-daire", label: "Daire", speech: "daire", lang: "tr" as const, emoji: "⭕" },
-      { id: "sekil-kare", label: "Kare", speech: "kare", lang: "tr" as const, emoji: "🟦" },
-      { id: "sekil-ucgen", label: "Üçgen", speech: "üçgen", lang: "tr" as const, emoji: "🔺" },
-      { id: "sekil-dikdortgen", label: "Dikdörtgen", speech: "dikdörtgen", lang: "tr" as const, emoji: "🟫" },
-      { id: "sekil-yildiz", label: "Yıldız", speech: "yıldız", lang: "tr" as const, emoji: "⭐" },
-      { id: "sekil-kalp", label: "Kalp", speech: "kalp", lang: "tr" as const, emoji: "❤️" },
-      { id: "sekil-eskenar", label: "Elmas", speech: "elmas", lang: "tr" as const, emoji: "💎" },
-      { id: "sekil-altigen", label: "Altıgen", speech: "altıgen", lang: "tr" as const, emoji: "⬡" },
+      { id: "sekil-daire", label: "Daire", speech: "daire", lang: "tr" as const, emoji: "⭕", audioGain: 2.2 },
+      { id: "sekil-kare", label: "Kare", speech: "kare", lang: "tr" as const, emoji: "🟦", audioGain: 2.2 },
+      { id: "sekil-ucgen", label: "Üçgen", speech: "üçgen", lang: "tr" as const, emoji: "🔺", audioGain: 2.2 },
+      // Daha uzun bir dikdörtgen görseli — kareye benzemesin
+      { id: "sekil-dikdortgen", label: "Dikdörtgen", speech: "dikdörtgen", lang: "tr" as const, emoji: "▬", audioGain: 2.2 },
+      { id: "sekil-yildiz", label: "Yıldız", speech: "yıldız", lang: "tr" as const, emoji: "⭐", audioGain: 2.2 },
+      { id: "sekil-kalp", label: "Kalp", speech: "kalp", lang: "tr" as const, emoji: "❤️", audioGain: 2.2 },
+      { id: "sekil-altigen", label: "Altıgen", speech: "altıgen", lang: "tr" as const, emoji: "⬡", audioGain: 2.2 },
     ],
   },
   {
@@ -55,7 +59,6 @@ export const matematikTopics: ContentTopic[] = [
     emoji: "➕",
     practiceMode: "math",
     ages: [5,6],
-    // Toplama soruları runtime'da üretilir; items sadece sonuç sayılarını barındırır
     items: Array.from({ length: 10 }, (_, i) => i + 1).map((n) => ({
       id: `top-${n}`,
       label: String(n),

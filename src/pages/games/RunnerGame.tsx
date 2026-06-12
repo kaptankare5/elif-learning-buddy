@@ -278,10 +278,9 @@ const RunnerGame = () => {
           setScore((s) => s + 3);
           setCombo((c) => c + 1);
           flashFx("good");
-          (async () => {
-            await playSpeech(t.speech, t.lang);
-            void nextRound();
-          })();
+          playFeedback(true);
+          // Doğru cevapta soruyu tekrar seslendirme — sadece olumlu geri bildirim sesi
+          setTimeout(() => { void nextRound(); }, 600);
         } else if (hitWrong && !hitTarget) {
           if (targetRef.current) { recordSrsAnswer("games", SRS_TOPIC, targetRef.current.id, false); recordGameAnswer(targetRef.current, false); }
           loseLifeAndRenew();

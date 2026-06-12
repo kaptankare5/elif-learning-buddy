@@ -22,8 +22,15 @@ const PuzzleGame = () => {
   const [age] = useAge();
   const N = gridForAge(age);
 
+  // Yapboz için uygun olmayan tek-renk / düz şekil görsellerini ayıkla.
+  // Tek ton emojiler (turuncu/mavi/sarı kareler vs.) yapbozda hep aynı parça gibi görünüyor.
+  const BLOCKED_EMOJIS = new Set([
+    "⬛","⬜","🟥","🟧","🟨","🟩","🟦","🟪","🟫",
+    "⭕","🔴","🟠","🟡","🟢","🔵","🟣","⚫","⚪","🟤",
+    "🔺","🔻","🔶","🔷","🔸","🔹","▪️","▫️","◼️","◻️","◾","◽","▬","⬡",
+  ]);
   const pool = useMemo(
-    () => gamePool().filter((p) => p.emoji && [...p.emoji].length <= 2),
+    () => gamePool().filter((p) => p.emoji && [...p.emoji].length <= 2 && !BLOCKED_EMOJIS.has(p.emoji)),
     [],
   );
   const [item, setItem] = useState<ContentItem | null>(null);
