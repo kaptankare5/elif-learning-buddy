@@ -280,7 +280,6 @@ const RunnerGame = () => {
           flashFx("good");
           playFeedback(true);
           // Doğru cevapta soruyu tekrar seslendirme — sadece olumlu geri bildirim sesi
-          void t; // mark used
           setTimeout(() => { void nextRound(); }, 600);
         } else if (hitWrong && !hitTarget) {
           if (targetRef.current) { recordSrsAnswer("games", SRS_TOPIC, targetRef.current.id, false); recordGameAnswer(targetRef.current, false); }
