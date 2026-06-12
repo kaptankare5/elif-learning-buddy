@@ -319,17 +319,14 @@ const SnakeGame = () => {
           )}
         </div>
 
-        {/* Yedek D-pad — mobil/masaüstü her ikisinde de çalışsın */}
-        <div className="mt-2 flex flex-col items-center gap-1 select-none shrink-0">
-          <button onClick={() => turn({ x: 0, y: -1 })} className="w-12 h-12 rounded-2xl bg-card shadow-card border-2 border-border text-xl font-extrabold active:scale-90">▲</button>
-          <div className="flex gap-1">
-            <button onClick={() => turn({ x: -1, y: 0 })} className="w-12 h-12 rounded-2xl bg-card shadow-card border-2 border-border text-xl font-extrabold active:scale-90">◀</button>
-            <button onClick={() => setPaused((p) => !p)} className="w-12 h-12 rounded-2xl bg-muted shadow-card border-2 border-border text-xs font-extrabold active:scale-90">
-              {paused ? "▶" : "II"}
-            </button>
-            <button onClick={() => turn({ x: 1, y: 0 })} className="w-12 h-12 rounded-2xl bg-card shadow-card border-2 border-border text-xl font-extrabold active:scale-90">▶</button>
-          </div>
-          <button onClick={() => turn({ x: 0, y: 1 })} className="w-12 h-12 rounded-2xl bg-card shadow-card border-2 border-border text-xl font-extrabold active:scale-90">▼</button>
+        {/* Sadece duraklat/devam et — yön kontrolü kaydırarak yapılır */}
+        <div className="mt-2 flex justify-center select-none shrink-0">
+          <button
+            onClick={() => setPaused((p) => !p)}
+            className="px-5 h-11 rounded-2xl bg-card shadow-card border-2 border-border text-sm font-extrabold active:scale-90"
+          >
+            {paused ? "▶ Başlat" : "II Duraklat"}
+          </button>
         </div>
       </main>
     </div>
