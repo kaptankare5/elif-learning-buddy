@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { EmojiView } from "@/components/EmojiView";
 import { PageHeader } from "@/components/PageHeader";
 import { playItem, playFeedback, playSpeech } from "@/lib/audio";
 import { gamePool, shuffle, pickN } from "./_shared";
@@ -336,7 +337,7 @@ const FlappyGame = () => {
                   willChange: "left",
                 }}
               >
-                {l.item.emoji}
+                <EmojiView value={l.item.emoji} />
               </div>
             );
           })}

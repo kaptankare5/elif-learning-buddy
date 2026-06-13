@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { EmojiView } from "@/components/EmojiView";
 import { PageHeader } from "@/components/PageHeader";
 import { playFeedback, playSpeech } from "@/lib/audio";
 import { gamePool, pickN } from "./_shared";
@@ -220,7 +221,7 @@ const LaneRunnerGame = () => {
 
         <div className="rounded-2xl p-3 mb-3 border-2 bg-warning/15 border-warning/50 text-center min-h-[64px]">
           <p className="text-xs font-bold text-muted-foreground">🎯 Doğru yola geç, topla!</p>
-          <p className="text-3xl mt-1">{target?.emoji ?? "—"} <span className="text-base font-bold text-foreground/70">{target?.label ?? ""}</span></p>
+          <p className="text-3xl mt-1"><EmojiView value={target?.emoji ?? "—"} /> <span className="text-base font-bold text-foreground/70">{target?.label ?? ""}</span></p>
         </div>
 
         <div
@@ -307,7 +308,7 @@ const LaneRunnerGame = () => {
                 {o.isTarget && (
                   <div className="absolute inset-0 -m-2 rounded-full border-4 border-warning/90 animate-pulse" />
                 )}
-                <span className={cn(o.isTarget && "animate-float")}>{o.item.emoji}</span>
+                <span className={cn(o.isTarget && "animate-float")}><EmojiView value={o.item.emoji} /></span>
               </div>
             );
           })}

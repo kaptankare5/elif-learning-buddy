@@ -1,4 +1,5 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { EmojiView } from "@/components/EmojiView";
 
 const ShipSvg = memo(() => (
   <svg viewBox="0 0 100 100" className="w-full h-full">
@@ -366,7 +367,7 @@ const RunnerGame = () => {
                 fontSize: "34px", filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.6))",
                 willChange: "top", zIndex: e.isTarget ? 20 : 5 }}>
               {e.isTarget && (!isSuper || getLetterLevel("games", SRS_TOPIC, e.item.id) === 1) && (<div className="absolute -inset-1 rounded-full border-4 border-warning animate-pulse" />)}
-              <span className="animate-float">{e.item.emoji}</span>
+              <span className="animate-float"><EmojiView value={e.item.emoji} /></span>
             </div>
           ))}
 

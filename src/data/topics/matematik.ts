@@ -8,11 +8,12 @@ const NUMBER_NAMES_TR = [
   "on bir", "on iki", "on üç", "on dört", "on beş", "on altı", "on yedi", "on sekiz", "on dokuz", "yirmi",
 ];
 
-// 1-10: keycap emoji; 11-20: dolu daire içinde sayı karakteri (görsel)
-// 1-10 keycap; 11-20 renkli rozet (sayı + arka plan renk noktası)
+// 1-10: keycap emoji; 11-20: renkli kare-rozet içinde sayı (EmojiView "num:N:#hex" ile çizilir)
 const NUMBER_EMOJIS = [
   "", "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟",
-  "🔴11", "🟠12", "🟡13", "🟢14", "🔵15", "🟣16", "🟤17", "🟥18", "🟧19", "🟨20",
+  "num:11:#ef4444", "num:12:#f97316", "num:13:#eab308", "num:14:#22c55e",
+  "num:15:#3b82f6", "num:16:#a855f7", "num:17:#ec4899", "num:18:#14b8a6",
+  "num:19:#f59e0b", "num:20:#06b6d4",
 ];
 
 export const matematikTopics: ContentTopic[] = [
@@ -45,11 +46,12 @@ export const matematikTopics: ContentTopic[] = [
       { id: "sekil-daire", label: "Daire", speech: "daire", lang: "tr" as const, emoji: "🔴", audioGain: 2.2 },
       { id: "sekil-kare", label: "Kare", speech: "kare", lang: "tr" as const, emoji: "🟦", audioGain: 2.2 },
       { id: "sekil-ucgen", label: "Üçgen", speech: "üçgen", lang: "tr" as const, emoji: "🔺", audioGain: 2.2 },
-      // Renkli, uzun dikdörtgen — kareye benzemesin
-      { id: "sekil-dikdortgen", label: "Dikdörtgen", speech: "dikdörtgen", lang: "tr" as const, emoji: "🟧▬", audioGain: 2.2 },
+      // Tek parça, renkli uzun dikdörtgen (EmojiView ile çizilir)
+      { id: "sekil-dikdortgen", label: "Dikdörtgen", speech: "dikdörtgen", lang: "tr" as const, emoji: "rect:#f97316", audioGain: 2.2 },
       { id: "sekil-yildiz", label: "Yıldız", speech: "yıldız", lang: "tr" as const, emoji: "⭐", audioGain: 2.2 },
       { id: "sekil-kalp", label: "Kalp", speech: "kalp", lang: "tr" as const, emoji: "❤️", audioGain: 2.2 },
-      { id: "sekil-altigen", label: "Altıgen", speech: "altıgen", lang: "tr" as const, emoji: "🟣⬡", audioGain: 2.2 },
+      // Tek parça, renkli altıgen (SVG)
+      { id: "sekil-altigen", label: "Altıgen", speech: "altıgen", lang: "tr" as const, emoji: "hex:#a855f7", audioGain: 2.2 },
     ],
   },
   {

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { EmojiView } from "@/components/EmojiView";
 import { PageHeader } from "@/components/PageHeader";
 import { LangToggle } from "@/components/LangToggle";
 import { playItem, playFeedback } from "@/lib/audio";
@@ -139,7 +140,7 @@ const BalloonGame = () => {
                 "w-16 h-20 rounded-[50%] flex items-center justify-center shadow-card",
                 COLORS[i % COLORS.length],
               )}>
-                <span className="text-3xl">{b.item.emoji}</span>
+                <span className="text-3xl"><EmojiView value={b.item.emoji} /></span>
               </div>
               <div className="w-px h-4 bg-foreground/40 mx-auto" />
             </button>
