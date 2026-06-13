@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, Navigate } from "react-router-dom";
 import { getSubject, getTopic } from "@/data/subjects";
 import { PageHeader } from "@/components/PageHeader";
+import { EmojiView } from "@/components/EmojiView";
 import { playItem, playFeedback, playSpeech } from "@/lib/audio";
 import { Volume2, ChevronLeft, ChevronRight } from "lucide-react";
 import type { ContentItem, SubjectId } from "@/data/types";
