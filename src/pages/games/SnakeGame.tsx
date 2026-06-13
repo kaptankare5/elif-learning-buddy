@@ -28,7 +28,14 @@ interface QuizState {
   options: [FoodLetter, FoodLetter];
 }
 
-function randCell(taken: Cell[]): Cell {
+function randCell(taken: Cell[], avoid: Cell[] = [], minDist = 0): Cell {
+  for (let tries = 0; tries < 200; tries++) {
+    const c = { x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS) };
+    if (taken.some((t) => t.x === c.x && t.y === c.y)) continue;
+    if (avoid.some((a) => Math.abs(a.x - c.x) + Math.abs(a.y - c.y) < minDist)) continue;
+    return c;
+  }
+  // fallback: any free cell
   while (true) {
     const c = { x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS) };
     if (!taken.some((t) => t.x === c.x && t.y === c.y)) return c;
