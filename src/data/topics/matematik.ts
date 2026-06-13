@@ -42,14 +42,14 @@ export const matematikTopics: ContentTopic[] = [
     practiceMode: "visual",
     ages: [3,4,5,6],
     items: [
-      { id: "sekil-daire", label: "Daire", speech: "daire", lang: "tr" as const, emoji: "⭕", audioGain: 2.2 },
+      { id: "sekil-daire", label: "Daire", speech: "daire", lang: "tr" as const, emoji: "🔴", audioGain: 2.2 },
       { id: "sekil-kare", label: "Kare", speech: "kare", lang: "tr" as const, emoji: "🟦", audioGain: 2.2 },
       { id: "sekil-ucgen", label: "Üçgen", speech: "üçgen", lang: "tr" as const, emoji: "🔺", audioGain: 2.2 },
-      // Daha uzun bir dikdörtgen görseli — kareye benzemesin
-      { id: "sekil-dikdortgen", label: "Dikdörtgen", speech: "dikdörtgen", lang: "tr" as const, emoji: "▬", audioGain: 2.2 },
+      // Renkli, uzun dikdörtgen — kareye benzemesin
+      { id: "sekil-dikdortgen", label: "Dikdörtgen", speech: "dikdörtgen", lang: "tr" as const, emoji: "🟧▬", audioGain: 2.2 },
       { id: "sekil-yildiz", label: "Yıldız", speech: "yıldız", lang: "tr" as const, emoji: "⭐", audioGain: 2.2 },
       { id: "sekil-kalp", label: "Kalp", speech: "kalp", lang: "tr" as const, emoji: "❤️", audioGain: 2.2 },
-      { id: "sekil-altigen", label: "Altıgen", speech: "altıgen", lang: "tr" as const, emoji: "⬡", audioGain: 2.2 },
+      { id: "sekil-altigen", label: "Altıgen", speech: "altıgen", lang: "tr" as const, emoji: "🟣⬡", audioGain: 2.2 },
     ],
   },
   {
