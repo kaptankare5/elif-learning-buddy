@@ -9,9 +9,10 @@ const NUMBER_NAMES_TR = [
 ];
 
 // 1-10: keycap emoji; 11-20: dolu daire içinde sayı karakteri (görsel)
+// 1-10 keycap; 11-20 renkli rozet (sayı + arka plan renk noktası)
 const NUMBER_EMOJIS = [
   "", "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟",
-  "⑪", "⑫", "⑬", "⑭", "⑮", "⑯", "⑰", "⑱", "⑲", "⑳",
+  "🔴11", "🟠12", "🟡13", "🟢14", "🔵15", "🟣16", "🟤17", "🟥18", "🟧19", "🟨20",
 ];
 
 export const matematikTopics: ContentTopic[] = [
