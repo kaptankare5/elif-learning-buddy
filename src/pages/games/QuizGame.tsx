@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { EmojiView } from "@/components/EmojiView";
 import { PageHeader } from "@/components/PageHeader";
 import { LangToggle } from "@/components/LangToggle";
 import { playItem, playFeedback } from "@/lib/audio";
@@ -92,7 +93,7 @@ const QuizGame = () => {
                       isCorrect && "bg-success border-success animate-pop",
                       isWrong && "bg-destructive border-destructive animate-shake",
                     )}>
-                    <span className="text-7xl">{opt.emoji}</span>
+                    <span className="text-7xl"><EmojiView value={opt.emoji} /></span>
                   </button>
                 );
               })}

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { EmojiView } from "@/components/EmojiView";
 import { PageHeader } from "@/components/PageHeader";
 import { LangToggle } from "@/components/LangToggle";
 import { playItem, playSpeech, playFeedback } from "@/lib/audio";
@@ -281,7 +282,7 @@ const Match3Game = () => {
             <div className="text-xl font-extrabold text-primary">{score}</div>
           </div>
           <div className="rounded-xl bg-card p-2 shadow-soft border-2 border-warning/30 flex items-center justify-center gap-1">
-            {types.map((t) => <span key={t.id} className="text-2xl">{t.emoji}</span>)}
+            {types.map((t) => <span key={t.id} className="text-2xl"><EmojiView value={t.emoji} /></span>)}
           </div>
         </div>
 
@@ -310,7 +311,7 @@ const Match3Game = () => {
                         "bg-card border-primary/20 active:scale-95"
                   )}
                 >
-                  {cell.item?.emoji}
+                  {cell.item && <EmojiView value={cell.item.emoji} />}
                 </button>
               );
             }))}
@@ -339,7 +340,7 @@ const Match3Game = () => {
                     }}
                     className="text-5xl bg-card rounded-2xl p-4 border-4 border-primary/40 shadow-card active:scale-95"
                   >
-                    {opt.emoji}
+                    <EmojiView value={opt.emoji} />
                   </button>
                 ))}
               </div>

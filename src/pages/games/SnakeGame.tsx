@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { EmojiView } from "@/components/EmojiView";
 import { PageHeader } from "@/components/PageHeader";
 import { playItem, playFeedback, playSpeech } from "@/lib/audio";
 import { gamePool, shuffle, pickN } from "./_shared";
@@ -295,7 +296,7 @@ const SnakeGame = () => {
                 width: `${100 / COLS}%`, height: `${100 / ROWS}%`,
               }}
             >
-              <span className="text-lg font-extrabold leading-none">{food.item.emoji}</span>
+              <span className="text-lg font-extrabold leading-none"><EmojiView value={food.item.emoji} /></span>
             </div>
           )}
           {quiz && quiz.options.map((opt, i) => {
@@ -314,7 +315,7 @@ const SnakeGame = () => {
                   width: `${100 / COLS}%`, height: `${100 / ROWS}%`,
                 }}
               >
-                <span className="text-lg font-extrabold leading-none">{opt.item.emoji}</span>
+                <span className="text-lg font-extrabold leading-none"><EmojiView value={opt.item.emoji} /></span>
               </div>
             );
           })}

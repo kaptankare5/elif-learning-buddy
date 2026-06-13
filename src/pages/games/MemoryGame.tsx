@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { EmojiView } from "@/components/EmojiView";
 import { PageHeader } from "@/components/PageHeader";
 import { LangToggle } from "@/components/LangToggle";
 import { playItem, playFeedback } from "@/lib/audio";
@@ -107,7 +108,7 @@ const MemoryGame = () => {
               )}
             >
               {(c.flipped || c.matched)
-                ? <span className="text-5xl">{c.item.emoji}</span>
+                ? <span className="text-5xl"><EmojiView value={c.item.emoji} /></span>
                 : <span>?</span>}
             </button>
           ))}

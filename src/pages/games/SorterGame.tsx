@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { EmojiView } from "@/components/EmojiView";
 import { PageHeader } from "@/components/PageHeader";
 import { LangToggle } from "@/components/LangToggle";
 import { playItem, playSpeech, playFeedback } from "@/lib/audio";
@@ -214,7 +215,7 @@ const SorterGame = () => {
                             "bg-card border-primary/20 hover:-translate-y-1 active:scale-95",
                     )}
                   >
-                    {!c.cleared && <span>{c.item.emoji}</span>}
+                    {!c.cleared && <span><EmojiView value={c.item.emoji} /></span>}
                   </button>
                 );
               })}

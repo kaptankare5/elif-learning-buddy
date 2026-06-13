@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { EmojiView } from "@/components/EmojiView";
 import { PageHeader } from "@/components/PageHeader";
 import { cn } from "@/lib/utils";
 import { gamePool, getGameLang, pickN } from "./_shared";
@@ -191,7 +192,7 @@ const TripleMatchGame = () => {
                 transform: `translate(-50%, -50%) rotate(${b.rot}deg)`,
               }}
             >
-              {b.item.emoji}
+              <EmojiView value={b.item.emoji} />
             </button>
           ))}
           {floatText && (
@@ -228,7 +229,7 @@ const TripleMatchGame = () => {
                   slot ? "bg-primary-soft border-primary animate-pop" : "bg-muted/40 border-dashed border-muted-foreground/30"
                 )}
               >
-                {slot?.item.emoji}
+                {slot && <EmojiView value={slot.item.emoji} />}
               </div>
             ))}
           </div>
