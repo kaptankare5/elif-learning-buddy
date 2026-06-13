@@ -360,11 +360,12 @@ const RunnerGame = () => {
               backgroundSize: `40px 40px, 60px 60px`, backgroundPosition: `0 0, 20px 30px` }} />
 
           {enemies.map((e) => (
-            <div key={e.uid} className="absolute leading-none"
+            <div key={e.uid} className="absolute leading-none flex items-center justify-center rounded-full bg-white/95 border-2 border-white shadow-[0_0_14px_rgba(255,255,255,0.5)]"
               style={{ left: `${e.x}%`, top: `${e.y}%`, transform: "translate3d(-50%, -50%, 0)",
-                fontSize: "40px", filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.6))",
+                width: "56px", height: "56px",
+                fontSize: "34px", filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.6))",
                 willChange: "top", zIndex: e.isTarget ? 20 : 5 }}>
-              {e.isTarget && (!isSuper || getLetterLevel("games", SRS_TOPIC, e.item.id) === 1) && (<div className="absolute -inset-2 rounded-full border-4 border-warning/70 animate-pulse" />)}
+              {e.isTarget && (!isSuper || getLetterLevel("games", SRS_TOPIC, e.item.id) === 1) && (<div className="absolute -inset-1 rounded-full border-4 border-warning animate-pulse" />)}
               <span className="animate-float">{e.item.emoji}</span>
             </div>
           ))}

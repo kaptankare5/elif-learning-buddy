@@ -28,7 +28,14 @@ interface QuizState {
   options: [FoodLetter, FoodLetter];
 }
 
-function randCell(taken: Cell[]): Cell {
+function randCell(taken: Cell[], avoid: Cell[] = [], minDist = 0): Cell {
+  for (let tries = 0; tries < 200; tries++) {
+    const c = { x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS) };
+    if (taken.some((t) => t.x === c.x && t.y === c.y)) continue;
+    if (avoid.some((a) => Math.abs(a.x - c.x) + Math.abs(a.y - c.y) < minDist)) continue;
+    return c;
+  }
+  // fallback: any free cell
   while (true) {
     const c = { x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS) };
     if (!taken.some((t) => t.x === c.x && t.y === c.y)) return c;
@@ -59,7 +66,9 @@ const SnakeGame = () => {
     const ids = pool.map((p) => p.id);
     const chosenId = pickNextLetter("games", SRS_TOPIC, ids);
     const item = pool.find((p) => p.id === chosenId) || pool[0];
-    setFood({ pos: randCell(occupied), item });
+    const head = occupied[0];
+    const avoid = head ? [head] : [];
+    setFood({ pos: randCell(occupied, avoid, 2), item });
   }, []);
 
   const startQuiz = useCallback((occupied: Cell[]) => {
@@ -69,8 +78,22 @@ const SnakeGame = () => {
     const target = pool.find((p) => p.id === targetId) || pool[0];
     const wrong = pickN(pool.filter((p) => p.id !== target.id), 1)[0];
     const taken = [...occupied];
-    const a = randCell(taken); taken.push(a);
-    const b = randCell(taken);
+    // Yılan kafasının etrafında 3 kareyi (önü dahil) boş tut — spam cevap olmasın
+    const head = occupied[0];
+    const d = dirRef.current;
+    const avoid: Cell[] = [];
+    if (head) {
+      avoid.push(head);
+      for (let i = 1; i <= 3; i++) {
+        avoid.push({ x: head.x + d.x * i, y: head.y + d.y * i });
+        avoid.push({ x: head.x + i, y: head.y });
+        avoid.push({ x: head.x - i, y: head.y });
+        avoid.push({ x: head.x, y: head.y + i });
+        avoid.push({ x: head.x, y: head.y - i });
+      }
+    }
+    const a = randCell(taken, avoid, 1); taken.push(a);
+    const b = randCell(taken, [...avoid, a], 2);
     const items = shuffle([target, wrong]);
     setQuiz({
       target,
