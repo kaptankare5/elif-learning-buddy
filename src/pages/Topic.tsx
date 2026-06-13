@@ -133,7 +133,7 @@ const Topic = () => {
             key={item.id}
             aria-label="Dinle"
           >
-            {item.emoji && <div className="text-[140px] leading-none">{item.emoji}</div>}
+            {item.emoji && <div className="text-[140px] leading-none"><EmojiView value={item.emoji} /></div>}
             <div className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-primary-foreground font-bold shadow-soft text-xl">
               <Volume2 className="h-6 w-6" />
             </div>
@@ -234,7 +234,7 @@ const Topic = () => {
                     )}
                     aria-label={opt.label}
                   >
-                    {opt.emoji && <span className={cn("leading-none", showLabel ? "text-5xl" : "text-7xl")}>{opt.emoji}</span>}
+                    {opt.emoji && <span className={cn("leading-none", showLabel ? "text-5xl" : "text-7xl")}><EmojiView value={opt.emoji} /></span>}
                     {showLabel && (
                       <span className={cn("text-lg font-extrabold", (isCorrect || isWrong) ? "text-white" : "text-foreground")}>
                         {opt.label}
