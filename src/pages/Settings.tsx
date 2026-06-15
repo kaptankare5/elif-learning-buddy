@@ -1,14 +1,33 @@
+import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Switch } from "@/components/ui/switch";
 import { useSettings } from "@/lib/settings";
 import { playFeedback } from "@/lib/audio";
-import { Volume2, Vibrate, GraduationCap } from "lucide-react";
+import { Volume2, Vibrate, GraduationCap, Shield, Trash2 } from "lucide-react";
 import { useGameMode } from "@/lib/gameMode";
 import { cn } from "@/lib/utils";
+import { consentGiven, setConsent, deleteMyAnalytics, updateMyProfile } from "@/lib/analytics";
+import { useAuth } from "@/hooks/useAuth";
 
 const Settings = () => {
   const [s, set] = useSettings();
   const [mode, setMode] = useGameMode();
+  const { session } = useAuth();
+  const [consent, setConsentState] = useState(consentGiven());
+  useEffect(() => {
+    const fn = () => setConsentState(consentGiven());
+    window.addEventListener("miniakil:consent-changed", fn);
+    return () => window.removeEventListener("miniakil:consent-changed", fn);
+  }, []);
+  const toggleConsent = async (v: boolean) => {
+    setConsent(v); setConsentState(v);
+    if (session) await updateMyProfile({ analytics_consent: v });
+  };
+  const handleDelete = async () => {
+    if (!confirm("Tüm öğrenme verilerin sunucudan silinecek. Emin misin?")) return;
+    await deleteMyAnalytics();
+    alert("Verilerin silindi.");
+  };
   return (
     <div className="min-h-screen bg-gradient-to-b from-secondary/30 to-background">
       <main className="container mx-auto max-w-xl px-4 pb-16">
