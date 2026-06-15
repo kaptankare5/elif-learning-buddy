@@ -18,6 +18,13 @@ const Index = () => {
     return (
       <div className="relative min-h-screen overflow-hidden bg-gradient-to-b from-secondary/40 via-background to-primary-soft/40">
         <main className="container relative mx-auto max-w-2xl px-4 pb-16 pt-12">
+          <Link
+            to={session ? "/ayarlar" : "/giris"}
+            className="absolute top-3 right-3 z-10 rounded-full bg-card p-2 shadow-card border-2 border-primary/20"
+            aria-label={session ? "Hesap" : "Giriş"}
+          >
+            {session ? <UserCircle2 className="h-5 w-5 text-primary" /> : <LogIn className="h-5 w-5 text-primary" />}
+          </Link>
           <div className="mb-6 text-center animate-bounce-in">
             <div className="text-7xl mb-3 animate-float">🐱</div>
             <h1 className="mb-2 text-4xl font-extrabold tracking-tight text-primary text-shadow-soft">
