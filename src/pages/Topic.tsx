@@ -71,6 +71,7 @@ const Topic = () => {
     const tid = pickNextLetter(NS, topic.id, itemIds);
     setQ(buildQuestion(items, tid));
     setPicked(null);
+    questionStartRef.current = Date.now();
   }, [mode, topic, itemIds, q, items]);
 
   useEffect(() => {
