@@ -47,59 +47,6 @@ export type Database = {
         }
         Relationships: []
       }
-      classroom_members: {
-        Row: {
-          child_user_id: string
-          classroom_id: string
-          id: string
-          joined_at: string
-        }
-        Insert: {
-          child_user_id: string
-          classroom_id: string
-          id?: string
-          joined_at?: string
-        }
-        Update: {
-          child_user_id?: string
-          classroom_id?: string
-          id?: string
-          joined_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "classroom_members_classroom_id_fkey"
-            columns: ["classroom_id"]
-            isOneToOne: false
-            referencedRelation: "classrooms"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      classrooms: {
-        Row: {
-          created_at: string
-          id: string
-          invite_code: string
-          name: string
-          teacher_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          invite_code: string
-          name: string
-          teacher_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          invite_code?: string
-          name?: string
-          teacher_id?: string
-        }
-        Relationships: []
-      }
       game_sessions: {
         Row: {
           age_band: string | null
@@ -440,11 +387,6 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_in_classroom_of: {
-        Args: { _child_id: string; _teacher_id: string }
-        Returns: boolean
-      }
-      join_classroom_by_code: { Args: { _code: string }; Returns: string }
     }
     Enums: {
       app_role: "admin" | "user" | "parent" | "teacher"
