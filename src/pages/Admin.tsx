@@ -83,6 +83,28 @@ const Admin = () => {
           <div className="space-y-6">
             <KPIs daily={daily} pop={pop} funnel={funnel} />
 
+            <Card title="⚡ Öğrenme Gücü (gerçek soru süresi, bildiği harfler hariç)">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <KPI label="Yeni öğrenilen öğe" value={power?.learned_items ?? 0} />
+                <KPI label="Öğrenen kişi" value={power?.learners ?? 0} />
+                <KPI label="Ort. saniye / öğe" value={power?.avg_seconds_per_item ?? "—"} />
+                <KPI label="Ort. dakika / öğe" value={power?.avg_minutes_per_item ?? "—"} />
+              </div>
+              <Table headers={["Konu", "Öğe", "Öğrenen", "Ort. saniye", "Önceden biliyordu"]}>
+                {letterPower.map((r) => (
+                  <tr key={r.topic_id + r.letter_id} className="border-t">
+                    <td className="py-1.5 font-semibold">{r.topic_id}</td>
+                    <td>{r.letter_id}</td>
+                    <td>{r.learners}</td>
+                    <td>{r.avg_seconds ?? "—"}</td>
+                    <td>{r.knew_before_count}</td>
+                  </tr>
+                ))}
+                {letterPower.length === 0 && <tr><td colSpan={5} className="text-center text-muted-foreground py-3">Henüz yeterli veri yok.</td></tr>}
+              </Table>
+            </Card>
+
+
             <Card title="📅 Günlük Aktif Kullanıcı (DAU)">
               <ResponsiveContainer width="100%" height={240}>
                 <LineChart data={daily}>
