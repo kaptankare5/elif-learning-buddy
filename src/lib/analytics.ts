@@ -2,11 +2,11 @@
 // PII içermez; sadece user_id (auth uid), yaş aralığı, cinsiyet (opsiyonel) ve
 // içerik kimlikleri (topic_id, letter_id, game_id) toplanır.
 import { supabase } from "@/integrations/supabase/client";
-import { getAge } from "@/lib/age";
+import { getAge, ageBandFor } from "@/lib/age";
 
 const CONSENT_KEY = "miniakil:analytics-consent";
 const QUEUE_KEY = "miniakil:analytics-queue";
-const PROFILE_CACHE_KEY = "miniakil:profile-cache";
+export const PROFILE_CACHE_KEY = "miniakil:profile-cache";
 
 export type ProfileExtras = {
   age_band?: string | null;
@@ -28,9 +28,14 @@ export function setConsent(v: boolean) {
 }
 
 function ageBand(): string {
-  const a = getAge();
-  if (!a) return "unknown";
-  return a <= 4 ? "3-4" : "5-6";
+  return ageBandFor(getAge());
+}
+
+export function getCachedProfile(): { age_band?: string; gender?: string; consent_at?: string } | null {
+  try {
+    const raw = localStorage.getItem(PROFILE_CACHE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
 }
 
 function platform(): string {
@@ -63,7 +68,15 @@ export async function updateMyProfile(p: ProfileExtras) {
     patch.consent_at = new Date().toISOString();
   }
   await supabase.from("profiles").update(patch).eq("user_id", userId);
-  try { localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(patch)); } catch { /* ignore */ }
+  try {
+    const prev = getCachedProfile() ?? {};
+    localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify({
+      ...prev,
+      ...(patch.age_band !== undefined ? { age_band: patch.age_band } : {}),
+      ...(patch.gender !== undefined ? { gender: patch.gender } : {}),
+      ...(patch.consent_at ? { consent_at: patch.consent_at } : {}),
+    }));
+  } catch { /* ignore */ }
 }
 
 // ---- Game sessions ----

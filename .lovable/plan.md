@@ -1,134 +1,110 @@
 
-# Endless Mum — Analitik & Öğrenme Verisi Paneli
+## Amaç
 
-Amaç: Velinin kendi çocuğunu, anasınıfı öğretmeninin kendi sınıfını, senin (admin) tüm uygulamayı **anonim ve KVKK uyumlu** şekilde izleyebileceği bir analitik sistemi. Mobil (Capacitor) ile uyumlu, ad/soyad/foto gibi kimlik verisi toplamadan.
-
----
-
-## 1. Yasal yaklaşım (KVKK / GDPR-K çocuk verisi)
-
-- **Hiçbir kimlik bilgisi toplanmaz**: ad, soyad, foto, doğum tarihi yok. Sadece **yaş aralığı** (3-4, 5-6) ve **cinsiyet (opsiyonel, "belirtmek istemiyorum" varsayılan)**.
-- Veri sahibi: veli. İlk girişte tek ekranlı **veli onayı** (toggle + tarih damgası) — onay verilmezse sadece localStorage çalışır, sunucuya hiçbir event gitmez.
-- Tüm event'ler `user_id` (auth uid) ile bağlanır; PII içermez. Veli "**verilerimi sil**" butonuyla tüm event'lerini silebilir (RLS + edge function).
-- Öğretmen sınıfa **davet kodu** ile bağlanır; çocuğun adını değil, takma adı (örn. "Mavi Tilki") görür.
-- Admin paneli **toplu/anonim** rakamlar gösterir; tek bir kullanıcının ham eventlerine erişim sadece "veri silme talebi" için, gerekçeli.
+Türkiye KVKK (özellikle çocuk verileri) ve Capacitor mobil dağıtım göz önünde tutularak; giriş erişimini kolaylaştırmak, onay modalının tekrar tekrar açılmasını engellemek, hesapsız oynanan verinin hesaba taşınmasını sağlamak ve yaş seçeneklerini genişletmek.
 
 ---
 
-## 2. Veri modeli (yeni tablolar)
+## 1) Giriş yerini görünür hale getirme
 
-Mevcut `answer_events` ve `letter_stats` korunur. Yeni:
+- `Ayarlar` sayfasına en üste bir "Hesap" kartı:
+  - Giriş yapılmadıysa → "Giriş / Kayıt" butonu (`/giris`).
+  - Giriş yapıldıysa → e-posta + "Çıkış yap".
+- `Index` (ana sayfa) sağ üstte küçük bir kullanıcı/giriş ikonu (giriş yoksa `/giris`, varsa `/ayarlar`).
+- `BottomNav` değişmiyor (alanı küçük).
 
-```text
-profiles            (+ yeni alanlar)
-  age_band          text   -- "3-4" | "5-6"
-  gender            text   -- "k" | "e" | "x"  (x = belirtmedi, default)
-  role              -- ZATEN user_roles'ta: parent | teacher | admin (enum'a eklenir)
-  analytics_consent boolean default false
-  consent_at        timestamptz
-  pseudonym         text   -- otomatik (örn. "Mavi-Tilki-42")
+## 2) Onay modalının (ConsentModal) bir daha sorulmaması
 
-classrooms
-  id, teacher_id (user_id), name, invite_code (unique), created_at
+Sorun: Modal sadece giriş yapan kullanıcıya açılıyor, ama her oturum açılışta tekrar tetikleniyor çünkü `consent_at` yalnız sunucuda. Tarayıcı verisi temizlenince ya da yeni cihazda tekrar soruluyor.
 
-classroom_members
-  classroom_id, child_user_id, joined_at
-  -- veli, çocuğunun kodla katılmasını onaylar
+Çözüm:
+- Tercihleri **yerelde de** önbelleğe al: `miniakil:profile-cache` zaten var; `consent_at` ve `age_band` da yazılacak.
+- Modal açılma koşulu: (yerel cache YOK) **VE** (server `consent_at` YOK).
+- Profil sorularını tek bir yere bağla:
+  - **Hesapsız (guest)**: sadece yerel; sunucuya hiçbir şey gitmez (KVKK).
+  - **Hesaplı**: yerel + `profiles` tablosu.
+- "Tekrar sorma" mantığı: bir kez kaydedildikten sonra Ayarlar > Hesap içinden "Yaş / Cinsiyet" düzenlenebilir.
 
-game_sessions
-  id, user_id, game_id, topic_id (nullable), started_at, ended_at,
-  duration_ms, score int, correct int, wrong int, completed bool,
-  age_band, gender   -- session anındaki snapshot (denormalize, raporlama hızlı)
+## 3) KVKK uyumlu veri toplama kurgusu (çocuklar, Türkiye)
 
-screen_views
-  id, user_id, path, opened_at, duration_ms, age_band
+Mimari prensip: **Yasal muhatap = veli (e-posta + şifre ile kayıtlı kişi).** Çocuğun adı/foto/doğum tarihi hiç toplanmaz.
 
-learning_milestones
-  id, user_id, topic_id, letter_id, level smallint,
-  reached_at timestamptz
-  -- ilk Level 2/3/4 anı; "öğrenme süresi" = first_seen_at → reached_at(L4)
+- **Hesapsız mod (default):**
+  - Tüm SRS, doğru/yanlış, süreler **sadece `localStorage`/IndexedDB** içinde tutulur (zaten `srs.ts` ve `gameProgress.ts` lokal).
+  - `game_sessions`, `screen_views`, `answer_events`, `letter_stats`, `paywall_events`, `learning_milestones` sunucuya **yazılmaz**. `analytics.ts` zaten `consentGiven()` + `uid()` kontrolüne sahip; ek olarak guest için cloudSync'i bypass edeceğiz.
+- **Hesap açma (Parent Gate):**
+  - Kayıt ekranına bir **Ebeveyn Kapısı** (basit aritmetik, ör. "7 + 8 = ?") eklenecek.
+  - Aydınlatma Metni + KVKK Açık Rıza onay kutusu (zorunlu) + Çocuk Avatarı/Takma Ad seçimi.
+  - "Çocuğumun verilerinin işlenmesine veli sıfatıyla onay veriyorum" tek tıklık.
+- **Veri Birleştirme (Migration) hesap açıldığı an:**
+  - `src/lib/localProgress.ts` (yeni) tüm lokal SRS + ilerleme + süre verisini snapshot olarak verir.
+  - `migrateGuestDataToAccount(userId)` fonksiyonu:
+    1. `letter_stats` upsert (toplam sayaçlar, level, knew_before, time_to_learn_ms, total_response_ms),
+    2. `learning_milestones` (level=3 ilk ulaşım) ekle,
+    3. başarılı olunca yerel snapshot **silinmez** (offline destek için kalır), sadece `migrated_at` işaretlenir.
+  - Çocuk seviye 1'e düşmez; kaldığı yerden devam eder.
+- **Premium/ödeme akışı:**
+  - Ödeme ekranına girişten önce Parent Gate.
+  - Ödeme yapanın **veli** olduğu beyanı (checkbox) + iade hakkı + abonelik koşulları linki (KVKK/MEM/6502).
+  - Yaş bandı sunucuya yazılmadan ödeme başlatılmaz (yaş çocuk = veli onayı zorunlu).
+- **Capacitor için:**
+  - iOS App Store / Google Play "Kids" kategorisi için: SDK üzerinden reklam yok, üçüncü taraf izleyici yok (zaten yok), ağ analitiği yalnız hesap + onay sonrası.
+  - `Info.plist` / Android manifest tracking permission açıklamaları daha sonra eklenecek (ayrı görev).
 
-paywall_events
-  id, user_id, step text  -- "viewed" | "plan_selected" | "checkout_started" | "purchased" | "abandoned"
-  plan_id text, created_at
-```
+## 4) Yaş seçeneklerini genişletme
 
-RLS:
-- `parent` kendi `user_id`'sinin satırlarını okur/yazar.
-- `teacher` sadece `classroom_members` ile bağlı çocukların satırlarını okur (security definer fn `is_classmate(teacher, child)`).
-- `admin` her şeyi okur ama **sadece view'lar üzerinden toplu** (ham tablolara client erişimi yok; admin sayfası `analytics_*` view'ları sorgular).
-- Tüm `public` tabloları için GRANT bloğu eklenir.
+Mevcut: 3, 4, 5, 6.
+Yeni seçenekler (`Age` tipi genişler): **2, 3, 4, 5, 6, 7, 8**.
+- 2: "Sesler & taklit"
+- 3: "Tanıma & sesler"
+- 4: "Renkler & sayılar"
+- 5: "Harfler & kavramlar"
+- 6: "Okuma hazırlık"
+- 7: "1. sınıfa hazırlık"
+- 8: "Okuma-yazma pekiştirme"
 
----
+`topicForAge` ve `itemsForAge` limitleri yeni yaşlara göre güncellenir. Yaş bandı sunucuya 3 grup gider: `2-3`, `4-5`, `6-8` (anonimlik için daha kaba bantlama, KVKK için tercih edilir).
 
-## 3. Toplulaştırma view'ları (admin için)
+ConsentModal yaş seçimi 4 yerine 7 seçenekli grid; cinsiyet aynı kalır + "Belirtme" default.
 
-```text
-analytics_daily_active       -- user_id'siz, sadece sayım
-analytics_letter_learn_time  -- harf, ortalama dakika, n
-analytics_game_popularity    -- game_id, oturum sayısı, ort. süre, tamamlama %
-analytics_game_retention     -- game_id, tekrar oynama oranı (24h, 7g)
-analytics_funnel_paywall     -- adım, kullanıcı sayısı, oran
-analytics_session_heatmap    -- saat × gün, oturum sayısı
-analytics_age_breakdown      -- age_band × topic × başarı %
-```
+## 5) Şifre / Google girişi
 
-View'lar SECURITY INVOKER; admin'e GRANT SELECT. Veli/öğretmen view'ları da ayrı (`my_child_*`, `classroom_*`).
-
----
-
-## 4. İstemci entegrasyonu
-
-Yeni `src/lib/analytics.ts`:
-- `consentGiven()` kontrolü; yoksa hiç gönderme.
-- `trackSession(gameId, topicId)` → mount/unmount ile süre.
-- `trackScreen(path)` → react-router listener.
-- `trackPaywall(step, planId?)` → Paywall.tsx adımlarında.
-- `trackMilestone(topicId, letterId, level)` → `recordSrsAnswer` içinden çağrılır (level her arttığında upsert).
-- Tüm event'ler batch'lenip 5sn'de bir gönderilir (mobil pil dostu).
-
-Mevcut `cloudSync.ts` korunur, sadece `game_sessions` ile zenginleştirilir.
+Mevcut akış zaten OK. Eklenecek küçük iyileştirme: `Auth.tsx` üzerinde Google butonu loading state'inde devre dışı kalsın ve hata mesajları toast yerine inline gösterilsin (mobil için daha güvenilir). (Önceki turda Google hatası net surfacing zaten eklendi.)
 
 ---
 
-## 5. UI sayfaları
+## Teknik Özet (geliştirici için)
 
-- `/ilerleme` (mevcut) — veli için: çocuğun harf süreleri, en sık oynadığı oyun, son 7 gün streak.
-- `/sinif` — **yeni**, öğretmen rolü için: sınıf listesi, davet kodu, sınıf ortalamaları (anonim takma adlarla).
-- `/admin` — **yeni**, admin rolü için: KPI'lar (DAU, ort. oturum, en popüler oyun), öğrenme süresi grafikleri, ödeme funnel'i, yaş/cinsiyet kırılımı. `recharts` ile.
-- `/ayarlar` → "Analitik onayı" toggle + "Verilerimi sil" butonu eklenir.
-- `/giris` sonrası ilk açılışta tek seferlik **onam modal'ı** (rol seçimi: Veliyim / Öğretmenim, yaş aralığı, opsiyonel cinsiyet, onay).
+**Yeni dosyalar**
+- `src/lib/localProgress.ts` — guest SRS snapshot / migration helper'ları.
+- `src/lib/parentGate.ts` + `src/components/ParentGate.tsx` — aritmetik kapı.
+- `src/components/AccountCard.tsx` — Ayarlar üstünde kullanılan giriş kartı.
 
----
+**Değişen dosyalar**
+- `src/data/types.ts` — `Age = 2|3|4|5|6|7|8`.
+- `src/lib/age.ts` — etiketler/açıklamalar, `itemsForAge` limit tablosu, yaş→bant haritası (`2-3 | 4-5 | 6-8`).
+- `src/components/AgePicker.tsx` — 7 seçenekli grid.
+- `src/components/ConsentModal.tsx` — yerel cache + server kontrolü; yeni yaş seçenekleri; sadece hesaplı kullanıcıda açılır; "Tekrar sorma".
+- `src/lib/analytics.ts` — `ageBand()` yeni eşleme; guest için early-return; profile cache'e `consent_at` yazımı.
+- `src/data/cloudSync.ts` — guest ise no-op (zaten user yoksa atlıyor, doğrulanacak).
+- `src/pages/Auth.tsx` — Parent Gate + KVKK rıza kutucuğu + çocuk takma adı/avatar alanı (opsiyonel, kayıt anında); başarılı kayıt sonrası `migrateGuestDataToAccount`.
+- `src/pages/Paywall.tsx` — Parent Gate + veli beyanı checkbox.
+- `src/pages/Settings.tsx` — Hesap kartı; Yaş/Cinsiyet düzenleme bölümü; mevcut "Verilerimi sil" zaten var.
+- `src/pages/Index.tsx` — sağ üstte küçük hesap ikonu.
 
-## 6. Adım adım uygulama sırası
+**Veritabanı**
+- `profiles` mevcut. `age_band` değerleri yeni: `2-3 | 4-5 | 6-8` (mevcut `3-4`/`5-6` satırları geriye uyumlu, sadece UI yeni değerler yazar). Yeni migration **gerekmez** (kolon `text`).
+- `letter_stats.knew_before`, `learned_at`, `time_to_learn_ms`, `total_response_ms` — önceki turlarda eklendi, migration'a gerek yok.
 
-1. **Migration 1**: `app_role` enum'a `parent`, `teacher` ekle; `profiles`'a yeni alanlar; tüm yeni tablolar + GRANT + RLS + security definer fn'ler (`is_classmate`, `current_age_band`).
-2. **Migration 2**: Analytics view'ları + GRANT.
-3. **`src/lib/analytics.ts`** + tüm oyunlara mount-süresi hook (`useGameSession(gameId)`).
-4. **Onam modal'ı** + Settings'e veri silme.
-5. **Veli görünümü**: mevcut `/ilerleme`'yi yeni metriklerle genişlet (harf öğrenme süresi, oyun süresi).
-6. **Öğretmen `/sinif`** sayfası + sınıf oluştur/katıl akışı.
-7. **Admin `/admin`** sayfası + recharts grafikleri.
-8. **Paywall takibi**: `Paywall.tsx`'e adım event'leri.
-9. Capacitor için: tüm event'ler offline kuyrukta (`localStorage`), bağlantı gelince flush.
-
----
-
-## 7. Toplanan metriklerin örnek listesi
-
-- Harf/öğe başına: ilk görme, L4'e ulaşma süresi (dakika), tekrar sayısı.
-- Oyun başına: oynanma sayısı, ort. süre, tamamlanma %, doğru/yanlış oranı, "beğeni proxy"si (24h içinde tekrar açma).
-- Konu başına: yaş bandına göre başarı %.
-- Oturum: günlük/saatlik dağılım, streak, ort. oturum süresi.
-- Ödeme funnel: paywall görüldü → plan seçildi → checkout başladı → satın alındı (her adımda drop %).
-- Cihaz: yalnızca platform (web/ios/android) + dil; IP/UA saklanmaz.
+**KVKK/yasal notlar (içerik)**
+- Aydınlatma Metni ve KVKK Açık Rıza şablonu için iki kısa MD dosyası: `src/content/legal/aydinlatma.md`, `src/content/legal/acik-riza.md`. Ayarlar > Yasal bölümünden okunabilir. (İçerik kullanıcı/avukat tarafından doldurulacak — placeholder ile başlanacak.)
 
 ---
 
-## 8. Riskler & notlar
+## Açıklığa kavuşturulması iyi olur (opsiyonel)
 
-- Çocuk verisi olduğundan: ses kayıtları, foto, konum **kesinlikle yok**.
-- Cinsiyet opsiyonel, varsayılan boş; istatistikte n<5 olan hücreler "—" gösterilir (k-anonimite).
-- Admin paneli ham `user_id` listelemez; yalnızca toplam ve oran.
-- `pseudonym` çocuk adı yerine — öğretmen sınıfta gerçek ad göremez (veli kendi cihazında etiketleyebilir, local-only).
+1. Çocuk için **takma ad + avatar** seçimini hesap açılışında zorunlu mu, opsiyonel mi tutalım?
+2. Yaş bandını **3 grup** (`2-3 | 4-5 | 6-8`) sunucuya göndermeyi onaylıyor musun (KVKK için anonimliği güçlendirir)?
+3. Parent Gate olarak basit aritmetik (`7+8`) yeterli mi, yoksa "uzun bas + sürükle" tarzı bir engel mi tercih?
+
+Onaylarsan implementasyona geçerim.

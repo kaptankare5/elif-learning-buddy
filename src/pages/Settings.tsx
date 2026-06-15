@@ -8,6 +8,7 @@ import { useGameMode } from "@/lib/gameMode";
 import { cn } from "@/lib/utils";
 import { consentGiven, setConsent, deleteMyAnalytics, updateMyProfile } from "@/lib/analytics";
 import { useAuth } from "@/hooks/useAuth";
+import { AccountCard } from "@/components/AccountCard";
 
 const Settings = () => {
   const [s, set] = useSettings();
@@ -33,6 +34,8 @@ const Settings = () => {
     <div className="min-h-screen bg-gradient-to-b from-secondary/30 to-background">
       <main className="container mx-auto max-w-xl px-4 pb-16">
         <PageHeader title="⚙️ Ayarlar" backTo="/" centered />
+
+        <AccountCard />
 
         <div className="space-y-3">
           <div className="flex items-center gap-4 rounded-2xl bg-card p-4 shadow-card border-2 border-border/40">

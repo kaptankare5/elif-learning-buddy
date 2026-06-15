@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { SUBJECTS } from "@/data/subjects";
-import { Sparkles, Crown } from "lucide-react";
+import { Sparkles, Crown, LogIn, UserCircle2 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import { LangToggle } from "@/components/LangToggle";
 import { useAge, AGE_LABELS } from "@/lib/age";
 import { AgePicker, AgeBadge } from "@/components/AgePicker";
@@ -10,12 +11,20 @@ import { useSubscription } from "@/hooks/useSubscription";
 const Index = () => {
   const [age] = useAge();
   const { isPremium } = useSubscription();
+  const { session } = useAuth();
 
   // İlk açılış: yaş seçimi
   if (!age) {
     return (
       <div className="relative min-h-screen overflow-hidden bg-gradient-to-b from-secondary/40 via-background to-primary-soft/40">
         <main className="container relative mx-auto max-w-2xl px-4 pb-16 pt-12">
+          <Link
+            to={session ? "/ayarlar" : "/giris"}
+            className="absolute top-3 right-3 z-10 rounded-full bg-card p-2 shadow-card border-2 border-primary/20"
+            aria-label={session ? "Hesap" : "Giriş"}
+          >
+            {session ? <UserCircle2 className="h-5 w-5 text-primary" /> : <LogIn className="h-5 w-5 text-primary" />}
+          </Link>
           <div className="mb-6 text-center animate-bounce-in">
             <div className="text-7xl mb-3 animate-float">🐱</div>
             <h1 className="mb-2 text-4xl font-extrabold tracking-tight text-primary text-shadow-soft">
@@ -54,6 +63,13 @@ const Index = () => {
       </div>
 
       <main className="container relative mx-auto max-w-2xl px-4 pb-16 pt-6">
+        <Link
+          to={session ? "/ayarlar" : "/giris"}
+          className="absolute top-3 right-3 z-10 rounded-full bg-card p-2 shadow-card border-2 border-primary/20 hover:scale-105 transition-bouncy"
+          aria-label={session ? "Hesap" : "Giriş"}
+        >
+          {session ? <UserCircle2 className="h-5 w-5 text-primary" /> : <LogIn className="h-5 w-5 text-primary" />}
+        </Link>
         <div className="mb-3 flex justify-center animate-fade-in">
           <div className="inline-flex items-center gap-2 rounded-full bg-card px-4 py-1.5 text-xs font-bold text-primary shadow-card">
             <Sparkles className="h-3.5 w-3.5 text-warning" />
