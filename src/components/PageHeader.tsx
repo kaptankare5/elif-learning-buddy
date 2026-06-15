@@ -14,7 +14,11 @@ export const PageHeader = forwardRef<HTMLElement, PageHeaderProps>(
   ({ title, backTo = "/", onReset, centered }, ref) => {
     const navigate = useNavigate();
     return (
-      <header ref={ref} className="relative flex items-center justify-between gap-3 py-4">
+      <header
+        ref={ref}
+        className="sticky top-0 z-50 flex items-center justify-between gap-3 py-3 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70"
+        style={{ paddingTop: "max(0.5rem, env(safe-area-inset-top))" }}
+      >
         <Button
           variant="ghost"
           size="sm"
