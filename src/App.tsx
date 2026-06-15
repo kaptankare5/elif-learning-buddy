@@ -46,9 +46,12 @@ const AppShell = () => {
               <Route path="/oyunlar/:gameId" element={<Game />} />
               <Route path="/ilerleme" element={<Progress />} />
               <Route path="/ayarlar" element={<Settings />} />
+              <Route path="/admin" element={<Admin />} />
+              <Route path="/sinif" element={<Classroom />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             <BottomNav />
+            <ConsentModal />
           </SubscriptionProvider>
         </AuthProvider>
       </BrowserRouter>
