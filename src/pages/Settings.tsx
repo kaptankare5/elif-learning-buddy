@@ -23,6 +23,9 @@ const Settings = () => {
     window.addEventListener("miniakil:consent-changed", fn);
     return () => window.removeEventListener("miniakil:consent-changed", fn);
   }, []);
+  useEffect(() => {
+    if (!hasSuperMode && mode === "super") setMode("normal");
+  }, [hasSuperMode, mode, setMode]);
   const toggleConsent = async (v: boolean) => {
     setConsent(v); setConsentState(v);
     if (session) await updateMyProfile({ analytics_consent: v });
