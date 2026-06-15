@@ -12,6 +12,7 @@ import Game from "./pages/Game.tsx";
 import Progress from "./pages/Progress.tsx";
 import Settings from "./pages/Settings.tsx";
 import Auth from "./pages/Auth.tsx";
+import ResetPassword from "./pages/ResetPassword.tsx";
 import Paywall from "./pages/Paywall.tsx";
 import Admin from "./pages/Admin.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -38,6 +39,7 @@ const AppShell = () => {
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/giris" element={<Auth />} />
+              <Route path="/sifre-sifirla" element={<ResetPassword />} />
               <Route path="/abonelik" element={<Paywall />} />
               <Route path="/konu/:subjectId" element={<Subject />} />
               <Route path="/konu/:subjectId/:topicId" element={<Topic />} />

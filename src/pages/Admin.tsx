@@ -15,6 +15,8 @@ type Learn = { topic_id: string; letter_id: string; learners: number; avg_minute
 type Daily = { day: string; dau: number; sessions: number };
 type Funnel = { step: string; events: number; users: number };
 type Age = { age_band: string; gender: string; users: number; sessions: number; accuracy_pct: number | null };
+type Power = { learned_items: number; learners: number; avg_seconds_per_item: number | null; avg_minutes_per_item: number | null };
+type LetterPower = { topic_id: string; letter_id: string; learners: number; avg_seconds: number | null; knew_before_count: number };
 
 const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"];
 
@@ -27,23 +29,30 @@ const Admin = () => {
   const [daily, setDaily] = useState<Daily[]>([]);
   const [funnel, setFunnel] = useState<Funnel[]>([]);
   const [ages, setAges] = useState<Age[]>([]);
+  const [power, setPower] = useState<Power | null>(null);
+  const [letterPower, setLetterPower] = useState<LetterPower[]>([]);
 
   useEffect(() => {
     if (!isAdmin) return;
     void (async () => {
       setLoading(true);
-      const [p, l, d, f, a] = await Promise.all([
+      const sb = supabase as unknown as { from: (t: string) => any };
+      const [p, l, d, f, a, lp, lpw] = await Promise.all([
         supabase.from("analytics_game_popularity").select("*").order("session_count", { ascending: false }),
         supabase.from("analytics_letter_learn_time").select("*").order("avg_minutes", { ascending: true }).limit(30),
         supabase.from("analytics_daily_active").select("*").limit(30),
         supabase.from("analytics_paywall_funnel").select("*"),
         supabase.from("analytics_age_breakdown").select("*"),
+        sb.from("analytics_learning_power").select("*").maybeSingle(),
+        sb.from("analytics_letter_power").select("*").order("avg_seconds", { ascending: true }).limit(50),
       ]);
       setPop((p.data as Pop[]) ?? []);
       setLearn((l.data as Learn[]) ?? []);
       setDaily(((d.data as Daily[]) ?? []).reverse());
       setFunnel((f.data as Funnel[]) ?? []);
       setAges((a.data as Age[]) ?? []);
+      setPower((lp.data as Power | null) ?? null);
+      setLetterPower((lpw.data as LetterPower[]) ?? []);
       setLoading(false);
     })();
   }, [isAdmin]);
@@ -74,6 +83,28 @@ const Admin = () => {
         ) : (
           <div className="space-y-6">
             <KPIs daily={daily} pop={pop} funnel={funnel} />
+
+            <Card title="⚡ Öğrenme Gücü (gerçek soru süresi, bildiği harfler hariç)">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <KPI label="Yeni öğrenilen öğe" value={power?.learned_items ?? 0} />
+                <KPI label="Öğrenen kişi" value={power?.learners ?? 0} />
+                <KPI label="Ort. saniye / öğe" value={power?.avg_seconds_per_item ?? "—"} />
+                <KPI label="Ort. dakika / öğe" value={power?.avg_minutes_per_item ?? "—"} />
+              </div>
+              <Table headers={["Konu", "Öğe", "Öğrenen", "Ort. saniye", "Önceden biliyordu"]}>
+                {letterPower.map((r) => (
+                  <tr key={r.topic_id + r.letter_id} className="border-t">
+                    <td className="py-1.5 font-semibold">{r.topic_id}</td>
+                    <td>{r.letter_id}</td>
+                    <td>{r.learners}</td>
+                    <td>{r.avg_seconds ?? "—"}</td>
+                    <td>{r.knew_before_count}</td>
+                  </tr>
+                ))}
+                {letterPower.length === 0 && <tr><td colSpan={5} className="text-center text-muted-foreground py-3">Henüz yeterli veri yok.</td></tr>}
+              </Table>
+            </Card>
+
 
             <Card title="📅 Günlük Aktif Kullanıcı (DAU)">
               <ResponsiveContainer width="100%" height={240}>

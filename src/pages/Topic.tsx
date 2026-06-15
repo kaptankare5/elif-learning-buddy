@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, Navigate } from "react-router-dom";
 import { getSubject, getTopic } from "@/data/subjects";
 import { PageHeader } from "@/components/PageHeader";
@@ -52,6 +52,7 @@ const Topic = () => {
   const [q, setQ] = useState<{ target: ContentItem; options: ContentItem[] } | null>(null);
   const [picked, setPicked] = useState<string | null>(null);
   const [score, setScore] = useState(0);
+  const questionStartRef = useRef<number>(0);
 
   const [age] = useAge();
   const items = useMemo(() => itemsForAge(topic?.items || [], age), [topic, age]);
@@ -70,6 +71,7 @@ const Topic = () => {
     const tid = pickNextLetter(NS, topic.id, itemIds);
     setQ(buildQuestion(items, tid));
     setPicked(null);
+    questionStartRef.current = Date.now();
   }, [mode, topic, itemIds, q, items]);
 
   useEffect(() => {
@@ -159,7 +161,8 @@ const Topic = () => {
     setPicked(opt.id);
     const correct = opt.id === q.target.id;
     if (correct) setScore((s) => s + 1);
-    recordSrsAnswer(NS, topic.id, q.target.id, correct);
+    const responseMs = questionStartRef.current ? Date.now() - questionStartRef.current : undefined;
+    recordSrsAnswer(NS, topic.id, q.target.id, correct, { responseMs });
     await playFeedback(correct);
     setTimeout(() => setQ(null), 700);
   };
