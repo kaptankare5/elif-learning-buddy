@@ -11,6 +11,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 const Index = () => {
   const [age] = useAge();
   const { isPremium } = useSubscription();
+  const { session } = useAuth();
 
   // İlk açılış: yaş seçimi
   if (!age) {
