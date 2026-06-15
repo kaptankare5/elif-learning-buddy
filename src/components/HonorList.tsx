@@ -25,11 +25,10 @@ export function HonorList() {
       <div className="flex items-center gap-2 mb-3">
         <Crown className="h-5 w-5 text-warning" />
         <h2 className="text-base font-extrabold text-foreground">Onur Listesi</h2>
-        <span className="text-[10px] font-bold text-muted-foreground">Destekçilerimiz</span>
       </div>
       {rows.length === 0 ? (
         <p className="text-xs font-semibold text-muted-foreground text-center py-3">
-          Henüz destekçi yok. İlk sen ol! 🌟
+          Henüz üye yok. İlk sen ol! 🌟
         </p>
       ) : (
         <ul className="flex flex-wrap gap-2">
@@ -38,7 +37,7 @@ export function HonorList() {
               key={i}
               className="inline-flex items-center gap-1 rounded-full bg-card px-3 py-1 text-xs font-extrabold text-primary shadow-soft border-2 border-warning/40"
             >
-              👑 {r.display_name || "Destekçi"}
+              👑 {r.display_name || "Onur Üyesi"}
             </li>
           ))}
         </ul>
