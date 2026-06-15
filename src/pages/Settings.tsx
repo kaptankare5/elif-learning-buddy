@@ -25,8 +25,9 @@ const Settings = () => {
   };
   const handleDelete = async () => {
     if (!confirm("Tüm öğrenme verilerin sunucudan silinecek. Emin misin?")) return;
-    await deleteMyAnalytics();
-    alert("Verilerin silindi.");
+    const res = await deleteMyAnalytics();
+    if (res.ok) alert("Verilerin silindi.");
+    else alert("Silme başarısız: " + (res.error ?? "bilinmeyen hata"));
   };
   return (
     <div className="min-h-screen bg-gradient-to-b from-secondary/30 to-background">
