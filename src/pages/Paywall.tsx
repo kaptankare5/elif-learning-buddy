@@ -120,7 +120,7 @@ const Paywall = () => {
                 return (
                   <button
                     key={p.id}
-                    onClick={() => setSelected(p.id)}
+                    onClick={() => handleSelect(p.id)}
                     className={cn(
                       "w-full text-left rounded-2xl p-4 border-4 shadow-card transition-bouncy flex items-center gap-3",
                       isSel
