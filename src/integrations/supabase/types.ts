@@ -415,6 +415,13 @@ export type Database = {
         }
         Returns: boolean
       }
+      honor_list: {
+        Args: never
+        Returns: {
+          display_name: string
+          since: string
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "user" | "parent" | "teacher"
