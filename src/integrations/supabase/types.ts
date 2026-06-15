@@ -47,6 +47,140 @@ export type Database = {
         }
         Relationships: []
       }
+      classroom_members: {
+        Row: {
+          child_user_id: string
+          classroom_id: string
+          id: string
+          joined_at: string
+        }
+        Insert: {
+          child_user_id: string
+          classroom_id: string
+          id?: string
+          joined_at?: string
+        }
+        Update: {
+          child_user_id?: string
+          classroom_id?: string
+          id?: string
+          joined_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "classroom_members_classroom_id_fkey"
+            columns: ["classroom_id"]
+            isOneToOne: false
+            referencedRelation: "classrooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      classrooms: {
+        Row: {
+          created_at: string
+          id: string
+          invite_code: string
+          name: string
+          teacher_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invite_code: string
+          name: string
+          teacher_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invite_code?: string
+          name?: string
+          teacher_id?: string
+        }
+        Relationships: []
+      }
+      game_sessions: {
+        Row: {
+          age_band: string | null
+          completed: boolean
+          correct: number
+          duration_ms: number | null
+          ended_at: string | null
+          game_id: string
+          gender: string | null
+          id: string
+          platform: string | null
+          score: number
+          started_at: string
+          topic_id: string | null
+          user_id: string
+          wrong: number
+        }
+        Insert: {
+          age_band?: string | null
+          completed?: boolean
+          correct?: number
+          duration_ms?: number | null
+          ended_at?: string | null
+          game_id: string
+          gender?: string | null
+          id?: string
+          platform?: string | null
+          score?: number
+          started_at?: string
+          topic_id?: string | null
+          user_id: string
+          wrong?: number
+        }
+        Update: {
+          age_band?: string | null
+          completed?: boolean
+          correct?: number
+          duration_ms?: number | null
+          ended_at?: string | null
+          game_id?: string
+          gender?: string | null
+          id?: string
+          platform?: string | null
+          score?: number
+          started_at?: string
+          topic_id?: string | null
+          user_id?: string
+          wrong?: number
+        }
+        Relationships: []
+      }
+      learning_milestones: {
+        Row: {
+          age_band: string | null
+          id: string
+          letter_id: string
+          level: number
+          reached_at: string
+          topic_id: string
+          user_id: string
+        }
+        Insert: {
+          age_band?: string | null
+          id?: string
+          letter_id: string
+          level: number
+          reached_at?: string
+          topic_id: string
+          user_id: string
+        }
+        Update: {
+          age_band?: string | null
+          id?: string
+          letter_id?: string
+          level?: number
+          reached_at?: string
+          topic_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       letter_stats: {
         Row: {
           correct_count: number
@@ -89,26 +223,104 @@ export type Database = {
         }
         Relationships: []
       }
+      paywall_events: {
+        Row: {
+          age_band: string | null
+          created_at: string
+          id: string
+          plan_id: string | null
+          platform: string | null
+          step: string
+          user_id: string
+        }
+        Insert: {
+          age_band?: string | null
+          created_at?: string
+          id?: string
+          plan_id?: string | null
+          platform?: string | null
+          step: string
+          user_id: string
+        }
+        Update: {
+          age_band?: string | null
+          created_at?: string
+          id?: string
+          plan_id?: string | null
+          platform?: string | null
+          step?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
+          age_band: string | null
+          analytics_consent: boolean
+          consent_at: string | null
           created_at: string
           display_name: string | null
+          gender: string | null
           id: string
+          platform: string | null
+          pseudonym: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          age_band?: string | null
+          analytics_consent?: boolean
+          consent_at?: string | null
           created_at?: string
           display_name?: string | null
+          gender?: string | null
           id?: string
+          platform?: string | null
+          pseudonym?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          age_band?: string | null
+          analytics_consent?: boolean
+          consent_at?: string | null
           created_at?: string
           display_name?: string | null
+          gender?: string | null
           id?: string
+          platform?: string | null
+          pseudonym?: string | null
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      screen_views: {
+        Row: {
+          age_band: string | null
+          duration_ms: number | null
+          id: string
+          opened_at: string
+          path: string
+          platform: string | null
+          user_id: string
+        }
+        Insert: {
+          age_band?: string | null
+          duration_ms?: number | null
+          id?: string
+          opened_at?: string
+          path: string
+          platform?: string | null
+          user_id: string
+        }
+        Update: {
+          age_band?: string | null
+          duration_ms?: number | null
+          id?: string
+          opened_at?: string
+          path?: string
+          platform?: string | null
           user_id?: string
         }
         Relationships: []
@@ -172,7 +384,52 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      analytics_age_breakdown: {
+        Row: {
+          accuracy_pct: number | null
+          age_band: string | null
+          gender: string | null
+          sessions: number | null
+          users: number | null
+        }
+        Relationships: []
+      }
+      analytics_daily_active: {
+        Row: {
+          dau: number | null
+          day: string | null
+          sessions: number | null
+        }
+        Relationships: []
+      }
+      analytics_game_popularity: {
+        Row: {
+          accuracy_pct: number | null
+          avg_seconds: number | null
+          completion_pct: number | null
+          game_id: string | null
+          session_count: number | null
+          unique_users: number | null
+        }
+        Relationships: []
+      }
+      analytics_letter_learn_time: {
+        Row: {
+          avg_minutes: number | null
+          learners: number | null
+          letter_id: string | null
+          topic_id: string | null
+        }
+        Relationships: []
+      }
+      analytics_paywall_funnel: {
+        Row: {
+          events: number | null
+          step: string | null
+          users: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_active_subscription: { Args: { _user_id: string }; Returns: boolean }
@@ -181,6 +438,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_in_classroom_of: {
+        Args: { _child_id: string; _teacher_id: string }
         Returns: boolean
       }
     }
