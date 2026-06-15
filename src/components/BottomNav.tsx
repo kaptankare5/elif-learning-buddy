@@ -1,23 +1,11 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { BookOpen, Gamepad2, TrendingUp, Home, Shield, GraduationCap } from "lucide-react";
+import { BookOpen, Gamepad2, TrendingUp, Home, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSubscription } from "@/hooks/useSubscription";
-import { useAuth } from "@/hooks/useAuth";
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 
 export function BottomNav() {
   const loc = useLocation();
   const { isAdmin } = useSubscription();
-  const { session } = useAuth();
-  const [isTeacher, setIsTeacher] = useState(false);
-
-  useEffect(() => {
-    if (!session) { setIsTeacher(false); return; }
-    void supabase.from("user_roles").select("role").eq("user_id", session.user.id).then(({ data }) => {
-      setIsTeacher(!!data?.some((r) => r.role === "teacher"));
-    });
-  }, [session?.user?.id]);
 
   if (/^\/oyunlar\/[^/]+/.test(loc.pathname)) return null;
   if (loc.pathname === "/giris") return null;
@@ -26,7 +14,6 @@ export function BottomNav() {
     { to: "/", label: "Ana", icon: Home, show: true },
     { to: "/oyunlar", label: "Oyunlar", icon: Gamepad2, show: true },
     { to: "/ilerleme", label: "İlerleme", icon: TrendingUp, show: true },
-    { to: "/sinif", label: "Sınıf", icon: GraduationCap, show: isTeacher },
     { to: "/admin", label: "Admin", icon: Shield, show: isAdmin },
     { to: "/ayarlar", label: "Ayarlar", icon: BookOpen, show: true },
   ].filter((i) => i.show);

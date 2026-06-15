@@ -14,7 +14,6 @@ import Settings from "./pages/Settings.tsx";
 import Auth from "./pages/Auth.tsx";
 import Paywall from "./pages/Paywall.tsx";
 import Admin from "./pages/Admin.tsx";
-import Classroom from "./pages/Classroom.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import { AuthProvider } from "@/hooks/useAuth";
 import { SubscriptionProvider } from "@/hooks/useSubscription";
@@ -47,7 +46,7 @@ const AppShell = () => {
               <Route path="/ilerleme" element={<Progress />} />
               <Route path="/ayarlar" element={<Settings />} />
               <Route path="/admin" element={<Admin />} />
-              <Route path="/sinif" element={<Classroom />} />
+              
               <Route path="*" element={<NotFound />} />
             </Routes>
             <BottomNav />
