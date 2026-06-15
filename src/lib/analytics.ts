@@ -158,10 +158,10 @@ export async function trackPaywall(step: PaywallStep, planId?: string | null) {
 }
 
 // ---- Veri silme ----
-export async function deleteMyAnalytics() {
+export async function deleteMyAnalytics(): Promise<{ ok: boolean; error?: string }> {
   const userId = await uid();
-  if (!userId) return;
-  await Promise.all([
+  if (!userId) return { ok: false, error: "not_authenticated" };
+  const results = await Promise.all([
     supabase.from("game_sessions").delete().eq("user_id", userId),
     supabase.from("screen_views").delete().eq("user_id", userId),
     supabase.from("learning_milestones").delete().eq("user_id", userId),
@@ -169,6 +169,9 @@ export async function deleteMyAnalytics() {
     supabase.from("answer_events").delete().eq("user_id", userId),
     supabase.from("letter_stats").delete().eq("user_id", userId),
   ]);
+  const firstErr = results.find((r) => r.error)?.error;
+  if (firstErr) return { ok: false, error: firstErr.message };
+  return { ok: true };
 }
 
 // localStorage tabanlı queue (offline) — basit, gerektiğinde geliştirilir.
