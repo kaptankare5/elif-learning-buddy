@@ -37,10 +37,11 @@ export function ConsentModal() {
     // Yaş bandı → yaş sayısına dönüştür (ortayı al)
     setAge(ageBand === "3-4" ? 4 : 6);
     await updateMyProfile({ age_band: ageBand, gender, analytics_consent: accept });
-    if (session) {
+    if (session && role === "parent") {
+      // Only 'parent' can be self-assigned. 'teacher' role must be granted by an admin.
       await supabase
         .from("user_roles")
-        .insert({ user_id: session.user.id, role })
+        .insert({ user_id: session.user.id, role: "parent" })
         .select()
         .then(() => {}, () => {});
     }

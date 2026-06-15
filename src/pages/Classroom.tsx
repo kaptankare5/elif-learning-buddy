@@ -55,9 +55,8 @@ const Classroom = () => {
   const join = async () => {
     const c = code.trim().toUpperCase();
     if (!c) return;
-    const { data } = await supabase.from("classrooms").select("id").eq("invite_code", c).maybeSingle();
-    if (!data) { alert("Bu kodla bir sınıf bulunamadı."); return; }
-    await supabase.from("classroom_members").insert({ classroom_id: data.id, child_user_id: session.user.id });
+    const { error } = await supabase.rpc("join_classroom_by_code", { _code: c });
+    if (error) { alert("Bu kodla bir sınıf bulunamadı."); return; }
     setCode("");
     alert("Sınıfa katıldın!");
   };
