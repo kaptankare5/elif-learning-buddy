@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Check, Lock, Crown, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { trackPaywall } from "@/lib/analytics";
+import { ParentGate } from "@/components/ParentGate";
 
 interface Plan {
   id: string;
@@ -32,6 +33,9 @@ const Paywall = () => {
   const { session } = useAuth();
   const navigate = useNavigate();
   const [selected, setSelected] = useState<string>("yearly");
+  const [parentOk, setParentOk] = useState(false);
+  const [parentConsent, setParentConsent] = useState(false);
+  const [gateOpen, setGateOpen] = useState(false);
 
   useEffect(() => { void trackPaywall("viewed"); }, []);
 
@@ -40,16 +44,19 @@ const Paywall = () => {
     void trackPaywall("plan_selected", id);
   };
 
-  const handleSubscribe = () => {
-    if (!session) {
-      navigate("/giris");
-      return;
-    }
+  const runCheckout = () => {
     const p = PLANS.find((x) => x.id === selected);
     void trackPaywall("checkout_started", selected);
     alert(
       `"${p?.name}" planı (${p?.price}₺) — abonelik satın alma mobil sürümde aktif olacaktır.\n\n(Google Play Billing entegrasyonu Capacitor ile eklenecek.)`,
     );
+  };
+
+  const handleSubscribe = () => {
+    if (!session) { navigate("/giris"); return; }
+    if (!parentConsent) { alert("Önce veli beyanını onaylamalısın."); return; }
+    if (!parentOk) { setGateOpen(true); return; }
+    runCheckout();
   };
 
   return (
