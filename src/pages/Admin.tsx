@@ -36,14 +36,15 @@ const Admin = () => {
     if (!isAdmin) return;
     void (async () => {
       setLoading(true);
+      const sb = supabase as unknown as { from: (t: string) => any };
       const [p, l, d, f, a, lp, lpw] = await Promise.all([
         supabase.from("analytics_game_popularity").select("*").order("session_count", { ascending: false }),
         supabase.from("analytics_letter_learn_time").select("*").order("avg_minutes", { ascending: true }).limit(30),
         supabase.from("analytics_daily_active").select("*").limit(30),
         supabase.from("analytics_paywall_funnel").select("*"),
         supabase.from("analytics_age_breakdown").select("*"),
-        (supabase as unknown as { from: (t: string) => { select: (s: string) => { maybeSingle: () => Promise<{ data: Power | null }> } } }).from("analytics_learning_power").select("*").maybeSingle(),
-        (supabase as unknown as { from: (t: string) => { select: (s: string) => { order: (c: string, o: { ascending: boolean }) => { limit: (n: number) => Promise<{ data: LetterPower[] | null }> } } } }).from("analytics_letter_power").select("*").order("avg_seconds", { ascending: true }).limit(50),
+        sb.from("analytics_learning_power").select("*").maybeSingle(),
+        sb.from("analytics_letter_power").select("*").order("avg_seconds", { ascending: true }).limit(50),
       ]);
       setPop((p.data as Pop[]) ?? []);
       setLearn((l.data as Learn[]) ?? []);
