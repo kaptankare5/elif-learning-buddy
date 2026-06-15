@@ -68,7 +68,15 @@ export async function updateMyProfile(p: ProfileExtras) {
     patch.consent_at = new Date().toISOString();
   }
   await supabase.from("profiles").update(patch).eq("user_id", userId);
-  try { localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(patch)); } catch { /* ignore */ }
+  try {
+    const prev = getCachedProfile() ?? {};
+    localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify({
+      ...prev,
+      ...(patch.age_band !== undefined ? { age_band: patch.age_band } : {}),
+      ...(patch.gender !== undefined ? { gender: patch.gender } : {}),
+      ...(patch.consent_at ? { consent_at: patch.consent_at } : {}),
+    }));
+  } catch { /* ignore */ }
 }
 
 // ---- Game sessions ----
