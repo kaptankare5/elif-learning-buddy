@@ -161,7 +161,8 @@ const Topic = () => {
     setPicked(opt.id);
     const correct = opt.id === q.target.id;
     if (correct) setScore((s) => s + 1);
-    recordSrsAnswer(NS, topic.id, q.target.id, correct);
+    const responseMs = questionStartRef.current ? Date.now() - questionStartRef.current : undefined;
+    recordSrsAnswer(NS, topic.id, q.target.id, correct, { responseMs });
     await playFeedback(correct);
     setTimeout(() => setQ(null), 700);
   };
