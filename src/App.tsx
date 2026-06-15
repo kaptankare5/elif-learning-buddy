@@ -39,6 +39,7 @@ const AppShell = () => {
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/giris" element={<Auth />} />
+              <Route path="/sifre-sifirla" element={<ResetPassword />} />
               <Route path="/abonelik" element={<Paywall />} />
               <Route path="/konu/:subjectId" element={<Subject />} />
               <Route path="/konu/:subjectId/:topicId" element={<Topic />} />
