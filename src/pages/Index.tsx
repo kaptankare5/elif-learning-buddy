@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { SUBJECTS } from "@/data/subjects";
-import { Sparkles, Crown } from "lucide-react";
+import { Sparkles, Crown, LogIn, UserCircle2 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import { LangToggle } from "@/components/LangToggle";
 import { useAge, AGE_LABELS } from "@/lib/age";
 import { AgePicker, AgeBadge } from "@/components/AgePicker";
