@@ -127,6 +127,7 @@ export function pickNextLetter(ns: Namespace, topicId: string, letterIds: string
 export function recordSrsAnswer(ns: Namespace, topicId: string, letterId: string, correct: boolean) {
   const s = load(ns);
   const e = ensureEntry(s, topicId, letterId);
+  const prevLevel = e.level;
   e.total += 1;
   e.seen += 1;
   e.lastSeen = Date.now();
@@ -137,6 +138,11 @@ export function recordSrsAnswer(ns: Namespace, topicId: string, letterId: string
     if (e.level > 1) e.level = ((e.level - 1) as Level);
   }
   save(ns, s);
+
+  // Analitik: seviye yükselmesi durumunda milestone gönder (ilk kez ulaştığında)
+  if (correct && e.level > prevLevel) {
+    import("@/lib/analytics").then((m) => m.trackMilestone(topicId, letterId, e.level)).catch(() => {});
+  }
 }
 
 // İstatistikler — Progress sayfası için

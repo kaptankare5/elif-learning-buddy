@@ -1,25 +1,45 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { BookOpen, Gamepad2, TrendingUp, Home } from "lucide-react";
+import { BookOpen, Gamepad2, TrendingUp, Home, Shield, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const items = [
-  { to: "/", label: "Ana Sayfa", icon: Home },
-  { to: "/oyunlar", label: "Oyunlar", icon: Gamepad2 },
-  { to: "/ilerleme", label: "İlerleme", icon: TrendingUp },
-  { to: "/ayarlar", label: "Ayarlar", icon: BookOpen },
-];
+import { useSubscription } from "@/hooks/useSubscription";
+import { useAuth } from "@/hooks/useAuth";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export function BottomNav() {
   const loc = useLocation();
-  // Oyun içinde gösterme (sadece oyun listesi sayfasında göster)
+  const { isAdmin } = useSubscription();
+  const { session } = useAuth();
+  const [isTeacher, setIsTeacher] = useState(false);
+
+  useEffect(() => {
+    if (!session) { setIsTeacher(false); return; }
+    void supabase.from("user_roles").select("role").eq("user_id", session.user.id).then(({ data }) => {
+      setIsTeacher(!!data?.some((r) => r.role === "teacher"));
+    });
+  }, [session?.user?.id]);
+
   if (/^\/oyunlar\/[^/]+/.test(loc.pathname)) return null;
   if (loc.pathname === "/giris") return null;
+
+  const items = [
+    { to: "/", label: "Ana", icon: Home, show: true },
+    { to: "/oyunlar", label: "Oyunlar", icon: Gamepad2, show: true },
+    { to: "/ilerleme", label: "İlerleme", icon: TrendingUp, show: true },
+    { to: "/sinif", label: "Sınıf", icon: GraduationCap, show: isTeacher },
+    { to: "/admin", label: "Admin", icon: Shield, show: isAdmin },
+    { to: "/ayarlar", label: "Ayarlar", icon: BookOpen, show: true },
+  ].filter((i) => i.show);
+
   return (
     <nav
       className="fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur border-t-2 border-primary/20 shadow-elegant"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      <div className="container mx-auto max-w-2xl grid grid-cols-4">
+      <div
+        className="container mx-auto max-w-2xl grid"
+        style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
+      >
         {items.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}

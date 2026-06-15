@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/PageHeader";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useAuth } from "@/hooks/useAuth";
 import { Check, Lock, Crown, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { trackPaywall } from "@/lib/analytics";
 
 interface Plan {
   id: string;
@@ -32,12 +33,20 @@ const Paywall = () => {
   const navigate = useNavigate();
   const [selected, setSelected] = useState<string>("yearly");
 
+  useEffect(() => { void trackPaywall("viewed"); }, []);
+
+  const handleSelect = (id: string) => {
+    setSelected(id);
+    void trackPaywall("plan_selected", id);
+  };
+
   const handleSubscribe = () => {
     if (!session) {
       navigate("/giris");
       return;
     }
     const p = PLANS.find((x) => x.id === selected);
+    void trackPaywall("checkout_started", selected);
     alert(
       `"${p?.name}" planı (${p?.price}₺) — abonelik satın alma mobil sürümde aktif olacaktır.\n\n(Google Play Billing entegrasyonu Capacitor ile eklenecek.)`,
     );
@@ -111,7 +120,7 @@ const Paywall = () => {
                 return (
                   <button
                     key={p.id}
-                    onClick={() => setSelected(p.id)}
+                    onClick={() => handleSelect(p.id)}
                     className={cn(
                       "w-full text-left rounded-2xl p-4 border-4 shadow-card transition-bouncy flex items-center gap-3",
                       isSel
