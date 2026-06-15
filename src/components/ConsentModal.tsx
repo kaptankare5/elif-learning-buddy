@@ -1,28 +1,42 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { consentGiven, setConsent, updateMyProfile } from "@/lib/analytics";
-import { setAge } from "@/lib/age";
+import { setConsent, updateMyProfile, getCachedProfile, PROFILE_CACHE_KEY } from "@/lib/analytics";
+import { setAge, ageBandFor } from "@/lib/age";
+import type { Age } from "@/data/types";
+import { ALL_AGES } from "@/data/types";
 import { Shield, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function ConsentModal() {
   const { session, loading } = useAuth();
   const [open, setOpen] = useState(false);
-  const [ageBand, setAgeBand] = useState<"3-4" | "5-6">("3-4");
+  const [age, setAgeLocal] = useState<Age>(5);
   const [gender, setGender] = useState<"k" | "e" | "x">("x");
   const [accept, setAccept] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (loading || !session) return;
+    // Yerel cache varsa bir daha sorma.
+    if (getCachedProfile()?.consent_at) return;
     void (async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("age_band, consent_at")
+        .select("age_band, consent_at, gender")
         .eq("user_id", session.user.id)
         .maybeSingle();
-      if (!data?.consent_at) setOpen(true);
+      if (data?.consent_at) {
+        try {
+          localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify({
+            age_band: data.age_band ?? undefined,
+            gender: data.gender ?? undefined,
+            consent_at: data.consent_at,
+          }));
+        } catch { /* ignore */ }
+        return;
+      }
+      setOpen(true);
     })();
   }, [session, loading]);
 
@@ -31,8 +45,8 @@ export function ConsentModal() {
   const submit = async () => {
     setSaving(true);
     setConsent(accept);
-    setAge(ageBand === "3-4" ? 4 : 6);
-    await updateMyProfile({ age_band: ageBand, gender, analytics_consent: accept });
+    setAge(age);
+    await updateMyProfile({ age_band: ageBandFor(age), gender, analytics_consent: accept });
     setSaving(false);
     setOpen(false);
   };
@@ -49,14 +63,15 @@ export function ConsentModal() {
         </div>
 
         <p className="text-sm text-muted-foreground mb-4 leading-snug">
-          Uygulamayı çocuğunuz için en iyi şekilde uyarlayabilmemiz için birkaç bilgi.
-          Hiçbir kimlik bilgisi (ad, foto, vb.) saklanmaz.
+          Veli sıfatıyla, çocuğunuza en uygun içeriği sunabilmemiz için birkaç bilgi.
+          Çocuğun adı, fotoğrafı veya doğum tarihi hiçbir zaman saklanmaz.
         </p>
 
-        <Label>Çocuğun yaş aralığı</Label>
-        <div className="grid grid-cols-2 gap-2 mb-4">
-          <Choice active={ageBand === "3-4"} onClick={() => setAgeBand("3-4")} label="3-4 yaş" />
-          <Choice active={ageBand === "5-6"} onClick={() => setAgeBand("5-6")} label="5-6 yaş" />
+        <Label>Çocuğun yaşı</Label>
+        <div className="grid grid-cols-4 gap-2 mb-4">
+          {ALL_AGES.map((a) => (
+            <Choice key={a} active={age === a} onClick={() => setAgeLocal(a)} label={`${a} yaş`} />
+          ))}
         </div>
 
         <Label>Cinsiyet (opsiyonel)</Label>
@@ -65,7 +80,6 @@ export function ConsentModal() {
           <Choice active={gender === "e"} onClick={() => setGender("e")} label="👦 Erkek" />
           <Choice active={gender === "x"} onClick={() => setGender("x")} label="Belirtme" />
         </div>
-
 
         <label className="flex items-start gap-2 mb-4 cursor-pointer">
           <input
@@ -76,8 +90,8 @@ export function ConsentModal() {
           />
           <span className="text-xs text-muted-foreground leading-snug">
             Uygulamayı geliştirmek için <strong>anonim</strong> kullanım verilerinin (hangi oyun
-            oynandı, ne kadar sürdü, hangi harf öğrenildi) toplanmasına izin veriyorum.
-            İstediğim zaman Ayarlar'dan kapatabilir ve verilerimi silebilirim.
+            oynandı, hangi harf öğrenildi, süre) işlenmesine veli olarak <strong>açık rıza</strong>
+            veriyorum. İstediğim zaman Ayarlar'dan kapatabilir ve verilerimi silebilirim. (KVKK)
           </span>
         </label>
 
@@ -102,7 +116,7 @@ function Choice({ active, onClick, label }: { active: boolean; onClick: () => vo
       type="button"
       onClick={onClick}
       className={cn(
-        "rounded-xl p-2.5 border-2 font-bold text-sm transition-bouncy",
+        "rounded-xl p-2 border-2 font-bold text-sm transition-bouncy",
         active ? "bg-primary/10 border-primary text-primary" : "bg-muted/40 border-border text-foreground",
       )}
     >
