@@ -233,32 +233,43 @@ const SnakeGame = () => {
     touchStartRef.current = null;
   };
 
+  const cellSize = (axis: "w" | "h") => `${100 / (axis === "w" ? COLS : ROWS)}%`;
+
   return (
-    <div className="h-screen overflow-hidden bg-gradient-to-b from-success/10 to-background flex flex-col">
-      <main className="container mx-auto max-w-xl px-3 flex-1 flex flex-col min-h-0">
+    <div className="h-screen overflow-hidden flex flex-col relative bg-gradient-to-b from-sky-200 via-emerald-100 to-emerald-200">
+      {/* Cute background bubbles */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-10 -left-10 h-48 w-48 rounded-full bg-white/40 blur-2xl" />
+        <div className="absolute top-20 -right-16 h-56 w-56 rounded-full bg-warning/30 blur-3xl" />
+        <div className="absolute bottom-10 -left-20 h-64 w-64 rounded-full bg-success/30 blur-3xl" />
+      </div>
+
+      <main className="container mx-auto max-w-xl px-3 flex-1 flex flex-col min-h-0 relative z-10">
         <PageHeader title="🐍 Yılan" backTo="/oyunlar" centered onReset={reset} />
 
         <div className="mb-2 grid grid-cols-3 gap-2 text-center shrink-0">
-          <div className="rounded-xl bg-card p-1.5 shadow-soft border-2 border-success/30">
-            <div className="text-[10px] font-bold text-muted-foreground">Puan</div>
-            <div className="text-lg font-extrabold text-success leading-tight">{score}</div>
+          <div className="rounded-2xl bg-white/90 backdrop-blur p-2 shadow-card border-2 border-success/40">
+            <div className="text-[10px] font-extrabold text-success/80 uppercase tracking-wider">⭐ Puan</div>
+            <div className="text-xl font-black text-success leading-tight">{score}</div>
           </div>
-          <div className="rounded-xl bg-card p-1.5 shadow-soft border-2 border-info/30">
-            <div className="text-[10px] font-bold text-muted-foreground">{isSuper ? "Mod" : "Yenen"}</div>
-            <div className="text-lg font-extrabold text-info leading-tight">{isSuper ? "⚡" : eaten}</div>
+          <div className="rounded-2xl bg-white/90 backdrop-blur p-2 shadow-card border-2 border-info/40">
+            <div className="text-[10px] font-extrabold text-info/80 uppercase tracking-wider">{isSuper ? "Mod" : "🍎 Yenen"}</div>
+            <div className="text-xl font-black text-info leading-tight">{isSuper ? "⚡" : eaten}</div>
           </div>
           <button
             onClick={() => quiz && playItem(quiz.target)}
             disabled={!quiz}
-            className="rounded-xl bg-primary text-primary-foreground p-1.5 shadow-soft border-2 border-primary font-bold flex items-center justify-center gap-1 disabled:opacity-40"
+            className="rounded-2xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground p-2 shadow-card border-2 border-primary-foreground/40 font-extrabold flex items-center justify-center gap-1.5 disabled:opacity-40 active:scale-95 transition-bouncy"
           >
-            <Volume2 className="h-4 w-4" /> Dinle
+            <Volume2 className="h-5 w-5" /> Dinle
           </button>
         </div>
 
         <div className={cn(
-          "rounded-xl p-2 mb-2 border-2 text-center shrink-0 transition-colors",
-          quiz ? "bg-warning/20 border-warning" : "bg-card border-border",
+          "rounded-2xl p-2.5 mb-2 border-2 text-center shrink-0 transition-colors shadow-soft",
+          quiz
+            ? "bg-gradient-to-r from-warning/30 to-warning/20 border-warning"
+            : "bg-white/80 backdrop-blur border-success/40",
         )}>
           {quiz ? (
             <p className="text-xs font-extrabold text-foreground">🎯 Sesi dinle, doğru harfi ye!</p>
@@ -270,33 +281,69 @@ const SnakeGame = () => {
         <div
           onTouchStart={onTouchStart}
           onTouchEnd={onTouchEnd}
-          className="relative bg-gradient-to-b from-success/5 to-success/20 rounded-2xl shadow-card border-4 border-success/30 overflow-hidden mx-auto select-none touch-none"
+          className="relative rounded-3xl shadow-elegant border-[6px] border-success/60 overflow-hidden mx-auto select-none touch-none"
           style={{
             aspectRatio: `${COLS} / ${ROWS}`,
             width: "100%",
             maxWidth: "min(100%, 55vh)",
             maxHeight: "55vh",
+            backgroundImage:
+              "linear-gradient(180deg, hsl(140 70% 92%) 0%, hsl(140 60% 82%) 100%), repeating-linear-gradient(45deg, rgba(255,255,255,0.18) 0 8px, transparent 8px 16px)",
+            backgroundBlendMode: "overlay",
           }}
         >
-          {snake.map((c, i) => (
-            <div
-              key={i}
-              className={cn("absolute rounded-md", i === 0 ? "bg-success" : "bg-success/70")}
-              style={{
-                left: `${(c.x / COLS) * 100}%`, top: `${(c.y / ROWS) * 100}%`,
-                width: `${100 / COLS}%`, height: `${100 / ROWS}%`,
-              }}
-            />
-          ))}
+          {/* checker pattern overlay */}
+          <div className="pointer-events-none absolute inset-0 opacity-30"
+               style={{
+                 backgroundImage:
+                   `linear-gradient(rgba(255,255,255,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.4) 1px, transparent 1px)`,
+                 backgroundSize: `${100 / COLS}% ${100 / ROWS}%`,
+               }}
+          />
+
+          {snake.map((c, i) => {
+            const isHead = i === 0;
+            const d = dirRef.current;
+            const rotate = d.x === 1 ? 0 : d.x === -1 ? 180 : d.y === -1 ? -90 : 90;
+            return (
+              <div
+                key={i}
+                className={cn(
+                  "absolute flex items-center justify-center",
+                  isHead
+                    ? "bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-[35%] shadow-lg ring-2 ring-emerald-700/30 z-10"
+                    : "bg-gradient-to-br from-emerald-300 to-emerald-500 rounded-[40%] shadow-sm"
+                )}
+                style={{
+                  left: `${(c.x / COLS) * 100}%`, top: `${(c.y / ROWS) * 100}%`,
+                  width: cellSize("w"), height: cellSize("h"),
+                  transform: isHead ? `rotate(${rotate}deg)` : undefined,
+                }}
+              >
+                {isHead && (
+                  <div className="flex items-center gap-[15%] text-[8px] leading-none">
+                    <span className="h-[28%] w-[28%] rounded-full bg-white relative">
+                      <span className="absolute inset-[20%] rounded-full bg-black" />
+                    </span>
+                    <span className="h-[28%] w-[28%] rounded-full bg-white relative">
+                      <span className="absolute inset-[20%] rounded-full bg-black" />
+                    </span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
           {food && (
             <div
-              className="absolute flex items-center justify-center bg-warning/30 rounded-md border-2 border-warning"
+              className="absolute flex items-center justify-center animate-bounce-in"
               style={{
                 left: `${(food.pos.x / COLS) * 100}%`, top: `${(food.pos.y / ROWS) * 100}%`,
-                width: `${100 / COLS}%`, height: `${100 / ROWS}%`,
+                width: cellSize("w"), height: cellSize("h"),
               }}
             >
-              <span className="text-lg font-extrabold leading-none"><EmojiView value={food.item.emoji} /></span>
+              <div className="h-[90%] w-[90%] rounded-full bg-gradient-to-br from-warning to-orange-500 shadow-lg ring-2 ring-white/60 flex items-center justify-center animate-pulse">
+                <span className="text-base font-black text-white drop-shadow"><EmojiView value={food.item.emoji} /></span>
+              </div>
             </div>
           )}
           {quiz && quiz.options.map((opt, i) => {
@@ -304,40 +351,45 @@ const SnakeGame = () => {
             return (
               <div
                 key={i}
-                className={cn(
-                  "absolute flex items-center justify-center rounded-md border-2",
-                  isCorrect && showHint
-                    ? "bg-warning/40 border-warning ring-4 ring-warning/60 animate-pulse"
-                    : "bg-info/30 border-info"
-                )}
+                className="absolute flex items-center justify-center animate-bounce-in"
                 style={{
                   left: `${(opt.pos.x / COLS) * 100}%`, top: `${(opt.pos.y / ROWS) * 100}%`,
-                  width: `${100 / COLS}%`, height: `${100 / ROWS}%`,
+                  width: cellSize("w"), height: cellSize("h"),
                 }}
               >
-                <span className="text-lg font-extrabold leading-none"><EmojiView value={opt.item.emoji} /></span>
+                <div className={cn(
+                  "h-[92%] w-[92%] rounded-full flex items-center justify-center shadow-lg ring-2",
+                  isCorrect && showHint
+                    ? "bg-gradient-to-br from-yellow-300 to-warning ring-yellow-200 animate-pulse"
+                    : "bg-gradient-to-br from-sky-300 to-info ring-white/60"
+                )}>
+                  <span className="text-base font-black text-white drop-shadow"><EmojiView value={opt.item.emoji} /></span>
+                </div>
               </div>
             );
           })}
           {!gameOver && paused && (
             <button
               onClick={() => setPaused(false)}
-              className="absolute inset-0 flex flex-col items-center justify-center bg-background/80"
+              className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-white/70 to-emerald-100/80 backdrop-blur-sm"
             >
-              <div className="text-5xl mb-2">🐍</div>
-              <div className="text-xl font-extrabold text-success mb-1">Hazır?</div>
-              <div className="text-xs font-bold text-muted-foreground px-4 text-center">
-                Ekrana parmağını sürükle (↑↓←→) ya da bir yöne bas
+              <div className="text-7xl mb-3 animate-bounce">🐍</div>
+              <div className="text-2xl font-black text-success mb-2 drop-shadow-sm">Hazır mısın?</div>
+              <div className="text-xs font-extrabold text-foreground/80 px-6 text-center max-w-[80%]">
+                Ekrana parmağını sürükle ↑↓←→
+              </div>
+              <div className="mt-4 px-6 py-2.5 rounded-full bg-gradient-to-r from-success to-emerald-600 text-white font-black text-sm shadow-elegant">
+                ▶ Başla!
               </div>
             </button>
           )}
           {gameOver && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/90">
-              <div className="text-4xl mb-2">😵</div>
-              <div className="text-2xl font-extrabold text-destructive mb-2">Oyun Bitti</div>
-              <div className="text-sm font-bold text-muted-foreground mb-4">Puan: {score}</div>
-              <button onClick={reset} className="rounded-full bg-primary text-primary-foreground px-6 py-3 font-extrabold shadow-soft">
-                Tekrar Oyna
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-white/80 to-rose-100/90 backdrop-blur-sm">
+              <div className="text-7xl mb-2 animate-bounce-in">😵</div>
+              <div className="text-3xl font-black text-destructive mb-1 drop-shadow-sm">Oyun Bitti!</div>
+              <div className="text-sm font-extrabold text-foreground/70 mb-4">⭐ Puan: {score}</div>
+              <button onClick={reset} className="rounded-full bg-gradient-to-r from-primary to-primary/80 text-primary-foreground px-7 py-3 font-black shadow-elegant border-2 border-white/40 active:scale-95">
+                🔄 Tekrar Oyna
               </button>
             </div>
           )}
@@ -347,9 +399,9 @@ const SnakeGame = () => {
         <div className="mt-2 flex justify-center select-none shrink-0">
           <button
             onClick={() => setPaused((p) => !p)}
-            className="px-5 h-11 rounded-2xl bg-card shadow-card border-2 border-border text-sm font-extrabold active:scale-90"
+            className="px-6 h-11 rounded-full bg-white/90 backdrop-blur shadow-card border-2 border-success/40 text-sm font-black text-success active:scale-90 transition-bouncy"
           >
-            {paused ? "▶ Başlat" : "II Duraklat"}
+            {paused ? "▶ Başlat" : "❚❚ Duraklat"}
           </button>
         </div>
       </main>
