@@ -3,9 +3,24 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { setGamePremium } from "@/pages/games/_shared";
 
+export type PlanTier = "free" | "basic" | "super" | "patron";
+
+export function tierForProductId(pid: string | null | undefined): PlanTier {
+  if (!pid) return "free";
+  if (pid.startsWith("patron")) return "patron";
+  if (pid.startsWith("super")) return "super";
+  if (pid.startsWith("basic")) return "basic";
+  // backward compat with old ids
+  if (pid === "lifetime" || pid === "yearly") return "super";
+  if (pid === "monthly" || pid === "quarterly") return "basic";
+  return "basic";
+}
+
 interface SubscriptionState {
   isPremium: boolean;
   isAdmin: boolean;
+  hasSuperMode: boolean;
+  tier: PlanTier;
   loading: boolean;
   expiresAt: string | null;
   plan: string | null;
@@ -15,6 +30,8 @@ interface SubscriptionState {
 const Ctx = createContext<SubscriptionState>({
   isPremium: false,
   isAdmin: false,
+  hasSuperMode: false,
+  tier: "free",
   loading: true,
   expiresAt: null,
   plan: null,
@@ -66,17 +83,19 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.id, authLoading]);
 
-  // Admin → her zaman premium gibi davranır
+  const tier: PlanTier = isSubActive ? tierForProductId(plan) : "free";
+  // Admin → her zaman premium + super gibi davranır
   const isPremium = isSubActive || isAdmin;
+  const hasSuperMode = isAdmin || tier === "super" || tier === "patron";
 
   useEffect(() => {
     setGamePremium(isPremium);
   }, [isPremium]);
 
   const value = useMemo(
-    () => ({ isPremium, isAdmin, loading, expiresAt, plan, refresh: fetchStatus }),
+    () => ({ isPremium, isAdmin, hasSuperMode, tier, loading, expiresAt, plan, refresh: fetchStatus }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [isPremium, isAdmin, loading, expiresAt, plan],
+    [isPremium, isAdmin, hasSuperMode, tier, loading, expiresAt, plan],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

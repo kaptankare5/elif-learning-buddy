@@ -2,9 +2,9 @@
 
 export type Lang = "tr" | "en";
 
-// MEB okul öncesi + 1-2. sınıfa hazırlık (24-96 ay)
-export type Age = 2 | 3 | 4 | 5 | 6 | 7 | 8;
-export const ALL_AGES: Age[] = [2, 3, 4, 5, 6, 7, 8];
+// MEB okul öncesi + 1. sınıfa hazırlık (24-84 ay)
+export type Age = 2 | 3 | 4 | 5 | 6 | 7;
+export const ALL_AGES: Age[] = [2, 3, 4, 5, 6, 7];
 
 export interface ContentItem {
   id: string;

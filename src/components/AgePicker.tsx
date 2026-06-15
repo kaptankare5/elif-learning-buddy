@@ -4,7 +4,7 @@ import { ALL_AGES } from "@/data/types";
 import { cn } from "@/lib/utils";
 
 const ICONS: Record<Age, string> = {
-  2: "🍼", 3: "🧸", 4: "🎨", 5: "🔤", 6: "📚", 7: "✏️", 8: "📖",
+  2: "🍼", 3: "🧸", 4: "🎨", 5: "🔤", 6: "📚", 7: "✏️",
 };
 
 export function AgePicker({ onPick }: { onPick?: (a: Age) => void }) {
