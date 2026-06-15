@@ -444,6 +444,7 @@ export type Database = {
         Args: { _child_id: string; _teacher_id: string }
         Returns: boolean
       }
+      join_classroom_by_code: { Args: { _code: string }; Returns: string }
     }
     Enums: {
       app_role: "admin" | "user" | "parent" | "teacher"
