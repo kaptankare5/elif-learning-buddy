@@ -1,7 +1,6 @@
 import { forwardRef } from "react";
 import { ArrowLeft, RotateCcw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 
 interface PageHeaderProps {
   title?: string;
@@ -16,25 +15,27 @@ export const PageHeader = forwardRef<HTMLElement, PageHeaderProps>(
     return (
       <header
         ref={ref}
-        className="sticky top-0 z-50 flex items-center justify-between gap-3 py-3 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70"
+        className="sticky top-0 z-50 flex items-center justify-between gap-2 py-2"
         style={{ paddingTop: "max(0.5rem, env(safe-area-inset-top))" }}
       >
-        <Button
-          variant="ghost"
-          size="sm"
+        <button
           onClick={() => (backTo ? navigate(backTo) : navigate(-1))}
-          className="gap-1.5 text-primary hover:bg-primary-soft"
+          aria-label="Ana Sayfa"
+          className="group flex items-center gap-1.5 h-11 pl-2 pr-4 rounded-full bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-soft border-2 border-primary-foreground/40 active:scale-95 transition-bouncy"
         >
-          <ArrowLeft className="h-4 w-4" />
-          Ana Sayfa
-        </Button>
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-foreground/25">
+            <ArrowLeft className="h-4 w-4" />
+          </span>
+          <span className="text-xs font-extrabold tracking-wide">Ana Sayfa</span>
+        </button>
 
         {title && (
           <h1
             className={
-              centered
-                ? "absolute left-1/2 -translate-x-1/2 text-base font-bold text-foreground"
-                : "text-base font-bold text-foreground"
+              (centered
+                ? "absolute left-1/2 -translate-x-1/2 "
+                : "") +
+              "px-4 h-10 inline-flex items-center rounded-full bg-card/90 backdrop-blur text-sm font-extrabold text-foreground shadow-card border-2 border-primary/20"
             }
           >
             {title}
@@ -42,17 +43,15 @@ export const PageHeader = forwardRef<HTMLElement, PageHeaderProps>(
         )}
 
         {onReset ? (
-          <Button
-            variant="ghost"
-            size="icon"
+          <button
             onClick={onReset}
             aria-label="Sıfırla"
-            className="text-muted-foreground hover:text-foreground"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-card text-foreground shadow-card border-2 border-primary/30 active:scale-90 transition-bouncy hover:bg-primary-soft"
           >
-            <RotateCcw className="h-4 w-4" />
-          </Button>
+            <RotateCcw className="h-5 w-5" />
+          </button>
         ) : (
-          <span className="w-9" />
+          <span className="w-11" />
         )}
       </header>
     );
