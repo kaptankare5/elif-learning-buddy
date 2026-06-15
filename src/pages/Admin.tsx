@@ -15,6 +15,8 @@ type Learn = { topic_id: string; letter_id: string; learners: number; avg_minute
 type Daily = { day: string; dau: number; sessions: number };
 type Funnel = { step: string; events: number; users: number };
 type Age = { age_band: string; gender: string; users: number; sessions: number; accuracy_pct: number | null };
+type Power = { learned_items: number; learners: number; avg_seconds_per_item: number | null; avg_minutes_per_item: number | null };
+type LetterPower = { topic_id: string; letter_id: string; learners: number; avg_seconds: number | null; knew_before_count: number };
 
 const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"];
 
