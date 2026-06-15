@@ -23,13 +23,17 @@ const QuizGame = () => {
   const [picked, setPicked] = useState<string | null>(null);
   const [score, setScore] = useState(0);
   const [time, setTime] = useState(60);
+  const questionStartRef = useRef<number>(Date.now());
 
   useEffect(() => {
     const t = setInterval(() => setTime((s) => Math.max(0, s - 1)), 1000);
     return () => clearInterval(t);
   }, []);
 
-  useEffect(() => { playItem(q.target); }, [q.target.id]);
+  useEffect(() => {
+    playItem(q.target);
+    questionStartRef.current = Date.now();
+  }, [q.target.id]);
 
   useEffect(() => {
     const h = () => { setScore(0); setTime(60); setQ(makeQ()); setPicked(null); };
@@ -42,7 +46,8 @@ const QuizGame = () => {
     setPicked(item.id);
     const correct = item.id === q.target.id;
     if (correct) setScore((s) => s + 1);
-    recordGameAnswer(q.target, correct);
+    const responseMs = Date.now() - questionStartRef.current;
+    recordGameAnswer(q.target, correct, { responseMs, gameId: "quiz" });
     await playFeedback(correct);
     setTimeout(() => { setQ(makeQ()); setPicked(null); }, 700);
   };
