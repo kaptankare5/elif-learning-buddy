@@ -6,12 +6,9 @@ import { setAge } from "@/lib/age";
 import { Shield, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type Role = "parent" | "teacher";
-
 export function ConsentModal() {
   const { session, loading } = useAuth();
   const [open, setOpen] = useState(false);
-  const [role, setRole] = useState<Role>("parent");
   const [ageBand, setAgeBand] = useState<"3-4" | "5-6">("3-4");
   const [gender, setGender] = useState<"k" | "e" | "x">("x");
   const [accept, setAccept] = useState(true);
@@ -34,22 +31,10 @@ export function ConsentModal() {
   const submit = async () => {
     setSaving(true);
     setConsent(accept);
-    // Yaş bandı → yaş sayısına dönüştür (ortayı al)
     setAge(ageBand === "3-4" ? 4 : 6);
     await updateMyProfile({ age_band: ageBand, gender, analytics_consent: accept });
-    if (session && role === "parent") {
-      // Only 'parent' can be self-assigned. 'teacher' role must be granted by an admin.
-      await supabase
-        .from("user_roles")
-        .insert({ user_id: session.user.id, role: "parent" })
-        .select()
-        .then(() => {}, () => {});
-    }
     setSaving(false);
     setOpen(false);
-    if (role === "teacher") {
-      alert("Öğretmen hesabı için yöneticiyle iletişime geçin; rol ataması admin tarafından yapılır.");
-    }
   };
 
   return (
@@ -68,12 +53,6 @@ export function ConsentModal() {
           Hiçbir kimlik bilgisi (ad, foto, vb.) saklanmaz.
         </p>
 
-        <Label>Kim kullanacak?</Label>
-        <div className="grid grid-cols-2 gap-2 mb-4">
-          <Choice active={role === "parent"} onClick={() => setRole("parent")} label="👨‍👩‍👧 Veliyim" />
-          <Choice active={role === "teacher"} onClick={() => setRole("teacher")} label="🧑‍🏫 Öğretmenim" />
-        </div>
-
         <Label>Çocuğun yaş aralığı</Label>
         <div className="grid grid-cols-2 gap-2 mb-4">
           <Choice active={ageBand === "3-4"} onClick={() => setAgeBand("3-4")} label="3-4 yaş" />
@@ -86,6 +65,7 @@ export function ConsentModal() {
           <Choice active={gender === "e"} onClick={() => setGender("e")} label="👦 Erkek" />
           <Choice active={gender === "x"} onClick={() => setGender("x")} label="Belirtme" />
         </div>
+
 
         <label className="flex items-start gap-2 mb-4 cursor-pointer">
           <input
