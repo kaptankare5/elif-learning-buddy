@@ -7,13 +7,15 @@ import type { ContentItem } from "@/data/types";
 
 const NS = "quiz" as const;
 
-export function recordGameAnswer(item: ContentItem | undefined | null, correct: boolean) {
+export function recordGameAnswer(
+  item: ContentItem | undefined | null,
+  correct: boolean,
+  meta?: { responseMs?: number; gameId?: string },
+) {
   if (!item) return;
   const t = findTopicOfItem(item.id);
   if (!t) return;
   try {
-    recordSrsAnswer(NS, t.topicId, item.id, correct);
-  } catch {
-    /* ignore */
-  }
+    recordSrsAnswer(NS, t.topicId, item.id, correct, meta);
+  } catch { /* ignore */ }
 }
