@@ -113,6 +113,30 @@ const Settings = () => {
             ✗ Yanlış sesi
           </button>
         </div>
+
+        {/* Gizlilik */}
+        <div className="mt-6 rounded-2xl bg-card p-4 shadow-card border-2 border-border/40">
+          <div className="flex items-center gap-3 mb-3">
+            <Shield className="h-6 w-6 text-primary" />
+            <div className="flex-1">
+              <h3 className="text-base font-extrabold">Gizlilik & Veri</h3>
+              <p className="text-xs text-muted-foreground">Anonim öğrenme verisi toplama</p>
+            </div>
+            <Switch checked={consent} onCheckedChange={toggleConsent} />
+          </div>
+          <p className="text-[11px] text-muted-foreground mb-3 leading-snug">
+            Kimlik bilgisi (ad, foto, doğum tarihi) saklanmaz. Sadece hangi oyun ne kadar
+            oynandı, hangi harf öğrenildi gibi anonim veriler — uygulamayı geliştirmek için.
+          </p>
+          {session && (
+            <button
+              onClick={handleDelete}
+              className="w-full rounded-xl bg-destructive/10 text-destructive border-2 border-destructive/30 py-2 font-extrabold text-sm flex items-center justify-center gap-2"
+            >
+              <Trash2 className="h-4 w-4" /> Verilerimi sil
+            </button>
+          )}
+        </div>
       </main>
     </div>
   );
