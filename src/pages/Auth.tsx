@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { ParentGate } from "@/components/ParentGate";
+import { migrateGuestDataToAccount } from "@/lib/localProgress";
 
 export default function Auth() {
   const { user, loading } = useAuth();
@@ -15,16 +17,29 @@ export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [kvkk, setKvkk] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [gateOpen, setGateOpen] = useState(false);
+  const [pending, setPending] = useState<null | "signup" | "google">(null);
 
   if (loading) return null;
   if (user) return <Navigate to="/" replace />;
 
-  const handleEmail = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const afterAuthSuccess = async () => {
+    const { data } = await supabase.auth.getSession();
+    const uid = data.session?.user?.id;
+    if (uid) {
+      // Hesapsız oynanmış SRS verisini hesaba aktar (idempotent).
+      void migrateGuestDataToAccount(uid).catch(() => {});
+    }
+    navigate("/");
+  };
+
+  const doEmail = async () => {
     setBusy(true);
     try {
       if (mode === "signup") {
+        if (!kvkk) { toast.error("Devam etmek için KVKK aydınlatmasını onaylamalısın."); return; }
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -34,14 +49,13 @@ export default function Auth() {
           },
         });
         if (error) throw error;
-        toast.success("Hesabın oluşturuldu! Giriş yapabilirsin.");
-        navigate("/");
+        toast.success("Hesabın oluşturuldu!");
+        await afterAuthSuccess();
       } else if (mode === "signin") {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        navigate("/");
+        await afterAuthSuccess();
       } else {
-        // forgot
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: `${window.location.origin}/sifre-sifirla`,
         });
@@ -57,7 +71,17 @@ export default function Auth() {
     }
   };
 
-  const handleGoogle = async () => {
+  const handleEmail = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (mode === "signup") {
+      if (!kvkk) { toast.error("Devam etmek için KVKK aydınlatmasını onaylamalısın."); return; }
+      setPending("signup"); setGateOpen(true);
+    } else {
+      void doEmail();
+    }
+  };
+
+  const doGoogle = async () => {
     setBusy(true);
     try {
       const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin }) as { error?: unknown; redirected?: boolean };
@@ -68,7 +92,7 @@ export default function Auth() {
         return;
       }
       if (result.redirected) return;
-      navigate("/");
+      await afterAuthSuccess();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Google girişi başarısız";
       toast.error(msg);
@@ -76,11 +100,20 @@ export default function Auth() {
     }
   };
 
+  const handleGoogle = () => { setPending("google"); setGateOpen(true); };
+
+  const onGatePass = () => {
+    setGateOpen(false);
+    if (pending === "signup") void doEmail();
+    else if (pending === "google") void doGoogle();
+    setPending(null);
+  };
+
   const title =
     mode === "signin" ? "Giriş yap" : mode === "signup" ? "Hesap oluştur" : "Şifremi unuttum";
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-secondary/40 via-background to-primary-soft/40 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-secondary/40 via-background to-primary-soft/40 px-4 py-8">
       <div className="w-full max-w-sm rounded-3xl bg-card p-6 shadow-card">
         <div className="text-center mb-5">
           <div className="text-5xl mb-2">📖</div>
@@ -103,7 +136,7 @@ export default function Auth() {
         <form onSubmit={handleEmail} className="space-y-3">
           {mode === "signup" && (
             <div>
-              <Label htmlFor="name">Ad</Label>
+              <Label htmlFor="name">Veli adı (opsiyonel)</Label>
               <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Adın" />
             </div>
           )}
@@ -117,6 +150,18 @@ export default function Auth() {
               <Input id="password" type="password" minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} required />
             </div>
           )}
+
+          {mode === "signup" && (
+            <label className="flex items-start gap-2 text-[11px] text-muted-foreground leading-snug cursor-pointer">
+              <input type="checkbox" checked={kvkk} onChange={(e) => setKvkk(e.target.checked)} className="mt-1" />
+              <span>
+                <strong>Veli sıfatıyla</strong> hesabı kendim açıyorum. KVKK aydınlatmasını okudum;
+                çocuğa ait hiçbir kimlik bilgisinin (ad, foto, doğum tarihi) saklanmayacağını,
+                yalnızca anonim öğrenme verilerinin işleneceğini kabul ediyorum.
+              </span>
+            </label>
+          )}
+
           <Button type="submit" disabled={busy} className="w-full">
             {mode === "signin" ? "Giriş yap" : mode === "signup" ? "Kayıt ol" : "Sıfırlama bağlantısı gönder"}
           </Button>
@@ -124,9 +169,7 @@ export default function Auth() {
 
         {mode === "signin" && (
           <p className="text-center text-xs mt-3">
-            <button className="text-primary underline" onClick={() => setMode("forgot")}>
-              Şifremi unuttum
-            </button>
+            <button className="text-primary underline" onClick={() => setMode("forgot")}>Şifremi unuttum</button>
           </p>
         )}
 
@@ -146,6 +189,13 @@ export default function Auth() {
           <Link to="/">Misafir olarak devam et</Link>
         </p>
       </div>
+
+      <ParentGate
+        open={gateOpen}
+        onPass={onGatePass}
+        onCancel={() => { setGateOpen(false); setPending(null); }}
+        title="Veli misin?"
+      />
     </div>
   );
 }
