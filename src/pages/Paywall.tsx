@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/PageHeader";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useAuth } from "@/hooks/useAuth";
 import { Check, Lock, Crown, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { trackPaywall } from "@/lib/analytics";
 
 interface Plan {
   id: string;
