@@ -47,6 +47,9 @@ export function ConsentModal() {
     }
     setSaving(false);
     setOpen(false);
+    if (role === "teacher") {
+      alert("Öğretmen hesabı için yöneticiyle iletişime geçin; rol ataması admin tarafından yapılır.");
+    }
   };
 
   return (
