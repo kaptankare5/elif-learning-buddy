@@ -164,6 +164,15 @@ const Paywall = () => {
               })}
             </div>
 
+            <label className="flex items-start gap-2 mb-3 text-[11px] text-muted-foreground leading-snug cursor-pointer px-1">
+              <input type="checkbox" checked={parentConsent} onChange={(e) => setParentConsent(e.target.checked)} className="mt-1" />
+              <span>
+                <strong>Veli/yasal vasi sıfatıyla</strong> ödemeyi kendim yapıyorum. Aboneliği
+                istediğim zaman iptal edebileceğimi ve 6502 sayılı Tüketici Kanunu kapsamındaki
+                haklarımı bildiğimi onaylıyorum.
+              </span>
+            </label>
+
             <button
               onClick={handleSubscribe}
               className="w-full rounded-3xl bg-gradient-to-r from-warning to-primary text-white py-5 font-extrabold text-lg shadow-elegant active:scale-95 transition-bouncy flex items-center justify-center gap-2"
@@ -176,6 +185,13 @@ const Paywall = () => {
             </p>
           </>
         )}
+
+        <ParentGate
+          open={gateOpen}
+          onPass={() => { setParentOk(true); setGateOpen(false); runCheckout(); }}
+          onCancel={() => setGateOpen(false)}
+          title="Ödemeden önce: Veli doğrulaması"
+        />
 
         <div className="mt-8 rounded-2xl bg-muted/40 p-4 text-center">
           <Lock className="h-5 w-5 mx-auto text-muted-foreground mb-1" />
