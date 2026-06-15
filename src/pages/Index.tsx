@@ -56,6 +56,13 @@ const Index = () => {
       </div>
 
       <main className="container relative mx-auto max-w-2xl px-4 pb-16 pt-6">
+        <Link
+          to={session ? "/ayarlar" : "/giris"}
+          className="absolute top-3 right-3 z-10 rounded-full bg-card p-2 shadow-card border-2 border-primary/20 hover:scale-105 transition-bouncy"
+          aria-label={session ? "Hesap" : "Giriş"}
+        >
+          {session ? <UserCircle2 className="h-5 w-5 text-primary" /> : <LogIn className="h-5 w-5 text-primary" />}
+        </Link>
         <div className="mb-3 flex justify-center animate-fade-in">
           <div className="inline-flex items-center gap-2 rounded-full bg-card px-4 py-1.5 text-xs font-bold text-primary shadow-card">
             <Sparkles className="h-3.5 w-3.5 text-warning" />
