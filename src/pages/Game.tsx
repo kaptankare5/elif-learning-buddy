@@ -1,5 +1,6 @@
 import { useParams, Navigate } from "react-router-dom";
 import { useLockBodyScroll } from "@/hooks/useLockBodyScroll";
+import { useGameSession } from "@/hooks/useGameSession";
 import QuizGame from "./games/QuizGame";
 import MemoryGame from "./games/MemoryGame";
 import BalloonGame from "./games/BalloonGame";
@@ -17,7 +18,12 @@ const Game = () => {
   useLockBodyScroll();
   const { gameId } = useParams<{ gameId: string }>();
   if (!GAMES.includes(gameId as typeof GAMES[number])) return <Navigate to="/oyunlar" replace />;
+  // Oyun süresi/oturum kaydı (anonim, sadece onay verilmişse)
+  return <TrackedGame gameId={gameId!} />;
+};
 
+const TrackedGame = ({ gameId }: { gameId: string }) => {
+  useGameSession(gameId);
   switch (gameId) {
     case "memory": return <MemoryGame />;
     case "balloon": return <BalloonGame />;
