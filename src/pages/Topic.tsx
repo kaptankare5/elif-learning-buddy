@@ -52,6 +52,7 @@ const Topic = () => {
   const [q, setQ] = useState<{ target: ContentItem; options: ContentItem[] } | null>(null);
   const [picked, setPicked] = useState<string | null>(null);
   const [score, setScore] = useState(0);
+  const questionStartRef = useRef<number>(0);
 
   const [age] = useAge();
   const items = useMemo(() => itemsForAge(topic?.items || [], age), [topic, age]);
