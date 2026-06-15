@@ -33,12 +33,20 @@ const Paywall = () => {
   const navigate = useNavigate();
   const [selected, setSelected] = useState<string>("yearly");
 
+  useEffect(() => { void trackPaywall("viewed"); }, []);
+
+  const handleSelect = (id: string) => {
+    setSelected(id);
+    void trackPaywall("plan_selected", id);
+  };
+
   const handleSubscribe = () => {
     if (!session) {
       navigate("/giris");
       return;
     }
     const p = PLANS.find((x) => x.id === selected);
+    void trackPaywall("checkout_started", selected);
     alert(
       `"${p?.name}" planı (${p?.price}₺) — abonelik satın alma mobil sürümde aktif olacaktır.\n\n(Google Play Billing entegrasyonu Capacitor ile eklenecek.)`,
     );
