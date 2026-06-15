@@ -7,6 +7,7 @@ import { useAge, AGE_LABELS } from "@/lib/age";
 import { AgePicker, AgeBadge } from "@/components/AgePicker";
 import { topicForAge } from "@/lib/age";
 import { useSubscription } from "@/hooks/useSubscription";
+import { HonorList } from "@/components/HonorList";
 
 const Index = () => {
   const [age] = useAge();
@@ -154,6 +155,7 @@ const Index = () => {
           )}
         </div>
 
+        <HonorList />
 
         <p className="mt-6 text-center text-xs font-semibold text-muted-foreground">
           {AGE_LABELS[age]} • {allVisible.reduce((a, s) => a + s.topicCount, 0)} Konu • Eğlenceli Oyunlar

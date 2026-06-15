@@ -1,19 +1,22 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { PageHeader } from "@/components/PageHeader";
 import { Switch } from "@/components/ui/switch";
 import { useSettings } from "@/lib/settings";
 import { playFeedback } from "@/lib/audio";
-import { Volume2, Vibrate, GraduationCap, Shield, Trash2 } from "lucide-react";
+import { Volume2, Vibrate, GraduationCap, Shield, Trash2, Lock } from "lucide-react";
 import { useGameMode } from "@/lib/gameMode";
 import { cn } from "@/lib/utils";
 import { consentGiven, setConsent, deleteMyAnalytics, updateMyProfile } from "@/lib/analytics";
 import { useAuth } from "@/hooks/useAuth";
+import { useSubscription } from "@/hooks/useSubscription";
 import { AccountCard } from "@/components/AccountCard";
 
 const Settings = () => {
   const [s, set] = useSettings();
   const [mode, setMode] = useGameMode();
   const { session } = useAuth();
+  const { hasSuperMode } = useSubscription();
   const [consent, setConsentState] = useState(consentGiven());
   useEffect(() => {
     const fn = () => setConsentState(consentGiven());
@@ -85,18 +88,33 @@ const Settings = () => {
                 <div className="text-[10px] font-bold opacity-80 mt-1">Arada test sorusu</div>
               </button>
               <button
-                onClick={() => setMode("super")}
+                onClick={() => { if (hasSuperMode) setMode("super"); }}
+                disabled={!hasSuperMode}
                 className={cn(
-                  "rounded-2xl p-3 border-2 font-extrabold text-sm text-left transition-bouncy",
-                  mode === "super"
+                  "rounded-2xl p-3 border-2 font-extrabold text-sm text-left transition-bouncy relative",
+                  mode === "super" && hasSuperMode
                     ? "bg-warning text-warning-foreground border-warning shadow-soft"
-                    : "bg-muted/40 border-border text-foreground"
+                    : "bg-muted/40 border-border text-foreground",
+                  !hasSuperMode && "opacity-70"
                 )}
               >
                 ⚡ Süper Öğrenme
                 <div className="text-[10px] font-bold opacity-80 mt-1">Her zaman test, hep ilerleme</div>
+                {!hasSuperMode && (
+                  <span className="absolute top-1 right-1 inline-flex items-center gap-0.5 rounded-full bg-warning/90 text-warning-foreground px-1.5 py-0.5 text-[9px] font-extrabold">
+                    <Lock className="h-2.5 w-2.5" /> 249₺
+                  </span>
+                )}
               </button>
             </div>
+            {!hasSuperMode && (
+              <Link
+                to="/abonelik"
+                className="mt-2 block text-center text-[11px] font-extrabold text-warning underline"
+              >
+                Süper Öğrenme'yi açmak için 249₺ paketine geç →
+              </Link>
+            )}
             <p className="text-[11px] text-muted-foreground mt-2 leading-snug">
               Süper modda sadece şu oyunlar gösterilir: Yılan, Uzay, Balon, Kutu Boşalt, Hızlı Quiz. İpucu halkası yalnız seviye 1'de görünür.
             </p>
