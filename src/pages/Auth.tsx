@@ -60,14 +60,14 @@ export default function Auth() {
   const handleGoogle = async () => {
     setBusy(true);
     try {
-      const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
+      const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin }) as { error?: unknown; redirected?: boolean };
       if (result.error) {
-        const msg = typeof result.error === "string" ? result.error : (result.error as Error)?.message;
-        toast.error(`Google ile giriş yapılamadı: ${msg || "bilinmeyen hata"}`);
+        const e = result.error as { message?: string };
+        toast.error(`Google ile giriş yapılamadı: ${e?.message || String(result.error)}`);
         setBusy(false);
         return;
       }
-      if (result.redirected) return; // tarayıcı Google'a yönlendirilecek
+      if (result.redirected) return;
       navigate("/");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Google girişi başarısız";
