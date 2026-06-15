@@ -29,23 +29,29 @@ const Admin = () => {
   const [daily, setDaily] = useState<Daily[]>([]);
   const [funnel, setFunnel] = useState<Funnel[]>([]);
   const [ages, setAges] = useState<Age[]>([]);
+  const [power, setPower] = useState<Power | null>(null);
+  const [letterPower, setLetterPower] = useState<LetterPower[]>([]);
 
   useEffect(() => {
     if (!isAdmin) return;
     void (async () => {
       setLoading(true);
-      const [p, l, d, f, a] = await Promise.all([
+      const [p, l, d, f, a, lp, lpw] = await Promise.all([
         supabase.from("analytics_game_popularity").select("*").order("session_count", { ascending: false }),
         supabase.from("analytics_letter_learn_time").select("*").order("avg_minutes", { ascending: true }).limit(30),
         supabase.from("analytics_daily_active").select("*").limit(30),
         supabase.from("analytics_paywall_funnel").select("*"),
         supabase.from("analytics_age_breakdown").select("*"),
+        supabase.from("analytics_learning_power" as never).select("*").maybeSingle(),
+        supabase.from("analytics_letter_power" as never).select("*").order("avg_seconds", { ascending: true }).limit(50),
       ]);
       setPop((p.data as Pop[]) ?? []);
       setLearn((l.data as Learn[]) ?? []);
       setDaily(((d.data as Daily[]) ?? []).reverse());
       setFunnel((f.data as Funnel[]) ?? []);
       setAges((a.data as Age[]) ?? []);
+      setPower((lp.data as Power | null) ?? null);
+      setLetterPower((lpw.data as LetterPower[]) ?? []);
       setLoading(false);
     })();
   }, [isAdmin]);
