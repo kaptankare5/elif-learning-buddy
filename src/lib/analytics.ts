@@ -49,14 +49,19 @@ async function uid(): Promise<string | null> {
 export async function updateMyProfile(p: ProfileExtras) {
   const userId = await uid();
   if (!userId) return;
-  const patch: Record<string, unknown> = {};
+  const patch: {
+    age_band?: string | null;
+    gender?: string | null;
+    analytics_consent?: boolean;
+    consent_at?: string;
+    platform?: string;
+  } = { platform: platform() };
   if (p.age_band !== undefined) patch.age_band = p.age_band;
   if (p.gender !== undefined) patch.gender = p.gender;
   if (p.analytics_consent !== undefined) {
     patch.analytics_consent = p.analytics_consent;
     patch.consent_at = new Date().toISOString();
   }
-  patch.platform = platform();
   await supabase.from("profiles").update(patch).eq("user_id", userId);
   try { localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(patch)); } catch { /* ignore */ }
 }
