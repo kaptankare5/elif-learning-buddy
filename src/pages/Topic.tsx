@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, Navigate } from "react-router-dom";
 import { getSubject, getTopic } from "@/data/subjects";
 import { PageHeader } from "@/components/PageHeader";
