@@ -22,7 +22,7 @@ interface Plan {
 }
 
 // Tier'lar: free (limitli + normal mod) → basic (49₺ tüm konular) →
-// super (249₺ tüm konular + süper öğrenme) → patron (5000₺ destekçi onur listesi)
+// super (249₺ tüm konular + süper öğrenme) → patron (5000₺ onur listesi)
 const PLANS: Plan[] = [
   {
     id: "basic_monthly",
@@ -58,7 +58,7 @@ const PLANS: Plan[] = [
   },
   {
     id: "patron_monthly",
-    name: "Destekçi (Onur Listesi)",
+    name: "Onur Listesi",
     price: 5000,
     per: "ay",
     monthly: "₺5000/ay",
@@ -69,7 +69,7 @@ const PLANS: Plan[] = [
       "Süper Öğrenme paketinin tüm özellikleri",
       "Abone olduğun sürece adın 👑 Onur Listesi'nde",
       "Aylık abonelik — istediğin zaman iptal",
-      "Uygulamayı ayakta tutan destekçiler",
+      "Uygulamayı ayakta tutanlar",
     ],
   },
 ];
