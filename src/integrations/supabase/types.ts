@@ -135,10 +135,13 @@ export type Database = {
           id: string
           knew_before: boolean | null
           last_seen_at: string
+          learned_at: string | null
           letter_id: string
           level: number
           shown_count: number
+          time_to_learn_ms: number | null
           topic_id: string
+          total_response_ms: number
           user_id: string
           wrong_count: number
         }
@@ -148,10 +151,13 @@ export type Database = {
           id?: string
           knew_before?: boolean | null
           last_seen_at?: string
+          learned_at?: string | null
           letter_id: string
           level?: number
           shown_count?: number
+          time_to_learn_ms?: number | null
           topic_id: string
+          total_response_ms?: number
           user_id: string
           wrong_count?: number
         }
@@ -161,10 +167,13 @@ export type Database = {
           id?: string
           knew_before?: boolean | null
           last_seen_at?: string
+          learned_at?: string | null
           letter_id?: string
           level?: number
           shown_count?: number
+          time_to_learn_ms?: number | null
           topic_id?: string
+          total_response_ms?: number
           user_id?: string
           wrong_count?: number
         }
@@ -360,9 +369,28 @@ export type Database = {
         }
         Relationships: []
       }
+      analytics_learning_power: {
+        Row: {
+          avg_minutes_per_item: number | null
+          avg_seconds_per_item: number | null
+          learned_items: number | null
+          learners: number | null
+        }
+        Relationships: []
+      }
       analytics_letter_learn_time: {
         Row: {
           avg_minutes: number | null
+          learners: number | null
+          letter_id: string | null
+          topic_id: string | null
+        }
+        Relationships: []
+      }
+      analytics_letter_power: {
+        Row: {
+          avg_seconds: number | null
+          knew_before_count: number | null
           learners: number | null
           letter_id: string | null
           topic_id: string | null
