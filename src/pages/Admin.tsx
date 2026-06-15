@@ -42,8 +42,8 @@ const Admin = () => {
         supabase.from("analytics_daily_active").select("*").limit(30),
         supabase.from("analytics_paywall_funnel").select("*"),
         supabase.from("analytics_age_breakdown").select("*"),
-        supabase.from("analytics_learning_power" as never).select("*").maybeSingle(),
-        supabase.from("analytics_letter_power" as never).select("*").order("avg_seconds", { ascending: true }).limit(50),
+        (supabase as unknown as { from: (t: string) => { select: (s: string) => { maybeSingle: () => Promise<{ data: Power | null }> } } }).from("analytics_learning_power").select("*").maybeSingle(),
+        (supabase as unknown as { from: (t: string) => { select: (s: string) => { order: (c: string, o: { ascending: boolean }) => { limit: (n: number) => Promise<{ data: LetterPower[] | null }> } } } }).from("analytics_letter_power").select("*").order("avg_seconds", { ascending: true }).limit(50),
       ]);
       setPop((p.data as Pop[]) ?? []);
       setLearn((l.data as Learn[]) ?? []);
