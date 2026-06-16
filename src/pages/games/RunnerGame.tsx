@@ -362,7 +362,7 @@ const RunnerGame = () => {
                 width: "56px", height: "56px",
                 fontSize: "34px", filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.6))",
                 willChange: "top", zIndex: e.isTarget ? 20 : 5 }}>
-              {e.isTarget && (!isSuper || getLetterLevel("games", SRS_TOPIC, e.item.id) === 1) && (<div className="absolute -inset-1 rounded-full border-4 border-warning animate-pulse" />)}
+              {e.isTarget && (!isSuper || getGameItemLevel(e.item) === 1) && (<div className="absolute -inset-1 rounded-full border-4 border-warning animate-pulse" />)}
               <span className="animate-float"><EmojiView value={e.item.emoji} /></span>
             </div>
           ))}
