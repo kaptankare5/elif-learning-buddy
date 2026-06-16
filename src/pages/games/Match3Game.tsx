@@ -5,10 +5,9 @@ import { LangToggle } from "@/components/LangToggle";
 import { playItem, playSpeech, playFeedback } from "@/lib/audio";
 import { cn } from "@/lib/utils";
 import { gamePool, getGameLang, pickN, shuffle } from "./_shared";
-import { recordSrsAnswer, recordLetterMastery } from "@/data/srs";
+import { recordLetterMastery } from "@/data/srs";
+import { recordGameAnswer } from "@/lib/gameProgress";
 import type { ContentItem } from "@/data/types";
-
-const SRS_TOPIC = "match3-game";
 
 // =============================================================
 // Üçlü Eşleştir — Candy-Crush tarzı, 5x6 grid, 3-4 farklı nesne türü.
@@ -333,8 +332,8 @@ const Match3Game = () => {
                     key={opt.id}
                     onClick={() => {
                       const correct = opt.id === quiz.target.id;
-                      recordSrsAnswer("games", SRS_TOPIC, quiz.target.id, correct);
                       recordLetterMastery(quiz.target.id, correct);
+                      recordGameAnswer(quiz.target, correct);
                       playFeedback(correct);
                       setQuiz(null);
                     }}
