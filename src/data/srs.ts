@@ -246,7 +246,9 @@ export function recordSrsAnswer(
     }).then(() => {
       const uid = getActiveSrsUser();
       if (uid) void hydrateSrsFromCloud(uid).catch(() => {});
-    }).catch(() => {});
+    }).catch((error) => {
+      console.error("Bulut ilerleme kaydı başarısız:", error);
+    });
   }).catch(() => {});
 
   // Milestone: seviye yükselişinde
