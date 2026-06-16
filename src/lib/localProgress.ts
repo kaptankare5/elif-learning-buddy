@@ -19,9 +19,25 @@ const NS = ["quiz", "games"] as const;
 const MIGRATED_FLAG = (userId: string) => `miniakil:migrated:${userId}`;
 
 function loadNs(ns: typeof NS[number]): SrsState {
-  try { return JSON.parse(localStorage.getItem(`elifba-srs-${ns}-v1`) || "{}"); }
-  catch { return {}; }
+  // Hem yeni misafir anahtarı hem eski anahtar okunur, birleştirilir.
+  const merge = (a: SrsState, b: SrsState): SrsState => {
+    const out: SrsState = JSON.parse(JSON.stringify(a));
+    for (const [tid, topic] of Object.entries(b)) {
+      out[tid] = out[tid] || {};
+      for (const [lid, e] of Object.entries(topic)) {
+        const prev = out[tid][lid];
+        out[tid][lid] = prev ? { ...prev, ...e, level: Math.max(prev.level, e.level), correct: prev.correct + e.correct, total: prev.total + e.total, seen: prev.seen + e.seen } : e;
+      }
+    }
+    return out;
+  };
+  try {
+    const a = JSON.parse(localStorage.getItem(`elifba-srs-${ns}-guest-v1`) || "{}");
+    const b = JSON.parse(localStorage.getItem(`elifba-srs-${ns}-v1`) || "{}");
+    return merge(a, b);
+  } catch { return {}; }
 }
+
 
 export async function migrateGuestDataToAccount(userId: string): Promise<{ migrated: number; errors: number }> {
   if (!userId) return { migrated: 0, errors: 0 };
