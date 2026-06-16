@@ -27,8 +27,8 @@ export async function logAnswer(params: LogAnswerParams) {
     _topic_id: params.topicId,
     _letter_id: params.letterId,
     _correct: params.correct,
-    _game_id: params.gameId ?? null,
-    _response_ms: params.responseMs ?? null,
+    _game_id: params.gameId,
+    _response_ms: params.responseMs,
     _mode: getGameMode(),
   });
   if (error) throw error;
