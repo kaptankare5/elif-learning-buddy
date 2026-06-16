@@ -310,7 +310,7 @@ const FlappyGame = () => {
 
           {/* Letters */}
           {letters.map((l) => {
-            const lvl = getLetterLevel("games", SRS_TOPIC, l.item.id);
+            const lvl = getGameItemLevel(l.item);
             const showRing = l.isTarget && (!isSuper || lvl === 1);
             return (
               <div
