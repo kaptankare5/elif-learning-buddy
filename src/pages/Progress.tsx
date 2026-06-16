@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { SUBJECTS } from "@/data/subjects";
-import { getTopicSrs, getNamespaceStats, useSrsTick, type Level } from "@/data/srs";
+import { getTopicSrs, getNamespaceStats, getNamespaceStatsFromCloud, useSrsTick, type Level } from "@/data/srs";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -9,8 +10,25 @@ const NS = "quiz" as const;
 
 const ProgressPage = () => {
   useSrsTick(NS);
-  const stats = getNamespaceStats(NS);
+  const localStats = getNamespaceStats(NS);
   const { session } = useAuth();
+  const uid = session?.user.id ?? null;
+  const [cloudStats, setCloudStats] = useState<ReturnType<typeof getNamespaceStats> | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!uid) { setCloudStats(null); return; }
+    const fetch = async () => {
+      const r = await getNamespaceStatsFromCloud(uid);
+      if (!cancelled) setCloudStats(r);
+    };
+    void fetch();
+    const onProgress = () => void fetch();
+    window.addEventListener("elifba-progress-updated", onProgress);
+    return () => { cancelled = true; window.removeEventListener("elifba-progress-updated", onProgress); };
+  }, [uid]);
+
+  const stats = uid && cloudStats ? cloudStats : localStats;
   const accountLabel = session
     ? (session.user.user_metadata?.display_name || session.user.email || "Hesabım")
     : "Misafir (sadece bu cihaz)";

@@ -388,13 +388,6 @@ export type Database = {
         }
         Relationships: []
       }
-      analytics_known_letters: {
-        Row: {
-          already_known_items: number | null
-          users: number | null
-        }
-        Relationships: []
-      }
       analytics_learning_power: {
         Row: {
           avg_minutes_per_item: number | null
@@ -460,6 +453,50 @@ export type Database = {
           mode: string | null
           sessions: number | null
           users: number | null
+        }
+        Relationships: []
+      }
+      analytics_super_vs_normal_per_user: {
+        Row: {
+          accuracy_pct: number | null
+          avg_seconds: number | null
+          correct: number | null
+          events: number | null
+          mode: string | null
+          pseudonym: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
+      analytics_user_letter_breakdown: {
+        Row: {
+          correct_count: number | null
+          knew_before: boolean | null
+          last_seen_at: string | null
+          learned_at: string | null
+          letter_id: string | null
+          level: number | null
+          seconds_to_learn: number | null
+          shown_count: number | null
+          topic_id: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
+      analytics_user_progress: {
+        Row: {
+          accuracy_pct: number | null
+          age_band: string | null
+          avg_seconds_per_learned_item: number | null
+          gender: string | null
+          items_per_active_hour: number | null
+          known_items: number | null
+          last_active: string | null
+          learned_items: number | null
+          primary_mode: string | null
+          pseudonym: string | null
+          total_items_seen: number | null
+          user_id: string | null
         }
         Relationships: []
       }

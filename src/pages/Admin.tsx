@@ -9,6 +9,7 @@ import {
 } from "recharts";
 import { Shield, Loader2 } from "lucide-react";
 import { Navigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
 
 type Pop = { game_id: string; session_count: number; unique_users: number; avg_seconds: number | null; completion_pct: number | null; accuracy_pct: number | null };
 type Learn = { topic_id: string; letter_id: string; learners: number; avg_minutes: number | null };
@@ -21,7 +22,9 @@ type Rate = { mode: string; learners: number; learned_items: number; active_minu
 type Engage = { game_id: string; mode: string; sessions: number; unique_users: number; total_minutes: number | null; avg_seconds: number | null; completion_pct: number | null; accuracy_pct: number | null };
 type Ret = { cohort_week: string; cohort_size: number; d1_pct: number | null; d7_pct: number | null; d30_pct: number | null };
 type Svn = { mode: string; users: number; sessions: number; avg_seconds: number | null; completion_pct: number | null; accuracy_pct: number | null };
-type Known = { already_known_items: number; users: number };
+type UserRow = { user_id: string; pseudonym: string; age_band: string | null; gender: string | null; primary_mode: string; learned_items: number; known_items: number; total_items_seen: number; avg_seconds_per_learned_item: number | null; items_per_active_hour: number | null; last_active: string | null; accuracy_pct: number | null };
+type UserLetter = { user_id: string; topic_id: string; letter_id: string; level: number; knew_before: boolean | null; learned_at: string | null; shown_count: number; correct_count: number; seconds_to_learn: number | null; last_seen_at: string | null };
+type UserMode = { user_id: string; pseudonym: string; mode: string; events: number; correct: number; avg_seconds: number | null; accuracy_pct: number | null };
 
 
 const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"];
@@ -41,14 +44,19 @@ const Admin = () => {
   const [engage, setEngage] = useState<Engage[]>([]);
   const [retention, setRetention] = useState<Ret[]>([]);
   const [svn, setSvn] = useState<Svn[]>([]);
-  const [known, setKnown] = useState<Known | null>(null);
+  const [users, setUsers] = useState<UserRow[]>([]);
+  const [userModes, setUserModes] = useState<UserMode[]>([]);
+  const [selectedUid, setSelectedUid] = useState<string | null>(null);
+  const [userLetters, setUserLetters] = useState<UserLetter[]>([]);
+  const [filterMode, setFilterMode] = useState<"all" | "super" | "normal">("all");
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     if (!isAdmin) return;
     void (async () => {
       setLoading(true);
       const sb = supabase as unknown as { from: (t: string) => any };
-      const [p, l, d, f, a, lp, lpw, r, eg, rt, sv, kn] = await Promise.all([
+      const [p, l, d, f, a, lp, lpw, r, eg, rt, sv, up, um] = await Promise.all([
         supabase.from("analytics_game_popularity").select("*").order("session_count", { ascending: false }),
         supabase.from("analytics_letter_learn_time").select("*").order("avg_minutes", { ascending: true }).limit(30),
         supabase.from("analytics_daily_active").select("*").limit(30),
@@ -60,7 +68,8 @@ const Admin = () => {
         sb.from("analytics_game_engagement").select("*"),
         sb.from("analytics_retention").select("*").limit(12),
         sb.from("analytics_super_vs_normal").select("*"),
-        sb.from("analytics_known_letters").select("*").maybeSingle(),
+        sb.from("analytics_user_progress").select("*").order("learned_items", { ascending: false }).limit(500),
+        sb.from("analytics_super_vs_normal_per_user").select("*"),
       ]);
       setPop((p.data as Pop[]) ?? []);
       setLearn((l.data as Learn[]) ?? []);
@@ -73,10 +82,22 @@ const Admin = () => {
       setEngage((eg.data as Engage[]) ?? []);
       setRetention(((rt.data as Ret[]) ?? []).reverse());
       setSvn((sv.data as Svn[]) ?? []);
-      setKnown((kn.data as Known | null) ?? null);
+      setUsers((up.data as UserRow[]) ?? []);
+      setUserModes((um.data as UserMode[]) ?? []);
       setLoading(false);
     })();
   }, [isAdmin]);
+
+  // Detay drawer için tek kullanıcının harf kırılımını yükle
+  useEffect(() => {
+    if (!selectedUid) { setUserLetters([]); return; }
+    void (async () => {
+      const sb = supabase as unknown as { from: (t: string) => any };
+      const { data } = await sb.from("analytics_user_letter_breakdown")
+        .select("*").eq("user_id", selectedUid).order("learned_at", { ascending: true });
+      setUserLetters((data as UserLetter[]) ?? []);
+    })();
+  }, [selectedUid]);
 
 
   if (authLoading || subLoading) {
@@ -105,6 +126,84 @@ const Admin = () => {
         ) : (
           <div className="space-y-6">
             <KPIs daily={daily} pop={pop} funnel={funnel} />
+
+            <Card title="👤 Profil Bazlı İlerleme">
+              <div className="flex flex-wrap gap-2 mb-3 text-xs">
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Rumuz ara…"
+                  className="flex-1 min-w-[140px] rounded-lg border-2 border-border bg-background px-2 py-1"
+                />
+                {(["all", "super", "normal"] as const).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setFilterMode(m)}
+                    className={cn(
+                      "rounded-lg px-2 py-1 font-bold border-2",
+                      filterMode === m ? "bg-primary text-primary-foreground border-primary" : "bg-muted/40 border-border"
+                    )}
+                  >
+                    {m === "all" ? "Hepsi" : m === "super" ? "⚡ Süper" : "🎮 Normal"}
+                  </button>
+                ))}
+              </div>
+              <Table headers={["Rumuz", "Yaş", "Mod", "Öğrendiği", "Bildiği", "Ort sn/öğe", "Saat/öğe", "Doğruluk %", "Son aktif"]}>
+                {users
+                  .filter((u) => filterMode === "all" || u.primary_mode === filterMode)
+                  .filter((u) => !search || u.pseudonym.toLowerCase().includes(search.toLowerCase()))
+                  .map((u) => (
+                    <tr
+                      key={u.user_id}
+                      onClick={() => setSelectedUid(u.user_id)}
+                      className="border-t cursor-pointer hover:bg-muted/40"
+                    >
+                      <td className="py-1.5 font-extrabold">{u.pseudonym}</td>
+                      <td>{u.age_band ?? "—"}</td>
+                      <td>{u.primary_mode === "super" ? "⚡" : "🎮"}</td>
+                      <td>{u.learned_items}</td>
+                      <td>{u.known_items}</td>
+                      <td>{u.avg_seconds_per_learned_item ?? "—"}</td>
+                      <td>{u.items_per_active_hour ?? "—"}</td>
+                      <td>{u.accuracy_pct ?? "—"}</td>
+                      <td className="text-[10px]">{u.last_active ? new Date(u.last_active).toLocaleDateString() : "—"}</td>
+                    </tr>
+                  ))}
+                {users.length === 0 && <tr><td colSpan={9} className="text-center text-muted-foreground py-3">Henüz veri yok.</td></tr>}
+              </Table>
+              <p className="mt-2 text-[10px] text-muted-foreground">
+                Sadece analitik iznini açan kullanıcılar listelenir. İsim/e-posta gösterilmez.
+              </p>
+            </Card>
+
+            {selectedUid && (
+              <Card title={`🔍 Profil Detayı — ${users.find((x) => x.user_id === selectedUid)?.pseudonym ?? selectedUid.slice(0, 6)}`}>
+                <button onClick={() => setSelectedUid(null)} className="mb-2 text-xs underline">← Kapat</button>
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  {userModes.filter((m) => m.user_id === selectedUid).map((m) => (
+                    <div key={m.mode} className="rounded-xl bg-muted/40 p-3 text-xs">
+                      <div className="font-extrabold">{m.mode === "super" ? "⚡ Süper" : "🎮 Normal"}</div>
+                      <div>Olay: <b>{m.events}</b> • Doğru: <b>{m.correct}</b></div>
+                      <div>Ort. sn: <b>{m.avg_seconds ?? "—"}</b> • Doğruluk: <b>{m.accuracy_pct ?? "—"}%</b></div>
+                    </div>
+                  ))}
+                </div>
+                <Table headers={["Konu", "Harf", "Seviye", "Biliyordu", "Öğrenme sn", "Doğru/Görüldü"]}>
+                  {userLetters.map((r) => (
+                    <tr key={r.topic_id + r.letter_id} className="border-t">
+                      <td className="py-1.5 font-semibold">{r.topic_id}</td>
+                      <td>{r.letter_id}</td>
+                      <td>L{r.level}</td>
+                      <td>{r.knew_before === true ? "✓" : r.knew_before === false ? "—" : "?"}</td>
+                      <td>{r.seconds_to_learn ?? "—"}</td>
+                      <td>{r.correct_count}/{r.shown_count}</td>
+                    </tr>
+                  ))}
+                  {userLetters.length === 0 && <tr><td colSpan={6} className="text-center text-muted-foreground py-3">Henüz harf verisi yok.</td></tr>}
+                </Table>
+              </Card>
+            )}
+
 
             <Card title="🆚 Süper Öğrenme vs Normal Mod">
               <div className="overflow-x-auto">
@@ -148,11 +247,6 @@ const Admin = () => {
                 ))}
                 {rate.length === 0 && <tr><td colSpan={6} className="text-center text-muted-foreground py-3">Henüz veri yok.</td></tr>}
               </Table>
-              {known && (
-                <p className="mt-2 text-[11px] text-muted-foreground">
-                  Kontrol: hesaba katılmayan "zaten biliyordu" öğe sayısı: <b>{known.already_known_items}</b> ({known.users} kişi)
-                </p>
-              )}
             </Card>
 
             <Card title="🕒 Oyun Süresi (toplam dakika, mod kırılımı)">
