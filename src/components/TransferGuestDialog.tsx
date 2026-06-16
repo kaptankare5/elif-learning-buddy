@@ -46,10 +46,11 @@ export function TransferGuestDialog() {
     setBusy(true);
     try {
       const uid = session.user.id;
-      const r = await migrateGuestDataToAccount(uid);
+      const r = await migrateGuestDataToAccount(uid, { force: true });
       await hydrateSrsFromCloud(uid);
       markAsked();
-      if (r.errors === 0) toast.success(`✅ ${r.migrated} kayıt aktarıldı`);
+      if (r.errors === 0 && r.migrated > 0) toast.success(`✅ ${r.inserted} yeni, ${r.updated} güncellendi`);
+      else if (r.migrated === 0) toast.info("Aktarılacak misafir verisi bulunamadı.");
       else toast.error(`Aktarıldı: ${r.migrated} • Hata: ${r.errors}`);
       setOpen(false);
     } finally { setBusy(false); }

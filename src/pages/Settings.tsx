@@ -11,7 +11,7 @@ import { consentGiven, setConsent, deleteMyAnalytics, updateMyProfile } from "@/
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { AccountCard } from "@/components/AccountCard";
-import { migrateGuestDataToAccount } from "@/lib/localProgress";
+import { migrateGuestDataToAccount, resetMigrationFlags } from "@/lib/localProgress";
 import { hydrateSrsFromCloud, hasGuestData, clearLocalProgress } from "@/data/srs";
 import { ConfirmDestructive } from "@/components/ConfirmDestructive";
 import { toast } from "sonner";
@@ -47,13 +47,20 @@ const Settings = () => {
     setBusyMigrate(true);
     try {
       const uid = session.user.id;
-      const r = await migrateGuestDataToAccount(uid);
+      const r = await migrateGuestDataToAccount(uid, { force: true });
       await hydrateSrsFromCloud(uid);
-      if (r.errors === 0) toast.success(`✅ ${r.migrated} kayıt aktarıldı`);
+      if (r.errors === 0 && r.migrated > 0) toast.success(`✅ ${r.inserted} yeni, ${r.updated} güncellendi`);
+      else if (r.migrated === 0) toast.info("Aktarılacak misafir verisi bulunamadı.");
       else toast.error(`Aktarıldı: ${r.migrated} • Hata: ${r.errors}`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Aktarım başarısız");
     } finally { setBusyMigrate(false); }
+  };
+
+  const doResetAskFlag = () => {
+    if (!session) return;
+    resetMigrationFlags(session.user.id);
+    toast.success("Aktarım hatırlatıcısı sıfırlandı. Tekrar denenebilir.");
   };
 
   const doCloudDelete = async () => {
@@ -188,6 +195,12 @@ const Settings = () => {
               className="w-full rounded-xl bg-primary/10 text-primary border-2 border-primary/30 py-2 font-extrabold text-sm disabled:opacity-50"
             >
               {busyMigrate ? "Aktarılıyor…" : "⬆️ Misafir ilerlemesini bu hesaba aktar"}
+            </button>
+            <button
+              onClick={doResetAskFlag}
+              className="mt-2 w-full text-[11px] text-muted-foreground underline"
+            >
+              Aktarım hatırlatıcısını sıfırla
             </button>
           </div>
         )}
