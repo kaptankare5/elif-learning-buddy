@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ParentGate } from "@/components/ParentGate";
-import { migrateGuestDataToAccount } from "@/lib/localProgress";
+
 
 export default function Auth() {
   const { user, loading } = useAuth();
