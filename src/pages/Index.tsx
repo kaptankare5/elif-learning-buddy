@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
+
 import { SUBJECTS } from "@/data/subjects";
 import { Sparkles, Crown, LogIn, UserCircle2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -170,12 +172,13 @@ const Index = () => {
 
 function GuestLoginReminder() {
   const KEY = "endlessmum:guest-reminder-hide-until";
-  const [hidden, setHidden] = (require("react") as typeof import("react")).useState<boolean>(() => {
+  const [hidden, setHidden] = useState<boolean>(() => {
     try {
       const v = localStorage.getItem(KEY);
       return !!(v && Number(v) > Date.now());
     } catch { return false; }
   });
+
   if (hidden) return null;
   return (
     <div className="mb-4 rounded-2xl bg-card border-2 border-primary/30 p-3 shadow-card flex items-start gap-3 animate-fade-in">
