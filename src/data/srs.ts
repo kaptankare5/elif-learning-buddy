@@ -239,6 +239,9 @@ export function recordSrsAnswer(
       timeToLearnMs: e.msToLearn,
       totalResponseMs: e.totalMs,
       level: e.level,
+    }).then(() => {
+      const uid = getActiveSrsUser();
+      if (uid) void hydrateSrsFromCloud(uid).catch(() => {});
     }).catch(() => {});
   }).catch(() => {});
 
