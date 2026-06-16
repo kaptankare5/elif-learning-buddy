@@ -256,7 +256,8 @@ export function recordSrsAnswer(
 
   save(ns, s);
 
-  // Bulut: cevap olayı + agg istatistik (sessizce)
+  // Bulut: cevap olayı + agg istatistik. Giriş yapan kullanıcıda sunucu cevabı
+  // tek gerçek kaynak kabul edilir; dönen satırla yerel önbellek hemen güncellenir.
   import("@/data/cloudSync").then((m) => {
     m.logAnswer({
       topicId,
@@ -269,11 +270,13 @@ export function recordSrsAnswer(
       timeToLearnMs: e.msToLearn,
       totalResponseMs: e.totalMs,
       level: e.level,
-    }).then(() => {
-      const uid = getActiveSrsUser();
-      if (uid) void hydrateSrsFromCloud(uid).catch(() => {});
+    }).then((row) => {
+      if (row) mergeCloudRowIntoLocal(ns, row as CloudLetterRow);
     }).catch((error) => {
       console.error("Bulut ilerleme kaydı başarısız:", error);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("elifba-progress-save-failed", { detail: error }));
+      }
     });
   }).catch(() => {});
 
@@ -328,19 +331,9 @@ export async function getCloudSrsState(uid: string | null): Promise<SrsState | n
       .eq("user_id", uid);
     if (error || !data) return null;
     const state: SrsState = {};
-    for (const r of data as Array<{ topic_id: string; letter_id: string; level: number; correct_count: number; shown_count: number; last_seen_at: string | null; total_response_ms: number | null; time_to_learn_ms: number | null; knew_before: boolean | null; learned_at: string | null }>) {
+    for (const r of data as CloudLetterRow[]) {
       if (!state[r.topic_id]) state[r.topic_id] = {};
-      state[r.topic_id][r.letter_id] = {
-        level: Math.max(1, Math.min(4, r.level || 1)) as Level,
-        correct: r.correct_count || 0,
-        total: r.shown_count || 0,
-        seen: r.shown_count || 0,
-        lastSeen: r.last_seen_at ? new Date(r.last_seen_at).getTime() : 0,
-        totalMs: r.total_response_ms ?? 0,
-        msToLearn: r.time_to_learn_ms ?? undefined,
-        knewBefore: r.knew_before ?? undefined,
-        learnedAt: r.learned_at ? new Date(r.learned_at).getTime() : undefined,
-      };
+      state[r.topic_id][r.letter_id] = rowToEntry(r);
     }
     return state;
   } catch { return null; }
