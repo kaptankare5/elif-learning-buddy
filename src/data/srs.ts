@@ -347,8 +347,7 @@ export async function getCloudSrsState(uid: string | null): Promise<SrsState | n
     if (error || !data) return null;
     const state: SrsState = {};
     for (const r of data as CloudLetterRow[]) {
-      if (!state[r.topic_id]) state[r.topic_id] = {};
-      state[r.topic_id][r.letter_id] = rowToEntry(r);
+      putCloudRow(state, r);
     }
     return state;
   } catch { return null; }
