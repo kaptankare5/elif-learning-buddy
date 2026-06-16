@@ -31,6 +31,7 @@ const ProgressPage = () => {
     return () => { cancelled = true; window.removeEventListener("elifba-progress-updated", onProgress); };
   }, [uid]);
 
+  const showCloudLoading = !!uid && cloudLoading;
   const stats = uid ? (cloudStats ?? { total: 0, correct: 0, percent: 0, levelCount: { 1: 0, 2: 0, 3: 0, 4: 0 } as Record<Level, number> }) : localStats;
   const accountLabel = session
     ? (session.user.user_metadata?.display_name || session.user.email || "Hesabım")
@@ -59,15 +60,15 @@ const ProgressPage = () => {
         )}
 
         <div className="mb-4 grid grid-cols-3 gap-2">
-          <Stat label="Toplam Cevap" value={stats.total} color="text-primary" />
-          <Stat label="Doğru" value={stats.correct} color="text-success" />
-          <Stat label="Başarı" value={`${stats.percent}%`} color="text-info" />
+          <Stat label="Toplam Cevap" value={showCloudLoading ? "…" : stats.total} color="text-primary" />
+          <Stat label="Doğru" value={showCloudLoading ? "…" : stats.correct} color="text-success" />
+          <Stat label="Başarı" value={showCloudLoading ? "…" : `${stats.percent}%`} color="text-info" />
         </div>
 
 
         <div className="mb-6 grid grid-cols-4 gap-2">
           {[1, 2, 3, 4].map((l) => (
-            <LevelBox key={l} level={l as Level} count={stats.levelCount[l as Level]} />
+            <LevelBox key={l} level={l as Level} count={showCloudLoading ? "…" : stats.levelCount[l as Level]} />
           ))}
         </div>
 
@@ -182,7 +183,7 @@ function Stat({ label, value, color }: { label: string; value: string | number; 
   );
 }
 
-function LevelBox({ level, count }: { level: Level; count: number }) {
+function LevelBox({ level, count }: { level: Level; count: number | string }) {
   return (
     <div className={cn("rounded-xl p-2 text-center shadow-soft border-2",
       level === 1 && "bg-info/10 border-info/40",
