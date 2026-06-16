@@ -11,7 +11,7 @@ import { consentGiven, setConsent, deleteMyAnalytics, updateMyProfile } from "@/
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { AccountCard } from "@/components/AccountCard";
-import { clearLocalProgress } from "@/data/srs";
+import { clearLocalProgress, hydrateSrsFromCloud } from "@/data/srs";
 import { ConfirmDestructive } from "@/components/ConfirmDestructive";
 import { toast } from "sonner";
 
@@ -47,7 +47,8 @@ const Settings = () => {
 
   const doDeviceDelete = async () => {
     clearLocalProgress(deviceScope);
-    toast.success("Cihazdaki ilerleme verisi silindi.");
+    if (session?.user.id) await hydrateSrsFromCloud(session.user.id).catch(() => {});
+    toast.success("Cihazdaki önbellek silindi; hesap verisi yeniden yüklendi.");
   };
 
   return (
