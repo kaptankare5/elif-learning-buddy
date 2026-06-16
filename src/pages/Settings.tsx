@@ -1,18 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { PageHeader } from "@/components/PageHeader";
 import { Switch } from "@/components/ui/switch";
 import { useSettings } from "@/lib/settings";
 import { playFeedback } from "@/lib/audio";
-import { Volume2, Vibrate, GraduationCap, Shield, Trash2, Lock, Smartphone, Upload } from "lucide-react";
+import { Volume2, Vibrate, GraduationCap, Shield, Trash2, Lock, Smartphone } from "lucide-react";
 import { useGameMode } from "@/lib/gameMode";
 import { cn } from "@/lib/utils";
 import { consentGiven, setConsent, deleteMyAnalytics, updateMyProfile } from "@/lib/analytics";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { AccountCard } from "@/components/AccountCard";
-import { migrateGuestDataToAccount, resetMigrationFlags } from "@/lib/localProgress";
-import { hydrateSrsFromCloud, hasGuestData, clearLocalProgress } from "@/data/srs";
+import { clearLocalProgress } from "@/data/srs";
 import { ConfirmDestructive } from "@/components/ConfirmDestructive";
 import { toast } from "sonner";
 
@@ -23,11 +22,9 @@ const Settings = () => {
   const { session } = useAuth();
   const { hasSuperMode } = useSubscription();
   const [consent, setConsentState] = useState(consentGiven());
-  const [busyMigrate, setBusyMigrate] = useState(false);
   const [confirmCloudDel, setConfirmCloudDel] = useState(false);
   const [confirmDeviceDel, setConfirmDeviceDel] = useState(false);
   const [deviceScope, setDeviceScope] = useState<"active" | "guest" | "all">(session ? "active" : "guest");
-  const guestHas = useMemo(() => hasGuestData(), [session, busyMigrate]);
 
   useEffect(() => {
     const fn = () => setConsentState(consentGiven());
@@ -40,27 +37,6 @@ const Settings = () => {
   const toggleConsent = async (v: boolean) => {
     setConsent(v); setConsentState(v);
     if (session) await updateMyProfile({ analytics_consent: v });
-  };
-
-  const doMigrate = async () => {
-    if (!session) return;
-    setBusyMigrate(true);
-    try {
-      const uid = session.user.id;
-      const r = await migrateGuestDataToAccount(uid, { force: true });
-      await hydrateSrsFromCloud(uid);
-      if (r.errors === 0 && r.migrated > 0) toast.success(`✅ ${r.inserted} yeni, ${r.updated} güncellendi`);
-      else if (r.migrated === 0) toast.info("Aktarılacak misafir verisi bulunamadı.");
-      else toast.error(`Aktarıldı: ${r.migrated} • Hata: ${r.errors}`);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Aktarım başarısız");
-    } finally { setBusyMigrate(false); }
-  };
-
-  const doResetAskFlag = () => {
-    if (!session) return;
-    resetMigrationFlags(session.user.id);
-    toast.success("Aktarım hatırlatıcısı sıfırlandı. Tekrar denenebilir.");
   };
 
   const doCloudDelete = async () => {
@@ -177,33 +153,8 @@ const Settings = () => {
           </button>
         </div>
 
-        {/* Misafir verisi içe aktarma */}
-        {session && (
-          <div className="mt-6 rounded-2xl bg-card p-4 shadow-card border-2 border-primary/30">
-            <div className="flex items-center gap-3 mb-2">
-              <Upload className="h-6 w-6 text-primary" />
-              <h3 className="text-base font-extrabold flex-1">Cihazdaki misafir ilerlemesi</h3>
-            </div>
-            <p className="text-xs text-muted-foreground mb-3 leading-snug">
-              {guestHas
-                ? "Bu cihazda giriş yapmadan oynanan ilerleme bulundu. Bu hesaba eklemek istersen aşağıdaki butona dokun. Mevcut hesap verisi silinmez."
-                : "Bu cihazda misafir ilerlemesi bulunamadı — eklenecek bir şey yok."}
-            </p>
-            <button
-              onClick={doMigrate}
-              disabled={busyMigrate || !guestHas}
-              className="w-full rounded-xl bg-primary/10 text-primary border-2 border-primary/30 py-2 font-extrabold text-sm disabled:opacity-50"
-            >
-              {busyMigrate ? "Aktarılıyor…" : "⬆️ Misafir ilerlemesini bu hesaba aktar"}
-            </button>
-            <button
-              onClick={doResetAskFlag}
-              className="mt-2 w-full text-[11px] text-muted-foreground underline"
-            >
-              Aktarım hatırlatıcısını sıfırla
-            </button>
-          </div>
-        )}
+
+
 
         {/* Gizlilik */}
         <div className="mt-6 rounded-2xl bg-card p-4 shadow-card border-2 border-border/40">

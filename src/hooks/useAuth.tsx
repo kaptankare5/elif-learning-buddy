@@ -1,8 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { setActiveSrsUser, hydrateSrsFromCloud, hasGuestData } from "@/data/srs";
-const TRANSFER_PROMPT_EVENT = "miniakil:prompt-transfer";
+import { setActiveSrsUser, hydrateSrsFromCloud } from "@/data/srs";
 
 interface AuthCtx {
   user: User | null;
@@ -12,9 +11,6 @@ interface AuthCtx {
 }
 
 const Ctx = createContext<AuthCtx>({ user: null, session: null, loading: true, signOut: async () => {} });
-
-const ASKED_FLAG = (uid: string) => `miniakil:transfer-asked:${uid}`;
-const MIGRATED_FLAG = (uid: string) => `miniakil:migrated:${uid}`;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -26,21 +22,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const newUid = s?.user?.id ?? null;
       const prevUid = prevUidRef.current;
       if (newUid !== prevUid) {
-        // Önceki kullanıcının yerel önbelleğini KORU — cihaz başkasıyla paylaşılıyorsa
-        // Ayarlar > Cihaz verilerimi sil ile temizlenebilir.
+        // Aktif SRS kapsamını değiştir. Misafir önbelleği KORUNUR — hesap kendi
+        // önbelleğine buluttan çekilir; cihaz başkasıyla paylaşılıyorsa Ayarlar >
+        // "Cihazdaki ilerlememi sil" ile temizlenebilir.
         setActiveSrsUser(newUid);
         if (newUid) {
           void hydrateSrsFromCloud(newUid).catch(() => {});
-          // İlk girişte aktarma sorusunu tetikle
-          try {
-            const asked = localStorage.getItem(ASKED_FLAG(newUid)) === "1";
-            const migrated = localStorage.getItem(MIGRATED_FLAG(newUid)) === "1";
-            if (!asked && !migrated && hasGuestData()) {
-              setTimeout(() => {
-                try { window.dispatchEvent(new Event(TRANSFER_PROMPT_EVENT)); } catch { /* */ }
-              }, 600);
-            }
-          } catch { /* */ }
         }
         prevUidRef.current = newUid;
       }
