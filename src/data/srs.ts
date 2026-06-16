@@ -6,6 +6,7 @@
 // - Sadece "biliyordu = false" olan harflerin soru süresi öğrenme gücüne katkı verir.
 
 import { useEffect, useState } from "react";
+import { findTopicOfItem } from "@/data/subjects";
 
 export type Level = 1 | 2 | 3 | 4;
 export type Namespace = "quiz" | "games";
@@ -130,10 +131,25 @@ function rowToEntry(r: CloudLetterRow): LetterSrsEntry {
 
 function mergeCloudRowIntoLocal(ns: Namespace, row: CloudLetterRow) {
   if (typeof window === "undefined") return;
+  const topicId = normalizeCloudTopic(row);
   const s = load(ns);
-  if (!s[row.topic_id]) s[row.topic_id] = {};
-  s[row.topic_id][row.letter_id] = rowToEntry(row);
+  if (!s[topicId]) s[topicId] = {};
+  s[topicId][row.letter_id] = rowToEntry(row);
   save(ns, s);
+}
+
+function normalizeCloudTopic(row: CloudLetterRow): string {
+  return findTopicOfItem(row.letter_id)?.topicId ?? row.topic_id;
+}
+
+function putCloudRow(state: SrsState, row: CloudLetterRow) {
+  const topicId = normalizeCloudTopic(row);
+  if (!state[topicId]) state[topicId] = {};
+  const next = rowToEntry(row);
+  const prev = state[topicId][row.letter_id];
+  if (!prev || next.total > prev.total || (next.total === prev.total && next.lastSeen >= prev.lastSeen)) {
+    state[topicId][row.letter_id] = next;
+  }
 }
 
 export async function hydrateSrsFromCloud(uid: string) {
@@ -143,8 +159,7 @@ export async function hydrateSrsFromCloud(uid: string) {
   if (!data) return;
   const state: SrsState = {};
   for (const r of data as CloudLetterRow[]) {
-    if (!state[r.topic_id]) state[r.topic_id] = {};
-    state[r.topic_id][r.letter_id] = rowToEntry(r);
+    putCloudRow(state, r);
   }
   for (const ns of ["quiz", "games"] as Namespace[]) {
     try { localStorage.setItem(`elifba-srs-${ns}-${uid}-v1`, JSON.stringify(state)); } catch { /* */ }
