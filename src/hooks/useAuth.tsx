@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState, ReactN
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { setActiveSrsUser, hydrateSrsFromCloud, hasGuestData } from "@/data/srs";
-import { TRANSFER_PROMPT_EVENT } from "@/components/TransferGuestDialog";
+const TRANSFER_PROMPT_EVENT = "miniakil:prompt-transfer";
 
 interface AuthCtx {
   user: User | null;
