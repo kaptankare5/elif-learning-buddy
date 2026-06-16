@@ -29,8 +29,7 @@ ShipSvg.displayName = "ShipSvg";
 import { PageHeader } from "@/components/PageHeader";
 import { playFeedback, playSpeech } from "@/lib/audio";
 import { gamePool, pickN, shuffle } from "./_shared";
-import { pickNextLetter, recordSrsAnswer, getLetterLevel } from "@/data/srs";
-import { recordGameAnswer } from "@/lib/gameProgress";
+import { getGameItemLevel, pickNextGameItem, recordGameAnswer } from "@/lib/gameProgress";
 import { useGameMode } from "@/lib/gameMode";
 import type { ContentItem } from "@/data/types";
 import { cn } from "@/lib/utils";
@@ -48,7 +47,6 @@ const ENEMY_SIZE = 10;
 const ENEMY_FALL = 0.35;
 const BULLET_SPEED = 2.2;
 const SHIP_SPEED = 1.8;
-const SRS_TOPIC = "space-shooter";
 const MAX_ENEMIES = 5;
 const SHIP_TOP = 86;
 const ROUND_SIZE = 4; // her elde 4 nesne
@@ -95,8 +93,7 @@ const RunnerGame = () => {
     const pool = gamePool();
     if (pool.length === 0) return;
     // Hedefi SRS ile seç
-    const id = pickNextLetter("games", SRS_TOPIC, pool.map((p) => p.id));
-    const tgt = pool.find((p) => p.id === id) || pool[0];
+    const tgt = pickNextGameItem(pool) || pool[0];
     // El nesneleri: hedef + 3 rastgele yanlış (toplam 4)
     const others = pickN(pool.filter((p) => p.id !== tgt.id), Math.max(0, ROUND_SIZE - 1));
     const items = shuffle([tgt, ...others]);
@@ -234,7 +231,7 @@ const RunnerGame = () => {
             Math.abs(ny - SHIP_TOP) < (SHIP_H / 2 + ENEMY_SIZE / 2 - 2);
           if (hitsShip) {
             collided = true;
-            if (e.isTarget && targetRef.current) { recordSrsAnswer("games", SRS_TOPIC, targetRef.current.id, false); recordGameAnswer(targetRef.current, false); }
+            if (e.isTarget && targetRef.current) { recordGameAnswer(targetRef.current, false); }
             continue;
           }
           if (ny > 100) continue;
@@ -274,7 +271,6 @@ const RunnerGame = () => {
         if (hitTarget && targetRef.current && !roundLockRef.current) {
           roundLockRef.current = true;
           const t = targetRef.current;
-          recordSrsAnswer("games", SRS_TOPIC, t.id, true);
           recordGameAnswer(t, true);
           setScore((s) => s + 3);
           setCombo((c) => c + 1);
@@ -283,7 +279,7 @@ const RunnerGame = () => {
           // Doğru cevapta soruyu tekrar seslendirme — sadece olumlu geri bildirim sesi
           setTimeout(() => { void nextRound(); }, 600);
         } else if (hitWrong && !hitTarget) {
-          if (targetRef.current) { recordSrsAnswer("games", SRS_TOPIC, targetRef.current.id, false); recordGameAnswer(targetRef.current, false); }
+          if (targetRef.current) { recordGameAnswer(targetRef.current, false); }
           loseLifeAndRenew();
         }
         return moved;
@@ -366,7 +362,7 @@ const RunnerGame = () => {
                 width: "56px", height: "56px",
                 fontSize: "34px", filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.6))",
                 willChange: "top", zIndex: e.isTarget ? 20 : 5 }}>
-              {e.isTarget && (!isSuper || getLetterLevel("games", SRS_TOPIC, e.item.id) === 1) && (<div className="absolute -inset-1 rounded-full border-4 border-warning animate-pulse" />)}
+              {e.isTarget && (!isSuper || getGameItemLevel(e.item) === 1) && (<div className="absolute -inset-1 rounded-full border-4 border-warning animate-pulse" />)}
               <span className="animate-float"><EmojiView value={e.item.emoji} /></span>
             </div>
           ))}

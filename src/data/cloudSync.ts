@@ -21,9 +21,9 @@ export interface LogAnswerParams {
 export async function logAnswer(params: LogAnswerParams) {
   const { data: sess } = await supabase.auth.getSession();
   const user = sess.session?.user;
-  if (!user) return;
+  if (!user) return null;
 
-  const { error } = await supabase.rpc("record_letter_answer", {
+  const { data, error } = await supabase.rpc("record_letter_answer", {
     _topic_id: params.topicId,
     _letter_id: params.letterId,
     _correct: params.correct,
@@ -38,6 +38,8 @@ export async function logAnswer(params: LogAnswerParams) {
     window.dispatchEvent(new Event("elifba-srs-quiz-updated"));
     window.dispatchEvent(new Event("elifba-srs-games-updated"));
   }
+
+  return data;
 }
 
 export async function markKnewBefore(topicId: string, letterId: string, knewBefore: boolean) {

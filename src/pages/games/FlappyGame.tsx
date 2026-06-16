@@ -3,8 +3,8 @@ import { EmojiView } from "@/components/EmojiView";
 import { PageHeader } from "@/components/PageHeader";
 import { playItem, playFeedback, playSpeech } from "@/lib/audio";
 import { gamePool, shuffle, pickN } from "./_shared";
-import { pickNextLetter, recordSrsAnswer, recordLetterMastery, getLetterLevel } from "@/data/srs";
-import { recordGameAnswer } from "@/lib/gameProgress";
+import { recordLetterMastery } from "@/data/srs";
+import { getGameItemLevel, pickNextGameItem, recordGameAnswer } from "@/lib/gameProgress";
 import { useGameMode } from "@/lib/gameMode";
 import type { ContentItem } from "@/data/types";
 import { cn } from "@/lib/utils";
@@ -26,7 +26,6 @@ const MAX_LETTERS = 6;         // ekranda aynı anda en fazla
 const MIN_DY = 22;             // harfler arası minimum dikey mesafe (aynı x'te)
 const NEAR_DX = 18;            // yatayca "yakın" sayma eşiği
 // quiz kaldırıldı
-const SRS_TOPIC = "flappy-game";
 
 interface Letter {
   uid: number;
@@ -64,9 +63,7 @@ const FlappyGame = () => {
 
   const pickTarget = useCallback((silent = false) => {
     const pool = gamePool();
-    const ids = pool.map((p) => p.id);
-    const id = pickNextLetter("games", SRS_TOPIC, ids);
-    const item = pool.find((p) => p.id === id) || pool[0];
+    const item = pickNextGameItem(pool) || pool[0];
     setTarget(item);
     if (!silent && !pausedRef.current) playItem(item);
   }, []);
@@ -196,7 +193,6 @@ const FlappyGame = () => {
         let next = moved.filter((l) => l !== collidedTarget && l !== collidedWrong);
 
         if (collidedTarget) {
-          recordSrsAnswer("games", SRS_TOPIC, collidedTarget.item.id, true);
           recordLetterMastery(collidedTarget.item.id, true);
           recordGameAnswer(collidedTarget.item, true);
           playSpeech(collidedTarget.item.speech);
@@ -210,7 +206,6 @@ const FlappyGame = () => {
           return next;
         }
         if (collidedWrong) {
-          recordSrsAnswer("games", SRS_TOPIC, targetRef.current!.id, false);
           recordLetterMastery(targetRef.current!.id, false);
           recordGameAnswer(targetRef.current!, false);
           playFeedback(false);
@@ -221,7 +216,6 @@ const FlappyGame = () => {
           });
         }
         if (missedTarget) {
-          recordSrsAnswer("games", SRS_TOPIC, targetRef.current!.id, false);
           recordLetterMastery(targetRef.current!.id, false);
           recordGameAnswer(targetRef.current!, false);
           playFeedback(false);
@@ -316,7 +310,7 @@ const FlappyGame = () => {
 
           {/* Letters */}
           {letters.map((l) => {
-            const lvl = getLetterLevel("games", SRS_TOPIC, l.item.id);
+            const lvl = getGameItemLevel(l.item);
             const showRing = l.isTarget && (!isSuper || lvl === 1);
             return (
               <div

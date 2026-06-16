@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { SUBJECTS } from "@/data/subjects";
-import { getTopicSrs, getNamespaceStats, getNamespaceStatsFromCloud, getCloudSrsState, useSrsTick, type Level, type SrsState } from "@/data/srs";
+import { getTopicSrs, getNamespaceStats, getCloudSrsState, useSrsTick, type Level, type SrsState } from "@/data/srs";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -22,11 +22,8 @@ const ProgressPage = () => {
     if (!uid) { setCloudStats(null); setCloudSrs(null); setCloudLoading(false); return; }
     setCloudLoading(true);
     const fetch = async () => {
-      const [s, full] = await Promise.all([
-        getNamespaceStatsFromCloud(uid),
-        getCloudSrsState(uid),
-      ]);
-      if (!cancelled) { setCloudStats(s); setCloudSrs(full); setCloudLoading(false); }
+      const full = await getCloudSrsState(uid);
+      if (!cancelled) { setCloudStats(full ? statsFromState(full) : null); setCloudSrs(full); setCloudLoading(false); }
     };
     void fetch();
     const onProgress = () => void fetch();
@@ -162,6 +159,19 @@ const ProgressPage = () => {
     </div>
   );
 };
+
+function statsFromState(state: SrsState): ReturnType<typeof getNamespaceStats> {
+  let total = 0, correct = 0;
+  const levelCount: Record<Level, number> = { 1: 0, 2: 0, 3: 0, 4: 0 };
+  Object.values(state).forEach((topic) => {
+    Object.values(topic).forEach((e) => {
+      total += e.total;
+      correct += e.correct;
+      levelCount[e.level] += 1;
+    });
+  });
+  return { total, correct, percent: total === 0 ? 0 : Math.round((correct / total) * 100), levelCount };
+}
 
 function Stat({ label, value, color }: { label: string; value: string | number; color: string }) {
   return (

@@ -3,7 +3,7 @@ import { EmojiView } from "@/components/EmojiView";
 import { PageHeader } from "@/components/PageHeader";
 import { playFeedback, playSpeech } from "@/lib/audio";
 import { gamePool, pickN } from "./_shared";
-import { pickNextLetter, recordSrsAnswer } from "@/data/srs";
+import { pickNextGameItem, recordGameAnswer } from "@/lib/gameProgress";
 import type { ContentItem } from "@/data/types";
 import { cn } from "@/lib/utils";
 import { Heart, Volume2, ChevronLeft, ChevronRight } from "lucide-react";
@@ -14,7 +14,6 @@ import { Heart, Volume2, ChevronLeft, ChevronRight } from "lucide-react";
 const BASE_SPEED = 1.5;
 const TICK_MS = 33;
 const SPAWN_EVERY = 28;
-const SRS_TOPIC = "lane-runner";
 
 interface Obj {
   uid: number;
@@ -52,8 +51,7 @@ const LaneRunnerGame = () => {
   const pickTarget = useCallback((silent = false) => {
     const pool = gamePool();
     if (pool.length === 0) return;
-    const id = pickNextLetter("games", SRS_TOPIC, pool.map((p) => p.id));
-    const item = pool.find((p) => p.id === id) || pool[0];
+    const item = pickNextGameItem(pool) || pool[0];
     setTarget(item);
     if (!silent && !pausedRef.current) {
       setTimeout(() => playSpeech(`Hangisi ${item.speech}?`, item.lang), 80);
@@ -142,7 +140,7 @@ const LaneRunnerGame = () => {
         }
 
         if (hitTarget) {
-          recordSrsAnswer("games", SRS_TOPIC, hitTarget.item.id, true);
+          recordGameAnswer(hitTarget.item, true);
           playSpeech(hitTarget.item.speech, hitTarget.item.lang);
           setScore((s) => s + 1); setCombo((c) => c + 1);
           addPop(hitTarget.lane, "+1", true);
@@ -150,14 +148,14 @@ const LaneRunnerGame = () => {
           setTimeout(pickTarget, 350);
         }
         if (hitWrong) {
-          recordSrsAnswer("games", SRS_TOPIC, targetRef.current!.id, false);
+          recordGameAnswer(targetRef.current!, false);
           playFeedback(false); setCombo(0);
           addPop(hitWrong.lane, "✗", false);
           flashFx("bad");
           setLives((l) => { const nl = l - 1; if (nl <= 0) setGameOver(true); return nl; });
         }
         if (missedTarget && !hitTarget) {
-          recordSrsAnswer("games", SRS_TOPIC, targetRef.current!.id, false);
+          recordGameAnswer(targetRef.current!, false);
           setCombo(0);
           setLives((l) => { const nl = l - 1; if (nl <= 0) setGameOver(true); return nl; });
           setTimeout(pickTarget, 350);

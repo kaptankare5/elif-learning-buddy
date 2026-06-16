@@ -182,8 +182,6 @@ export async function deleteMyAnalytics(): Promise<{ ok: boolean; error?: string
     supabase.from("screen_views").delete().eq("user_id", userId),
     supabase.from("learning_milestones").delete().eq("user_id", userId),
     supabase.from("paywall_events").delete().eq("user_id", userId),
-    supabase.from("answer_events").delete().eq("user_id", userId),
-    supabase.from("letter_stats").delete().eq("user_id", userId),
   ]);
   const firstErr = results.find((r) => r.error)?.error;
   if (firstErr) return { ok: false, error: firstErr.message };

@@ -6,6 +6,7 @@
 // - Sadece "biliyordu = false" olan harflerin soru süresi öğrenme gücüne katkı verir.
 
 import { useEffect, useState } from "react";
+import { findTopicOfItem } from "@/data/subjects";
 
 export type Level = 1 | 2 | 3 | 4;
 export type Namespace = "quiz" | "games";
@@ -100,25 +101,65 @@ function save(ns: Namespace, s: SrsState) {
   window.dispatchEvent(new Event(PROGRESS_EVENT));
 }
 
+type CloudLetterRow = {
+  topic_id: string;
+  letter_id: string;
+  shown_count: number;
+  correct_count: number;
+  wrong_count?: number;
+  level: number;
+  total_response_ms: number | null;
+  learned_at: string | null;
+  time_to_learn_ms: number | null;
+  knew_before: boolean | null;
+  last_seen_at: string | null;
+};
+
+function rowToEntry(r: CloudLetterRow): LetterSrsEntry {
+  return {
+    level: Math.max(1, Math.min(4, r.level || 1)) as Level,
+    correct: r.correct_count || 0,
+    total: r.shown_count || 0,
+    seen: r.shown_count || 0,
+    lastSeen: r.last_seen_at ? new Date(r.last_seen_at).getTime() : 0,
+    totalMs: r.total_response_ms ?? 0,
+    msToLearn: r.time_to_learn_ms ?? undefined,
+    knewBefore: r.knew_before ?? undefined,
+    learnedAt: r.learned_at ? new Date(r.learned_at).getTime() : undefined,
+  };
+}
+
+function mergeCloudRowIntoLocal(ns: Namespace, row: CloudLetterRow) {
+  if (typeof window === "undefined") return;
+  const topicId = normalizeCloudTopic(row);
+  const s = load(ns);
+  if (!s[topicId]) s[topicId] = {};
+  s[topicId][row.letter_id] = rowToEntry(row);
+  save(ns, s);
+}
+
+function normalizeCloudTopic(row: CloudLetterRow): string {
+  return findTopicOfItem(row.letter_id)?.topicId ?? row.topic_id;
+}
+
+function putCloudRow(state: SrsState, row: CloudLetterRow) {
+  const topicId = normalizeCloudTopic(row);
+  if (!state[topicId]) state[topicId] = {};
+  const next = rowToEntry(row);
+  const prev = state[topicId][row.letter_id];
+  if (!prev || next.total > prev.total || (next.total === prev.total && next.lastSeen >= prev.lastSeen)) {
+    state[topicId][row.letter_id] = next;
+  }
+}
+
 export async function hydrateSrsFromCloud(uid: string) {
   if (!uid || typeof window === "undefined") return;
   const { supabase } = await import("@/integrations/supabase/client");
   const { data } = await supabase.from("letter_stats").select("*").eq("user_id", uid);
   if (!data) return;
   const state: SrsState = {};
-  for (const r of data as Array<{ topic_id: string; letter_id: string; shown_count: number; correct_count: number; wrong_count: number; level: number; total_response_ms: number | null; learned_at: string | null; time_to_learn_ms: number | null; knew_before: boolean | null; last_seen_at: string | null }>) {
-    if (!state[r.topic_id]) state[r.topic_id] = {};
-    state[r.topic_id][r.letter_id] = {
-      level: Math.max(1, Math.min(4, r.level)) as Level,
-      correct: r.correct_count,
-      total: r.shown_count,
-      seen: r.shown_count,
-      lastSeen: r.last_seen_at ? new Date(r.last_seen_at).getTime() : 0,
-      totalMs: r.total_response_ms ?? 0,
-      msToLearn: r.time_to_learn_ms ?? undefined,
-      knewBefore: r.knew_before ?? undefined,
-      learnedAt: r.learned_at ? new Date(r.learned_at).getTime() : undefined,
-    };
+  for (const r of data as CloudLetterRow[]) {
+    putCloudRow(state, r);
   }
   for (const ns of ["quiz", "games"] as Namespace[]) {
     try { localStorage.setItem(`elifba-srs-${ns}-${uid}-v1`, JSON.stringify(state)); } catch { /* */ }
@@ -230,7 +271,8 @@ export function recordSrsAnswer(
 
   save(ns, s);
 
-  // Bulut: cevap olayı + agg istatistik (sessizce)
+  // Bulut: cevap olayı + agg istatistik. Giriş yapan kullanıcıda sunucu cevabı
+  // tek gerçek kaynak kabul edilir; dönen satırla yerel önbellek hemen güncellenir.
   import("@/data/cloudSync").then((m) => {
     m.logAnswer({
       topicId,
@@ -243,11 +285,13 @@ export function recordSrsAnswer(
       timeToLearnMs: e.msToLearn,
       totalResponseMs: e.totalMs,
       level: e.level,
-    }).then(() => {
-      const uid = getActiveSrsUser();
-      if (uid) void hydrateSrsFromCloud(uid).catch(() => {});
+    }).then((row) => {
+      if (row) mergeCloudRowIntoLocal(ns, row as CloudLetterRow);
     }).catch((error) => {
       console.error("Bulut ilerleme kaydı başarısız:", error);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("elifba-progress-save-failed", { detail: error }));
+      }
     });
   }).catch(() => {});
 
@@ -273,20 +317,17 @@ export function getNamespaceStats(ns: Namespace) {
 export async function getNamespaceStatsFromCloud(uid: string | null) {
   if (!uid) return null;
   try {
-    const { supabase } = await import("@/integrations/supabase/client");
-    const { data, error } = await supabase
-      .from("letter_stats")
-      .select("shown_count, correct_count, level")
-      .eq("user_id", uid);
-    if (error || !data) return null;
+    const state = await getCloudSrsState(uid);
+    if (!state) return null;
     let total = 0, correct = 0;
     const levelCount: Record<Level, number> = { 1: 0, 2: 0, 3: 0, 4: 0 };
-    for (const r of data) {
-      total += r.shown_count || 0;
-      correct += r.correct_count || 0;
-      const lv = Math.max(1, Math.min(4, r.level || 1)) as Level;
-      levelCount[lv] += 1;
-    }
+    Object.values(state).forEach((topic) => {
+      Object.values(topic).forEach((e) => {
+        total += e.total;
+        correct += e.correct;
+        levelCount[e.level] += 1;
+      });
+    });
     return { total, correct, percent: total === 0 ? 0 : Math.round((correct / total) * 100), levelCount };
   } catch { return null; }
 }
@@ -302,19 +343,8 @@ export async function getCloudSrsState(uid: string | null): Promise<SrsState | n
       .eq("user_id", uid);
     if (error || !data) return null;
     const state: SrsState = {};
-    for (const r of data as Array<{ topic_id: string; letter_id: string; level: number; correct_count: number; shown_count: number; last_seen_at: string | null; total_response_ms: number | null; time_to_learn_ms: number | null; knew_before: boolean | null; learned_at: string | null }>) {
-      if (!state[r.topic_id]) state[r.topic_id] = {};
-      state[r.topic_id][r.letter_id] = {
-        level: Math.max(1, Math.min(4, r.level || 1)) as Level,
-        correct: r.correct_count || 0,
-        total: r.shown_count || 0,
-        seen: r.shown_count || 0,
-        lastSeen: r.last_seen_at ? new Date(r.last_seen_at).getTime() : 0,
-        totalMs: r.total_response_ms ?? 0,
-        msToLearn: r.time_to_learn_ms ?? undefined,
-        knewBefore: r.knew_before ?? undefined,
-        learnedAt: r.learned_at ? new Date(r.learned_at).getTime() : undefined,
-      };
+    for (const r of data as CloudLetterRow[]) {
+      putCloudRow(state, r);
     }
     return state;
   } catch { return null; }

@@ -5,9 +5,9 @@ import { LangToggle } from "@/components/LangToggle";
 import { playItem, playSpeech, playFeedback } from "@/lib/audio";
 import { cn } from "@/lib/utils";
 import { gamePool, getGameLang, pickN, shuffle } from "./_shared";
-import { recordSrsAnswer, recordLetterMastery, getLetterLevel } from "@/data/srs";
+import { recordLetterMastery } from "@/data/srs";
 import { useGameMode } from "@/lib/gameMode";
-import { recordGameAnswer } from "@/lib/gameProgress";
+import { getGameItemLevel, recordGameAnswer } from "@/lib/gameProgress";
 import type { ContentItem } from "@/data/types";
 
 // =============================================================
@@ -34,8 +34,6 @@ function buildBox(): { cells: Cell[]; types: ContentItem[] } {
   return { cells, types };
 }
 
-const SRS_TOPIC = "sorter-game";
-
 const SorterGame = () => {
   const [mode] = useGameMode();
   const isSuper = mode === "super";
@@ -45,7 +43,7 @@ const SorterGame = () => {
   const [score, setScore] = useState(0);
   const [level, setLevel] = useState(1);
   const [busy, setBusy] = useState(false);
-  const targetLevel = target ? getLetterLevel("games", SRS_TOPIC, target.id) : 1;
+  const targetLevel = getGameItemLevel(target);
   const showHint = isSuper && targetLevel === 1; // süper modda L1'de etrafı parlasın
 
   const remainingTypes = useMemo(
@@ -108,7 +106,6 @@ const SorterGame = () => {
         const completed = target;
         setTarget(null); // effect tetiklenmesin
         playItem(completed);
-        recordSrsAnswer("games", SRS_TOPIC, completed.id, true);
         recordLetterMastery(completed.id, true);
         recordGameAnswer(completed, true);
         setScore((s) => s + 1);
@@ -131,7 +128,6 @@ const SorterGame = () => {
       }
     } else {
       setBusy(true);
-      recordSrsAnswer("games", SRS_TOPIC, target.id, false);
       recordLetterMastery(target.id, false);
       recordGameAnswer(target, false);
       await playFeedback(false);
