@@ -1,79 +1,63 @@
-# Plan: Hesap-bazlı ilerleme, giriş hatırlatma ve admin analitiği
+# Hesap & İlerleme Akışı — Düzeltmeler
 
-## 1) Sorun: Farklı hesaplara giriş yapınca aynı ilerleme görünüyor
+## Sorunlar
+1. Hesaba girip çıkınca ilerleme "sıfır" görünüyor (yeni hesabın cloud'u boş, misafir verisi otomatik gelmiyor; çıkışta misafir görünümüne dönülüyor).
+2. Ayarlar'daki "Misafir ilerlemesini aktar" butonu kullanıcıya net geri bildirim vermiyor / işe yaramıyor gibi hissettiriyor.
+3. Kullanıcı, aktarımın Ayarlar'da olduğunu bilmiyor — ilk girişte sormalı.
+4. Veri silme tek `confirm()` ile çok kolay tetikleniyor; iptal/onay akışı zayıf.
+5. Cihazdaki yerel ilerlemeyi silme butonu yok.
 
-Bugün `Progress` sayfası ve oyunlardaki SRS verisi **sadece** cihazın `localStorage`'ından okunuyor (`elifba-srs-quiz-v1`, `elifba-srs-games-v1`). Hesap değiştirince localStorage aynı kaldığı için "ilerleme" değişmiyor. Ayrıca `Auth.tsx` her girişte cihazdaki misafir verisini hesaba otomatik aktarıyor (`migrateGuestDataToAccount`) — yeni bir hesap açan veli için bu yanlış.
+## Çözüm
 
-### Yapılacaklar
+### 1) İlk girişte otomatik "Aktarma" diyaloğu
+- Yeni dosya: `src/components/TransferGuestDialog.tsx` — shadcn `AlertDialog` tabanlı, çocuksu/renkli.
+  - Başlık: "Cihazdaki ilerlemeni hesabına ekleyelim mi?"
+  - Açıklama: misafirken kazanılan rozet/seviyelerin bu hesaba eklenir, mevcut hesap verisi silinmez (max alınır).
+  - "Evet, aktar" → `migrateGuestDataToAccount` + `hydrateSrsFromCloud`, toast ile "X kayıt aktarıldı".
+  - "Hayır" → ikinci onay: "Emin misin? Bu hesap için bir daha sorulmayacak." iki butonlu; "Vazgeç" diyaloğa geri döner.
+- `useAuth` içinde, kullanıcı **ilk kez** giriş yaptığında (flag: `miniakil:transfer-asked:{uid}` yoksa **ve** misafir SRS'inde veri varsa) global bir context event yayar.
+- `src/App.tsx` (veya `Index`) bu event'i dinleyip dialog'u açar.
+- Aktarım yapılsın ya da yapılmasın flag set edilir; "daha sonra sor" seçeneği için flag set edilmez.
 
-- **Hesap-bazlı yerel anahtar**: `KEY(ns)` `elifba-srs-{ns}-v1` yerine `elifba-srs-{ns}-{userId|guest}-v1` olacak. `useAuth` üzerinden aktif kullanıcıya göre okuma/yazma. Misafirken `guest`, girişten sonra `userId` namespace'i kullanılacak.
-- **Çıkış / hesap değişiminde reset**: `onAuthStateChange` dinleyicisinde önceki kullanıcının cache'i temizlenecek (yalnızca o kullanıcıya ait anahtarlar). Çıkışta misafir görünümü boş başlar.
-- **İlk girişte buluttan hidrasyon**: Hesaba giriş anında `letter_stats` tablosundan o kullanıcının satırları çekilip o kullanıcının localStorage namespace'ine yazılacak (yeni hesapta tablo boşsa görünüm sıfırdan başlayacak). Yeni bir helper `hydrateFromCloud(userId)` eklenecek.
-- **Otomatik migrate kapatılacak**: `Auth.tsx`'teki `migrateGuestDataToAccount` çağrısı kaldırılacak. Yerine `Settings` ekranına manuel bir buton: "Cihazdaki misafir ilerlemesini bu hesaba aktar" (tek seferlik onay, idempotent flag korunur).
-- **Progress sayfası**: Misafirse "guest", girişliyse buluttan hidrate edilmiş kullanıcı verisini gösterecek; üstte küçük bir rozet: `👤 {display_name}` ya da "Misafir".
+### 2) Çıkış davranışı: ilerleme görsel kaybını önle
+- `useAuth` `signOut`: önce kullanıcıya `AlertDialog` ile sorulur ("Çıkış yapmak istiyor musun? İlerlemen hesabında güvende kalır."). Onaylarsa çıkış.
+- Çıkıştaki `clearUserLocalSrs(prevUid)` çağrısı **kaldırılır**: yerel önbellek dursun, tekrar girişte hidrate ile zaten güncellenir. (Cihaz başkasıyla paylaşıldığında manuel "Cihaz verilerimi sil" butonu var.)
 
-## 2) Veliye giriş yapmayı nazikçe hatırlat
+### 3) Ayarlar > Aktar butonunu güçlendir
+- Yükleme durumu (`busy`), başarı/başarısızlık için `toast` (mevcut `sonner`).
+- Aktarım sonrası progress event tetikle (`elifba-progress-updated`) — Progress sayfası anında yenilensin.
+- Buton metni: "⬆️ Misafir ilerlemesini bu hesaba aktar". Açıklama: "Cihazdaki misafir verilerinde X harf bulundu" (boşsa buton disabled + "Aktarılacak veri yok").
 
-- `Index` (ana sayfa) üst kısmında, misafir kullanıcıya kapatılabilir bir kart: "Veliysen giriş yap — ilerleme tüm cihazlarında güvenle saklansın." (gizleme 3 günlüğüne `localStorage` flag).
-- Her oyun bitiminde misafirse bir kez (gün başına) küçük toast: "İlerlemen sadece bu cihazda saklanıyor — kaydetmek için giriş yap." `ParentGate` ardından `/giris`'e yönlendirme butonu.
-- **Çocuk dostu**: hatırlatıcılar yalnızca metin/sticker, hızla kapatılabilir, oyunu kesintiye uğratmaz; mevcut `ParentGate` korunur.
+### 4) Güçlü onay (double-confirm) yardımcı
+- Yeni: `src/components/ConfirmDestructive.tsx` — iki adımlı `AlertDialog`:
+  - 1. adım: "Emin misin?" + risk açıklaması.
+  - 2. adım: "Gerçekten silinsin mi? Geri alınamaz." + 3 saniye geri sayımlı "Sil" butonu (yanlışlıkla tıklamayı engellemek için).
+- `Settings.tsx`'te kullanılır:
+  - **Bulut verilerimi sil** (mevcut `deleteMyAnalytics`).
+  - **Cihaz ilerleme verilerini sil** (yeni — aşağıda).
 
-## 3) Admin analitiği — yeni metrikler
+### 5) Cihaz ilerleme verisini silme
+- `src/data/srs.ts`'e yeni: `clearLocalProgress(opts: { scope: "active" | "guest" | "all" })` — `elifba-srs-quiz-*`, `elifba-srs-games-*` anahtarlarını siler ve `PROGRESS_EVENT` yayar.
+- Ayarlar'da yeni kart "📱 Cihaz verileri":
+  - "Cihazdaki ilerlememi sil" → ConfirmDestructive (iki adımlı + geri sayım).
+  - Misafirken: yalnız guest anahtar silinir.
+  - Girişliyken: hem aktif kullanıcı önbelleği hem misafir verisi silinmesini seçtiren iki radio (varsayılan "yalnız bu hesabın cihaz önbelleği"). Bulut verisi etkilenmez (uyarı metni).
 
-### Yeni alan: oyun modu (super vs normal)
-- `game_sessions` ve `answer_events` tablolarına `mode TEXT CHECK (mode IN ('normal','super'))` kolonu eklenecek (migration).
-- `startGameSession`, `logAnswer`, `recordSrsAnswer` `lib/gameMode.ts`'ten okuyup `mode` parametresini ekleyecek.
+## Teknik detaylar (geliştirici)
+- Tüm yeni dialoglar shadcn `AlertDialog` + Tailwind tasarım tokenları (`primary`, `destructive`, vs.).
+- `migrateGuestDataToAccount` zaten `MIGRATED_FLAG` ile idempotent — değişiklik gerekmez; sadece UI'dan tetiklenir.
+- `useAuth.tsx`: önceki uid'nin yerel SRS temizliği kaldırılacak; `setActiveSrsUser` ve `hydrateSrsFromCloud` aynı kalır.
+- "İlk giriş" tespiti: hesap için `MIGRATED_FLAG` da `transfer-asked` flag'i de yoksa.
 
-### Yeni view'lar (migration)
-- `analytics_learning_rate` — Yeni öğrenilen öğe / aktif dakika (yalnızca `knew_before=false`):  
-  `learners`, `learned_items`, `active_minutes`, `items_per_minute`, `items_per_hour`, `mode` (normal/super kırılımı).
-- `analytics_game_engagement` — Oyun başına toplam dakika, oturum başına ortalama süre, % tamamlama, doğruluk; `mode` kırılımı.
-- `analytics_retention` — Kohort: signup tarihine göre D1 / D7 / D30 geri-dönüş yüzdesi (`screen_views` veya `game_sessions`'tan distinct day).
-- `analytics_super_vs_normal` — Aynı kullanıcı havuzunda iki modun: ortalama öğrenme hızı, oturum süresi, devam oranı (drop-off), doğruluk.
-- `analytics_known_letters` — Kullanıcı başına "zaten biliyordu" işaretlenen öğelerin sayısı (öğrenme hızından **dışlanmış** kontrol metriği olarak ayrı tablo).
+## Dokunulan dosyalar
+- `src/hooks/useAuth.tsx` — çıkış onayı, ilk-giriş eventi, clear çağrısı kaldırma.
+- `src/components/AccountCard.tsx` — çıkış onayı tetikleyici.
+- `src/components/TransferGuestDialog.tsx` (yeni).
+- `src/components/ConfirmDestructive.tsx` (yeni).
+- `src/pages/Settings.tsx` — aktarım butonu UX, iki silme aksiyonu, yeni "Cihaz verileri" kartı.
+- `src/data/srs.ts` — `clearLocalProgress` yardımcısı; misafir SRS'de veri var mı kontrolü için `hasGuestData()`.
+- `src/App.tsx` — `TransferGuestDialog` global mount + event listener.
 
-### Admin UI eklemeleri (`src/pages/Admin.tsx`)
-- "⚡ Öğrenme Hızı" kartı: dakikadaki yeni harf (normal vs super karşılaştırmalı bar chart).
-- "🕒 Oyun Süresi" kartı: oyun başına toplam dakika.
-- "🔁 Retention" kartı: D1/D7/D30 line chart.
-- "🆚 Süper vs Normal" kartı: yan yana KPI'lar (hız, doğruluk, oturum süresi, drop-off).
-- Filtre: yaş bandı + mode dropdown'u (mevcut kartlarda da filtre uygulansın).
-
-### Hukuki / KVKK
-- Hiçbir yeni PII toplanmıyor; sadece `mode` (enum) ve mevcut anonim agregalar. `analytics_consent=true` zorunluluğu korunur. Retention için `auth.users.created_at` SECURITY DEFINER view'da rumuzlanır (yalnız admin okur).
-
-## Teknik detaylar (kısa)
-
-```text
-src/data/srs.ts
-  KEY(ns) -> KEY(ns, userId)
-  + getActiveUserId() helper (auth event ile cache)
-  + hydrateFromCloud(userId) — letter_stats -> localStorage
-
-src/hooks/useAuth.tsx
-  onAuthStateChange:
-    SIGNED_IN  -> hydrateFromCloud(user.id)
-    SIGNED_OUT -> clearUserLocal(prev.id)
-
-src/lib/gameMode.ts -> getMode() zaten var; analytics/cloudSync'e parametre olarak iletilir
-
-supabase/migrations/*:
-  ALTER TABLE answer_events ADD COLUMN mode text;
-  ALTER TABLE game_sessions ADD COLUMN mode text;
-  CREATE VIEW analytics_learning_rate ...
-  CREATE VIEW analytics_game_engagement ...
-  CREATE VIEW analytics_retention ...
-  CREATE VIEW analytics_super_vs_normal ...
-  CREATE VIEW analytics_known_letters ...
-  GRANT SELECT ... TO authenticated;  (admin RLS zaten mevcut view'larda)
-```
-
-## Etki / risk
-
-- `localStorage` anahtarı değişiyor — mevcut misafir verisi kullanıcı isterse Settings'ten içe aktarılır (kayıp yok, ama otomatik birleşmiyor).
-- Yeni view'lar mevcut admin RLS modeline uyumlu (yalnızca `has_role(admin)`).
-- Mode bilgisi geriye dönük `NULL`; view'larda `coalesce(mode,'normal')` kullanılır.
-
-## Onay
-
-Onaylarsan üç adımda uygularım: (1) DB migration + view'lar, (2) SRS hesap-bazlı yerel + bulut hidrasyon + çıkışta temizleme + auto-migrate kaldırma, (3) Admin UI yeni kartlar + giriş hatırlatıcılar.
+## Kapsam dışı
+- Model değişikliği: Lovable mevcut "en üst" modeli (Claude Opus 4.5) ile çalışıyor; chat tarafı bu istekle değişmez.
+- Bulut analitik/admin metrikleri bu turda değişmez.
