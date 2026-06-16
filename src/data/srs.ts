@@ -100,25 +100,51 @@ function save(ns: Namespace, s: SrsState) {
   window.dispatchEvent(new Event(PROGRESS_EVENT));
 }
 
+type CloudLetterRow = {
+  topic_id: string;
+  letter_id: string;
+  shown_count: number;
+  correct_count: number;
+  wrong_count?: number;
+  level: number;
+  total_response_ms: number | null;
+  learned_at: string | null;
+  time_to_learn_ms: number | null;
+  knew_before: boolean | null;
+  last_seen_at: string | null;
+};
+
+function rowToEntry(r: CloudLetterRow): LetterSrsEntry {
+  return {
+    level: Math.max(1, Math.min(4, r.level || 1)) as Level,
+    correct: r.correct_count || 0,
+    total: r.shown_count || 0,
+    seen: r.shown_count || 0,
+    lastSeen: r.last_seen_at ? new Date(r.last_seen_at).getTime() : 0,
+    totalMs: r.total_response_ms ?? 0,
+    msToLearn: r.time_to_learn_ms ?? undefined,
+    knewBefore: r.knew_before ?? undefined,
+    learnedAt: r.learned_at ? new Date(r.learned_at).getTime() : undefined,
+  };
+}
+
+function mergeCloudRowIntoLocal(ns: Namespace, row: CloudLetterRow) {
+  if (typeof window === "undefined") return;
+  const s = load(ns);
+  if (!s[row.topic_id]) s[row.topic_id] = {};
+  s[row.topic_id][row.letter_id] = rowToEntry(row);
+  save(ns, s);
+}
+
 export async function hydrateSrsFromCloud(uid: string) {
   if (!uid || typeof window === "undefined") return;
   const { supabase } = await import("@/integrations/supabase/client");
   const { data } = await supabase.from("letter_stats").select("*").eq("user_id", uid);
   if (!data) return;
   const state: SrsState = {};
-  for (const r of data as Array<{ topic_id: string; letter_id: string; shown_count: number; correct_count: number; wrong_count: number; level: number; total_response_ms: number | null; learned_at: string | null; time_to_learn_ms: number | null; knew_before: boolean | null; last_seen_at: string | null }>) {
+  for (const r of data as CloudLetterRow[]) {
     if (!state[r.topic_id]) state[r.topic_id] = {};
-    state[r.topic_id][r.letter_id] = {
-      level: Math.max(1, Math.min(4, r.level)) as Level,
-      correct: r.correct_count,
-      total: r.shown_count,
-      seen: r.shown_count,
-      lastSeen: r.last_seen_at ? new Date(r.last_seen_at).getTime() : 0,
-      totalMs: r.total_response_ms ?? 0,
-      msToLearn: r.time_to_learn_ms ?? undefined,
-      knewBefore: r.knew_before ?? undefined,
-      learnedAt: r.learned_at ? new Date(r.learned_at).getTime() : undefined,
-    };
+    state[r.topic_id][r.letter_id] = rowToEntry(r);
   }
   for (const ns of ["quiz", "games"] as Namespace[]) {
     try { localStorage.setItem(`elifba-srs-${ns}-${uid}-v1`, JSON.stringify(state)); } catch { /* */ }
