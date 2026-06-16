@@ -17,9 +17,9 @@ type SrsState = Record<string, Record<string, LetterEntry>>;
 
 const NS = ["quiz", "games"] as const;
 const MIGRATED_FLAG = (userId: string) => `miniakil:migrated:${userId}`;
+const ASKED_FLAG = (userId: string) => `miniakil:transfer-asked:${userId}`;
 
 function loadNs(ns: typeof NS[number]): SrsState {
-  // Hem yeni misafir anahtarı hem eski anahtar okunur, birleştirilir.
   const merge = (a: SrsState, b: SrsState): SrsState => {
     const out: SrsState = JSON.parse(JSON.stringify(a));
     for (const [tid, topic] of Object.entries(b)) {
@@ -38,17 +38,36 @@ function loadNs(ns: typeof NS[number]): SrsState {
   } catch { return {}; }
 }
 
+function clearGuestKeys() {
+  for (const ns of NS) {
+    try { localStorage.removeItem(`elifba-srs-${ns}-guest-v1`); } catch { /* */ }
+    try { localStorage.removeItem(`elifba-srs-${ns}-v1`); } catch { /* */ }
+  }
+}
 
-export async function migrateGuestDataToAccount(userId: string): Promise<{ migrated: number; errors: number }> {
-  if (!userId) return { migrated: 0, errors: 0 };
-  try {
-    if (localStorage.getItem(MIGRATED_FLAG(userId)) === "1") return { migrated: 0, errors: 0 };
-  } catch { /* ignore */ }
+export interface MigrateResult {
+  migrated: number;
+  inserted: number;
+  updated: number;
+  errors: number;
+  skipped?: boolean;
+}
 
-  let migrated = 0;
-  let errors = 0;
+export async function migrateGuestDataToAccount(
+  userId: string,
+  opts?: { force?: boolean },
+): Promise<MigrateResult> {
+  if (!userId) return { migrated: 0, inserted: 0, updated: 0, errors: 0 };
+  if (!opts?.force) {
+    try {
+      if (localStorage.getItem(MIGRATED_FLAG(userId)) === "1") {
+        return { migrated: 0, inserted: 0, updated: 0, errors: 0, skipped: true };
+      }
+    } catch { /* ignore */ }
+  }
 
-  // Tüm namespace'ları birleştir; aynı (topic,letter) için maks değerleri al.
+  let inserted = 0, updated = 0, errors = 0;
+
   const merged = new Map<string, { topicId: string; letterId: string; e: LetterEntry }>();
   for (const ns of NS) {
     const s = loadNs(ns);
@@ -89,7 +108,6 @@ export async function migrateGuestDataToAccount(userId: string): Promise<{ migra
       last_seen_at: e.lastSeen ? new Date(e.lastSeen).toISOString() : new Date().toISOString(),
     };
 
-    // 1) Var mı kontrol et — varsa sadece "daha iyi" olan değerleri uygula.
     const { data: existing } = await supabase
       .from("letter_stats")
       .select("id, shown_count, correct_count, wrong_count, level, total_response_ms, learned_at, knew_before")
@@ -109,13 +127,25 @@ export async function migrateGuestDataToAccount(userId: string): Promise<{ migra
         knew_before: existing.knew_before ?? row.knew_before,
         last_seen_at: row.last_seen_at,
       }).eq("id", existing.id);
-      if (error) errors += 1; else migrated += 1;
+      if (error) errors += 1; else updated += 1;
     } else {
       const { error } = await supabase.from("letter_stats").insert(row);
-      if (error) errors += 1; else migrated += 1;
+      if (error) errors += 1; else inserted += 1;
     }
   }
 
-  try { localStorage.setItem(MIGRATED_FLAG(userId), "1"); } catch { /* ignore */ }
-  return { migrated, errors };
+  const migrated = inserted + updated;
+  // Only set flags / clear guest data when something actually moved
+  if (migrated > 0) {
+    try { localStorage.setItem(MIGRATED_FLAG(userId), "1"); } catch { /* */ }
+    try { localStorage.setItem(ASKED_FLAG(userId), "1"); } catch { /* */ }
+    clearGuestKeys();
+  }
+  return { migrated, inserted, updated, errors };
+}
+
+// Manuel sıfırlama — Ayarlar'dan tekrar denemek için
+export function resetMigrationFlags(userId: string) {
+  try { localStorage.removeItem(MIGRATED_FLAG(userId)); } catch { /* */ }
+  try { localStorage.removeItem(ASKED_FLAG(userId)); } catch { /* */ }
 }
