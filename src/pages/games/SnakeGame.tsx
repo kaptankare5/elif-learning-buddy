@@ -3,8 +3,8 @@ import { EmojiView } from "@/components/EmojiView";
 import { PageHeader } from "@/components/PageHeader";
 import { playItem, playFeedback, playSpeech } from "@/lib/audio";
 import { gamePool, shuffle, pickN } from "./_shared";
-import { pickNextLetter, recordSrsAnswer, recordLetterMastery, getLetterLevel } from "@/data/srs";
-import { recordGameAnswer } from "@/lib/gameProgress";
+import { recordLetterMastery } from "@/data/srs";
+import { getGameItemLevel, pickNextGameItem, recordGameAnswer } from "@/lib/gameProgress";
 import { useGameMode } from "@/lib/gameMode";
 import type { ContentItem } from "@/data/types";
 import { cn } from "@/lib/utils";
@@ -13,7 +13,6 @@ import { Volume2 } from "lucide-react";
 const COLS = 14;
 const ROWS = 18;
 const TICK_MS = 260;
-const SRS_TOPIC = "snake-game";
 const SWIPE_MIN = 24; // px — bu kadar kaydırınca yön değişir
 
 type Cell = { x: number; y: number };
@@ -59,14 +58,12 @@ const SnakeGame = () => {
   const [paused, setPaused] = useState(true);
 
   // Süper modda hedef harfin SRS seviyesi — sadece L1'de halka göster
-  const targetLevel = quiz ? getLetterLevel("games", SRS_TOPIC, quiz.target.id) : 1;
+  const targetLevel = getGameItemLevel(quiz?.target);
   const showHint = !isSuper || targetLevel === 1;
 
   const newFood = useCallback((occupied: Cell[]) => {
     const pool = gamePool();
-    const ids = pool.map((p) => p.id);
-    const chosenId = pickNextLetter("games", SRS_TOPIC, ids);
-    const item = pool.find((p) => p.id === chosenId) || pool[0];
+    const item = pickNextGameItem(pool) || pool[0];
     const head = occupied[0];
     const avoid = head ? [head] : [];
     setFood({ pos: randCell(occupied, avoid, 2), item });
@@ -74,9 +71,7 @@ const SnakeGame = () => {
 
   const startQuiz = useCallback((occupied: Cell[]) => {
     const pool = gamePool();
-    const ids = pool.map((p) => p.id);
-    const targetId = pickNextLetter("games", SRS_TOPIC, ids);
-    const target = pool.find((p) => p.id === targetId) || pool[0];
+    const target = pickNextGameItem(pool) || pool[0];
     const wrong = pickN(pool.filter((p) => p.id !== target.id), 1)[0];
     const taken = [...occupied];
     // Yılan kafasının etrafında 3 kareyi (önü dahil) boş tut — spam cevap olmasın
@@ -153,7 +148,6 @@ const SnakeGame = () => {
           if (hitIdx >= 0) {
             const opt = quiz.options[hitIdx];
             const correct = opt.item.id === quiz.target.id;
-            recordSrsAnswer("games", SRS_TOPIC, quiz.target.id, correct);
             recordLetterMastery(quiz.target.id, correct);
             recordGameAnswer(quiz.target, correct);
             if (correct) {
