@@ -3,23 +3,40 @@ import { PageHeader } from "@/components/PageHeader";
 import { SUBJECTS } from "@/data/subjects";
 import { getTopicSrs, getNamespaceStats, useSrsTick, type Level } from "@/data/srs";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
 
 const NS = "quiz" as const;
 
 const ProgressPage = () => {
   useSrsTick(NS);
   const stats = getNamespaceStats(NS);
+  const { session } = useAuth();
+  const accountLabel = session
+    ? (session.user.user_metadata?.display_name || session.user.email || "Hesabım")
+    : "Misafir (sadece bu cihaz)";
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-secondary/30 to-background">
       <main className="container mx-auto max-w-2xl px-4 pb-16">
         <PageHeader title="📈 İlerleme" backTo="/" centered />
 
+        <div className="mb-3 flex items-center justify-center gap-2 text-xs font-bold">
+          <span className="rounded-full bg-card border-2 border-primary/30 px-3 py-1">
+            👤 {accountLabel}
+          </span>
+          {!session && (
+            <Link to="/giris" className="rounded-full bg-primary text-primary-foreground px-3 py-1 font-extrabold">
+              Giriş yap
+            </Link>
+          )}
+        </div>
+
         <div className="mb-4 grid grid-cols-3 gap-2">
           <Stat label="Toplam Cevap" value={stats.total} color="text-primary" />
           <Stat label="Doğru" value={stats.correct} color="text-success" />
           <Stat label="Başarı" value={`${stats.percent}%`} color="text-info" />
         </div>
+
 
         <div className="mb-6 grid grid-cols-4 gap-2">
           {[1, 2, 3, 4].map((l) => (
