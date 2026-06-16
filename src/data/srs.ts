@@ -158,11 +158,14 @@ function waterfallWeights(filledLevels: Level[]): Record<Level, number> {
 export function pickNextLetter(ns: Namespace, topicId: string, letterIds: string[]): string {
   ensureLetters(ns, topicId, letterIds);
   const s = load(ns);
-  const topic = s[topicId] || {};
+  return pickNextLetterFromTopic(s[topicId] || {}, letterIds);
+}
+
+export function pickNextLetterFromTopic(topic: TopicSrs, letterIds: string[]): string {
   const byLevel: Record<Level, string[]> = { 1: [], 2: [], 3: [], 4: [] };
   for (const id of letterIds) {
-    const e = topic[id]; if (!e) continue;
-    byLevel[e.level].push(id);
+    const e = topic[id] || { level: 1, seen: 0, lastSeen: 0 };
+    byLevel[e.level as Level].push(id);
   }
   const filled: Level[] = ([1, 2, 3, 4] as Level[]).filter((l) => byLevel[l].length > 0);
   if (filled.length === 0) return letterIds[Math.floor(Math.random() * letterIds.length)];
