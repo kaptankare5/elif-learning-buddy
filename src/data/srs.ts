@@ -317,20 +317,17 @@ export function getNamespaceStats(ns: Namespace) {
 export async function getNamespaceStatsFromCloud(uid: string | null) {
   if (!uid) return null;
   try {
-    const { supabase } = await import("@/integrations/supabase/client");
-    const { data, error } = await supabase
-      .from("letter_stats")
-      .select("shown_count, correct_count, level")
-      .eq("user_id", uid);
-    if (error || !data) return null;
+    const state = await getCloudSrsState(uid);
+    if (!state) return null;
     let total = 0, correct = 0;
     const levelCount: Record<Level, number> = { 1: 0, 2: 0, 3: 0, 4: 0 };
-    for (const r of data) {
-      total += r.shown_count || 0;
-      correct += r.correct_count || 0;
-      const lv = Math.max(1, Math.min(4, r.level || 1)) as Level;
-      levelCount[lv] += 1;
-    }
+    Object.values(state).forEach((topic) => {
+      Object.values(topic).forEach((e) => {
+        total += e.total;
+        correct += e.correct;
+        levelCount[e.level] += 1;
+      });
+    });
     return { total, correct, percent: total === 0 ? 0 : Math.round((correct / total) * 100), levelCount };
   } catch { return null; }
 }
