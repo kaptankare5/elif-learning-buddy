@@ -14,13 +14,15 @@ const ProgressPage = () => {
   const { session } = useAuth();
   const uid = session?.user.id ?? null;
   const [cloudStats, setCloudStats] = useState<ReturnType<typeof getNamespaceStats> | null>(null);
+  const [cloudLoading, setCloudLoading] = useState<boolean>(!!uid);
 
   useEffect(() => {
     let cancelled = false;
-    if (!uid) { setCloudStats(null); return; }
+    if (!uid) { setCloudStats(null); setCloudLoading(false); return; }
+    setCloudLoading(true);
     const fetch = async () => {
       const r = await getNamespaceStatsFromCloud(uid);
-      if (!cancelled) setCloudStats(r);
+      if (!cancelled) { setCloudStats(r); setCloudLoading(false); }
     };
     void fetch();
     const onProgress = () => void fetch();
@@ -28,7 +30,7 @@ const ProgressPage = () => {
     return () => { cancelled = true; window.removeEventListener("elifba-progress-updated", onProgress); };
   }, [uid]);
 
-  const stats = uid && cloudStats ? cloudStats : localStats;
+  const stats = uid ? (cloudStats ?? { total: 0, correct: 0, percent: 0, levelCount: { 1: 0, 2: 0, 3: 0, 4: 0 } as Record<Level, number> }) : localStats;
   const accountLabel = session
     ? (session.user.user_metadata?.display_name || session.user.email || "Hesabım")
     : "Misafir (sadece bu cihaz)";
