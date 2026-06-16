@@ -21,7 +21,9 @@ type Rate = { mode: string; learners: number; learned_items: number; active_minu
 type Engage = { game_id: string; mode: string; sessions: number; unique_users: number; total_minutes: number | null; avg_seconds: number | null; completion_pct: number | null; accuracy_pct: number | null };
 type Ret = { cohort_week: string; cohort_size: number; d1_pct: number | null; d7_pct: number | null; d30_pct: number | null };
 type Svn = { mode: string; users: number; sessions: number; avg_seconds: number | null; completion_pct: number | null; accuracy_pct: number | null };
-type Known = { already_known_items: number; users: number };
+type UserRow = { user_id: string; pseudonym: string; age_band: string | null; gender: string | null; primary_mode: string; learned_items: number; known_items: number; total_items_seen: number; avg_seconds_per_learned_item: number | null; items_per_active_hour: number | null; last_active: string | null; accuracy_pct: number | null };
+type UserLetter = { user_id: string; topic_id: string; letter_id: string; level: number; knew_before: boolean | null; learned_at: string | null; shown_count: number; correct_count: number; seconds_to_learn: number | null; last_seen_at: string | null };
+type UserMode = { user_id: string; pseudonym: string; mode: string; events: number; correct: number; avg_seconds: number | null; accuracy_pct: number | null };
 
 
 const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"];
@@ -41,14 +43,19 @@ const Admin = () => {
   const [engage, setEngage] = useState<Engage[]>([]);
   const [retention, setRetention] = useState<Ret[]>([]);
   const [svn, setSvn] = useState<Svn[]>([]);
-  const [known, setKnown] = useState<Known | null>(null);
+  const [users, setUsers] = useState<UserRow[]>([]);
+  const [userModes, setUserModes] = useState<UserMode[]>([]);
+  const [selectedUid, setSelectedUid] = useState<string | null>(null);
+  const [userLetters, setUserLetters] = useState<UserLetter[]>([]);
+  const [filterMode, setFilterMode] = useState<"all" | "super" | "normal">("all");
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     if (!isAdmin) return;
     void (async () => {
       setLoading(true);
       const sb = supabase as unknown as { from: (t: string) => any };
-      const [p, l, d, f, a, lp, lpw, r, eg, rt, sv, kn] = await Promise.all([
+      const [p, l, d, f, a, lp, lpw, r, eg, rt, sv, up, um] = await Promise.all([
         supabase.from("analytics_game_popularity").select("*").order("session_count", { ascending: false }),
         supabase.from("analytics_letter_learn_time").select("*").order("avg_minutes", { ascending: true }).limit(30),
         supabase.from("analytics_daily_active").select("*").limit(30),
@@ -60,7 +67,8 @@ const Admin = () => {
         sb.from("analytics_game_engagement").select("*"),
         sb.from("analytics_retention").select("*").limit(12),
         sb.from("analytics_super_vs_normal").select("*"),
-        sb.from("analytics_known_letters").select("*").maybeSingle(),
+        sb.from("analytics_user_progress").select("*").order("learned_items", { ascending: false }).limit(500),
+        sb.from("analytics_super_vs_normal_per_user").select("*"),
       ]);
       setPop((p.data as Pop[]) ?? []);
       setLearn((l.data as Learn[]) ?? []);
@@ -73,10 +81,22 @@ const Admin = () => {
       setEngage((eg.data as Engage[]) ?? []);
       setRetention(((rt.data as Ret[]) ?? []).reverse());
       setSvn((sv.data as Svn[]) ?? []);
-      setKnown((kn.data as Known | null) ?? null);
+      setUsers((up.data as UserRow[]) ?? []);
+      setUserModes((um.data as UserMode[]) ?? []);
       setLoading(false);
     })();
   }, [isAdmin]);
+
+  // Detay drawer için tek kullanıcının harf kırılımını yükle
+  useEffect(() => {
+    if (!selectedUid) { setUserLetters([]); return; }
+    void (async () => {
+      const sb = supabase as unknown as { from: (t: string) => any };
+      const { data } = await sb.from("analytics_user_letter_breakdown")
+        .select("*").eq("user_id", selectedUid).order("learned_at", { ascending: true });
+      setUserLetters((data as UserLetter[]) ?? []);
+    })();
+  }, [selectedUid]);
 
 
   if (authLoading || subLoading) {
