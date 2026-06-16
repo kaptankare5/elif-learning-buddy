@@ -52,6 +52,43 @@ export function clearUserLocalSrs(uid: string | null) {
   }
 }
 
+// Misafir SRS verisinde kayıt var mı?
+export function hasGuestData(): boolean {
+  if (typeof window === "undefined") return false;
+  for (const ns of ["quiz", "games"] as Namespace[]) {
+    try {
+      const raw = localStorage.getItem(`elifba-srs-${ns}-guest-v1`)
+        || localStorage.getItem(`elifba-srs-${ns}-v1`);
+      if (!raw) continue;
+      const s = JSON.parse(raw);
+      for (const t of Object.values(s)) {
+        if (t && Object.keys(t as object).length > 0) return true;
+      }
+    } catch { /* */ }
+  }
+  return false;
+}
+
+// Cihazdaki ilerleme verisini siler (bulut etkilenmez).
+// scope: "active" = giriş yapan kullanıcı önbelleği, "guest" = misafir, "all" = ikisi de.
+export function clearLocalProgress(scope: "active" | "guest" | "all") {
+  if (typeof window === "undefined") return;
+  const targets: string[] = [];
+  if (scope === "guest" || scope === "all") targets.push("guest");
+  if ((scope === "active" || scope === "all") && _activeUid) targets.push(_activeUid);
+  for (const ns of ["quiz", "games"] as Namespace[]) {
+    for (const t of targets) {
+      try { localStorage.removeItem(`elifba-srs-${ns}-${t}-v1`); } catch { /* */ }
+    }
+    // Eski (kullanıcısız) anahtarı da temizle
+    if (scope === "all" || scope === "guest") {
+      try { localStorage.removeItem(`elifba-srs-${ns}-v1`); } catch { /* */ }
+    }
+    try { window.dispatchEvent(new Event(EVENT(ns))); } catch { /* */ }
+  }
+  try { window.dispatchEvent(new Event(PROGRESS_EVENT)); } catch { /* */ }
+}
+
 function load(ns: Namespace): SrsState {
   if (typeof window === "undefined") return {};
   try { return JSON.parse(localStorage.getItem(KEY(ns)) || "{}"); } catch { return {}; }
