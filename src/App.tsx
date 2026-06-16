@@ -20,6 +20,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { SubscriptionProvider } from "@/hooks/useSubscription";
 import { BottomNav } from "@/components/BottomNav";
 import { ConsentModal } from "@/components/ConsentModal";
+import { TransferGuestDialog } from "@/components/TransferGuestDialog";
 import { installAudioUnlock } from "@/lib/audio";
 
 const queryClient = new QueryClient();
@@ -53,6 +54,7 @@ const AppShell = () => {
             </Routes>
             <BottomNav />
             <ConsentModal />
+            <TransferGuestDialog />
           </SubscriptionProvider>
         </AuthProvider>
       </BrowserRouter>
