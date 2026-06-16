@@ -17,6 +17,12 @@ type Funnel = { step: string; events: number; users: number };
 type Age = { age_band: string; gender: string; users: number; sessions: number; accuracy_pct: number | null };
 type Power = { learned_items: number; learners: number; avg_seconds_per_item: number | null; avg_minutes_per_item: number | null };
 type LetterPower = { topic_id: string; letter_id: string; learners: number; avg_seconds: number | null; knew_before_count: number };
+type Rate = { mode: string; learners: number; learned_items: number; active_minutes: number | null; items_per_minute: number | null; items_per_hour: number | null };
+type Engage = { game_id: string; mode: string; sessions: number; unique_users: number; total_minutes: number | null; avg_seconds: number | null; completion_pct: number | null; accuracy_pct: number | null };
+type Ret = { cohort_week: string; cohort_size: number; d1_pct: number | null; d7_pct: number | null; d30_pct: number | null };
+type Svn = { mode: string; users: number; sessions: number; avg_seconds: number | null; completion_pct: number | null; accuracy_pct: number | null };
+type Known = { already_known_items: number; users: number };
+
 
 const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"];
 
@@ -31,13 +37,18 @@ const Admin = () => {
   const [ages, setAges] = useState<Age[]>([]);
   const [power, setPower] = useState<Power | null>(null);
   const [letterPower, setLetterPower] = useState<LetterPower[]>([]);
+  const [rate, setRate] = useState<Rate[]>([]);
+  const [engage, setEngage] = useState<Engage[]>([]);
+  const [retention, setRetention] = useState<Ret[]>([]);
+  const [svn, setSvn] = useState<Svn[]>([]);
+  const [known, setKnown] = useState<Known | null>(null);
 
   useEffect(() => {
     if (!isAdmin) return;
     void (async () => {
       setLoading(true);
       const sb = supabase as unknown as { from: (t: string) => any };
-      const [p, l, d, f, a, lp, lpw] = await Promise.all([
+      const [p, l, d, f, a, lp, lpw, r, eg, rt, sv, kn] = await Promise.all([
         supabase.from("analytics_game_popularity").select("*").order("session_count", { ascending: false }),
         supabase.from("analytics_letter_learn_time").select("*").order("avg_minutes", { ascending: true }).limit(30),
         supabase.from("analytics_daily_active").select("*").limit(30),
@@ -45,6 +56,11 @@ const Admin = () => {
         supabase.from("analytics_age_breakdown").select("*"),
         sb.from("analytics_learning_power").select("*").maybeSingle(),
         sb.from("analytics_letter_power").select("*").order("avg_seconds", { ascending: true }).limit(50),
+        sb.from("analytics_learning_rate").select("*"),
+        sb.from("analytics_game_engagement").select("*"),
+        sb.from("analytics_retention").select("*").limit(12),
+        sb.from("analytics_super_vs_normal").select("*"),
+        sb.from("analytics_known_letters").select("*").maybeSingle(),
       ]);
       setPop((p.data as Pop[]) ?? []);
       setLearn((l.data as Learn[]) ?? []);
@@ -53,9 +69,15 @@ const Admin = () => {
       setAges((a.data as Age[]) ?? []);
       setPower((lp.data as Power | null) ?? null);
       setLetterPower((lpw.data as LetterPower[]) ?? []);
+      setRate((r.data as Rate[]) ?? []);
+      setEngage((eg.data as Engage[]) ?? []);
+      setRetention(((rt.data as Ret[]) ?? []).reverse());
+      setSvn((sv.data as Svn[]) ?? []);
+      setKnown((kn.data as Known | null) ?? null);
       setLoading(false);
     })();
   }, [isAdmin]);
+
 
   if (authLoading || subLoading) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" /></div>;
