@@ -11,16 +11,20 @@ import NeckGame from "@/pages/kavram/NeckGame";
 import SizeGame from "@/pages/kavram/SizeGame";
 import {
   pickNextLetter,
+  pickNextLetterFromTopic,
   recordSrsAnswer,
   getTopicSrs,
+  getCloudSrsState,
   resetTopicSrs,
   useSrsTick,
   type Level,
+  type SrsState,
 } from "@/data/srs";
 import { cn } from "@/lib/utils";
 import { useAge, itemsForAge } from "@/lib/age";
 import { useSubscription } from "@/hooks/useSubscription";
 import { isTopicFree } from "@/lib/premium";
+import { useAuth } from "@/hooks/useAuth";
 
 type Mode = "pratik" | "kart";
 
@@ -53,6 +57,9 @@ const Topic = () => {
   const [picked, setPicked] = useState<string | null>(null);
   const [score, setScore] = useState(0);
   const questionStartRef = useRef<number>(0);
+  const { session } = useAuth();
+  const uid = session?.user.id ?? null;
+  const [cloudSrs, setCloudSrs] = useState<SrsState | null>(null);
 
   const [age] = useAge();
   const items = useMemo(() => itemsForAge(topic?.items || [], age), [topic, age]);
@@ -68,11 +75,24 @@ const Topic = () => {
   useEffect(() => {
     if (mode !== "pratik" || !topic || itemIds.length === 0 || q) return;
     if (topic.interactiveGame) return;
-    const tid = pickNextLetter(NS, topic.id, itemIds);
+    const tid = uid ? pickNextLetterFromTopic(cloudSrs?.[topic.id] ?? {}, itemIds) : pickNextLetter(NS, topic.id, itemIds);
     setQ(buildQuestion(items, tid));
     setPicked(null);
     questionStartRef.current = Date.now();
-  }, [mode, topic, itemIds, q, items]);
+  }, [mode, topic, itemIds, q, items, uid, cloudSrs]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!uid) { setCloudSrs(null); return; }
+    const fetch = async () => {
+      const full = await getCloudSrsState(uid);
+      if (!cancelled) setCloudSrs(full);
+    };
+    void fetch();
+    const onProgress = () => void fetch();
+    window.addEventListener("elifba-progress-updated", onProgress);
+    return () => { cancelled = true; window.removeEventListener("elifba-progress-updated", onProgress); };
+  }, [uid]);
 
   useEffect(() => {
     if (mode === "pratik" && q?.target) playItem(q.target);
@@ -104,7 +124,7 @@ const Topic = () => {
     );
   }
 
-  const srs = getTopicSrs(NS, topic.id);
+  const srs = uid ? (cloudSrs?.[topic.id] ?? {}) : getTopicSrs(NS, topic.id);
   const levelCount: Record<Level, number> = { 1: 0, 2: 0, 3: 0, 4: 0 };
   for (const id of itemIds) {
     const lvl = (srs[id]?.level || 1) as Level;
