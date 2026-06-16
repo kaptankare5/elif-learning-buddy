@@ -26,14 +26,11 @@ export default function Auth() {
   if (user) return <Navigate to="/" replace />;
 
   const afterAuthSuccess = async () => {
-    const { data } = await supabase.auth.getSession();
-    const uid = data.session?.user?.id;
-    if (uid) {
-      // Hesapsız oynanmış SRS verisini hesaba aktar (idempotent).
-      void migrateGuestDataToAccount(uid).catch(() => {});
-    }
+    // Yeni hesap girişinde cihazdaki misafir verisi otomatik aktarılmaz.
+    // Aktarmak için Ayarlar > "Cihazdaki misafir ilerlemesini bu hesaba aktar".
     navigate("/");
   };
+
 
   const doEmail = async () => {
     setBusy(true);
