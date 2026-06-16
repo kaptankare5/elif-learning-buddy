@@ -1,6 +1,8 @@
 // Cevapları Supabase'e (giriş yapan kullanıcılar için) kaydeder.
 // Sessiz davranır — kullanıcı giriş yapmamışsa hiçbir şey yapmaz.
 import { supabase } from "@/integrations/supabase/client";
+import { getGameMode } from "@/lib/gameMode";
+
 
 export interface LogAnswerParams {
   topicId: string;
@@ -21,7 +23,7 @@ export async function logAnswer(params: LogAnswerParams) {
   const user = sess.session?.user;
   if (!user) return;
 
-  // Ham olay (analitik için süre dahil)
+  // Ham olay (analitik için süre + mod dahil)
   supabase.from("answer_events").insert({
     user_id: user.id,
     topic_id: params.topicId,
@@ -29,7 +31,9 @@ export async function logAnswer(params: LogAnswerParams) {
     game_id: params.gameId ?? null,
     correct: params.correct,
     response_ms: params.responseMs ?? null,
+    mode: getGameMode(),
   }).then(() => {});
+
 
   // Toplulaştırılmış istatistik (upsert) + öğrenme gücü alanları
   const { data: existing } = await supabase

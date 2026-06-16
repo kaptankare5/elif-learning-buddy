@@ -84,6 +84,7 @@ export async function startGameSession(gameId: string, topicId?: string | null):
   if (!consentGiven()) return null;
   const userId = await uid();
   if (!userId) return null;
+  const { getGameMode } = await import("@/lib/gameMode");
   const { data, error } = await supabase
     .from("game_sessions")
     .insert({
@@ -92,12 +93,14 @@ export async function startGameSession(gameId: string, topicId?: string | null):
       topic_id: topicId ?? null,
       age_band: ageBand(),
       platform: platform(),
+      mode: getGameMode(),
     })
     .select("id")
     .single();
   if (error) return null;
   return data?.id ?? null;
 }
+
 
 export async function endGameSession(
   sessionId: string | null,
