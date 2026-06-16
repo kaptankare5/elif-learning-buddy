@@ -52,9 +52,12 @@ export function ConsentModal() {
     setOpen(false);
   };
 
-  return (
-    <div className="fixed inset-0 z-[100] bg-background/80 backdrop-blur flex items-center justify-center p-4">
-      <div className="w-full max-w-md rounded-3xl bg-card border-4 border-primary/30 shadow-elegant p-6 max-h-[90vh] overflow-y-auto">
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[200] bg-background/80 backdrop-blur flex items-center justify-center p-4"
+      style={{ pointerEvents: "auto" }}
+    >
+      <div className="w-full max-w-md rounded-3xl bg-card border-4 border-primary/30 shadow-elegant p-6 max-h-[90vh] overflow-y-auto" style={{ pointerEvents: "auto" }}>
         <div className="flex items-center gap-2 mb-3">
           <Shield className="h-6 w-6 text-primary" />
           <h2 className="text-xl font-extrabold">Hoş geldin!</h2>
@@ -104,7 +107,8 @@ export function ConsentModal() {
           {saving ? "Kaydediliyor…" : "Devam et"}
         </button>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
