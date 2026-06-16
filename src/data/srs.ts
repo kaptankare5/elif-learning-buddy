@@ -282,6 +282,35 @@ export async function getNamespaceStatsFromCloud(uid: string | null) {
   } catch { return null; }
 }
 
+// Bulut'tan tam SRS state (konu+harf bazlı). Oturum yoksa null.
+export async function getCloudSrsState(uid: string | null): Promise<SrsState | null> {
+  if (!uid) return null;
+  try {
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { data, error } = await supabase
+      .from("letter_stats")
+      .select("topic_id, letter_id, level, correct_count, shown_count, last_seen_at, total_response_ms, time_to_learn_ms, knew_before, learned_at")
+      .eq("user_id", uid);
+    if (error || !data) return null;
+    const state: SrsState = {};
+    for (const r of data as Array<{ topic_id: string; letter_id: string; level: number; correct_count: number; shown_count: number; last_seen_at: string | null; total_response_ms: number | null; time_to_learn_ms: number | null; knew_before: boolean | null; learned_at: string | null }>) {
+      if (!state[r.topic_id]) state[r.topic_id] = {};
+      state[r.topic_id][r.letter_id] = {
+        level: Math.max(1, Math.min(4, r.level || 1)) as Level,
+        correct: r.correct_count || 0,
+        total: r.shown_count || 0,
+        seen: r.shown_count || 0,
+        lastSeen: r.last_seen_at ? new Date(r.last_seen_at).getTime() : 0,
+        totalMs: r.total_response_ms ?? 0,
+        msToLearn: r.time_to_learn_ms ?? undefined,
+        knewBefore: r.knew_before ?? undefined,
+        learnedAt: r.learned_at ? new Date(r.learned_at).getTime() : undefined,
+      };
+    }
+    return state;
+  } catch { return null; }
+}
+
 // Cihazdaki öğrenme gücü: yeni öğrenilen harflerin ortalama süresi (saniye)
 export function getLearningPower(ns: Namespace): {
   learnedCount: number; knewCount: number; avgSeconds: number | null;
