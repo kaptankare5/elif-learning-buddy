@@ -169,7 +169,7 @@ const Settings = () => {
           </div>
           <p className="text-[11px] text-muted-foreground mb-3 leading-snug">
             Kimlik bilgisi (ad, foto, doğum tarihi) saklanmaz. Sadece hangi oyun ne kadar
-            oynandı, hangi harf öğrenildi gibi anonim veriler — uygulamayı geliştirmek için.
+            oynandı ve hangi ekranlar kullanıldı gibi anonim veriler — uygulamayı geliştirmek için.
           </p>
           {session && (
             <button
