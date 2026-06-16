@@ -60,6 +60,7 @@ const Topic = () => {
   const { session } = useAuth();
   const uid = session?.user.id ?? null;
   const [cloudSrs, setCloudSrs] = useState<SrsState | null>(null);
+  const [cloudLoading, setCloudLoading] = useState<boolean>(!!uid);
 
   const [age] = useAge();
   const items = useMemo(() => itemsForAge(topic?.items || [], age), [topic, age]);
@@ -75,18 +76,20 @@ const Topic = () => {
   useEffect(() => {
     if (mode !== "pratik" || !topic || itemIds.length === 0 || q) return;
     if (topic.interactiveGame) return;
+    if (uid && cloudLoading) return;
     const tid = uid ? pickNextLetterFromTopic(cloudSrs?.[topic.id] ?? {}, itemIds) : pickNextLetter(NS, topic.id, itemIds);
     setQ(buildQuestion(items, tid));
     setPicked(null);
     questionStartRef.current = Date.now();
-  }, [mode, topic, itemIds, q, items, uid, cloudSrs]);
+  }, [mode, topic, itemIds, q, items, uid, cloudSrs, cloudLoading]);
 
   useEffect(() => {
     let cancelled = false;
-    if (!uid) { setCloudSrs(null); return; }
+    if (!uid) { setCloudSrs(null); setCloudLoading(false); return; }
+    setCloudLoading(true);
     const fetch = async () => {
       const full = await getCloudSrsState(uid);
-      if (!cancelled) setCloudSrs(full);
+      if (!cancelled) { setCloudSrs(full); setCloudLoading(false); }
     };
     void fetch();
     const onProgress = () => void fetch();
@@ -182,7 +185,7 @@ const Topic = () => {
     const correct = opt.id === q.target.id;
     if (correct) setScore((s) => s + 1);
     const responseMs = questionStartRef.current ? Date.now() - questionStartRef.current : undefined;
-    recordSrsAnswer(NS, topic.id, q.target.id, correct, { responseMs });
+    await recordSrsAnswer(NS, topic.id, q.target.id, correct, { responseMs });
     await playFeedback(correct);
     setTimeout(() => setQ(null), 700);
   };
@@ -223,7 +226,7 @@ const Topic = () => {
               )}
             >
               <div className="text-[10px] leading-none">{"⭐".repeat(l)}</div>
-              <div className="text-xs font-extrabold text-foreground mt-0.5">{levelCount[l as Level]}</div>
+              <div className="text-xs font-extrabold text-foreground mt-0.5">{uid && cloudLoading ? "…" : levelCount[l as Level]}</div>
             </div>
           ))}
         </div>

@@ -231,14 +231,20 @@ export interface AnswerMeta {
   gameId?: string;
 }
 
-// Cevap kaydet → seviye + biliyordu/öğrenildi durumunu güncelle
-export function recordSrsAnswer(
+function dispatchCloudSaveFailure(error: unknown) {
+  console.error("Bulut ilerleme kaydı başarısız:", error);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("elifba-progress-save-failed", { detail: error }));
+  }
+}
+
+function recordLocalSrsAnswer(
   ns: Namespace,
   topicId: string,
   letterId: string,
   correct: boolean,
   meta?: AnswerMeta,
-) {
+): LetterSrsEntry {
   const s = load(ns);
   const e = ensureEntry(s, topicId, letterId);
   const prevLevel = e.level;
@@ -271,33 +277,39 @@ export function recordSrsAnswer(
 
   save(ns, s);
 
-  // Bulut: cevap olayı + agg istatistik. Giriş yapan kullanıcıda sunucu cevabı
-  // tek gerçek kaynak kabul edilir; dönen satırla yerel önbellek hemen güncellenir.
-  import("@/data/cloudSync").then((m) => {
-    m.logAnswer({
-      topicId,
-      letterId,
-      correct,
-      gameId: meta?.gameId,
-      responseMs: meta?.responseMs,
-      knewBefore: e.knewBefore,
-      learnedAtMs: e.learnedAt,
-      timeToLearnMs: e.msToLearn,
-      totalResponseMs: e.totalMs,
-      level: e.level,
-    }).then((row) => {
-      if (row) mergeCloudRowIntoLocal(ns, row as CloudLetterRow);
-    }).catch((error) => {
-      console.error("Bulut ilerleme kaydı başarısız:", error);
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent("elifba-progress-save-failed", { detail: error }));
-      }
-    });
-  }).catch(() => {});
-
   // Milestone: seviye yükselişinde
   if (correct && e.level > prevLevel) {
     import("@/lib/analytics").then((m) => m.trackMilestone(topicId, letterId, e.level)).catch(() => {});
+  }
+
+  return e;
+}
+
+// Cevap kaydet → giriş yapan kullanıcıda backend tek gerçek kaynaktır.
+export async function recordSrsAnswer(
+  ns: Namespace,
+  topicId: string,
+  letterId: string,
+  correct: boolean,
+  meta?: AnswerMeta,
+): Promise<LetterSrsEntry | null> {
+  const uid = getActiveSrsUser();
+  if (!uid) return recordLocalSrsAnswer(ns, topicId, letterId, correct, meta);
+
+  const prevLevel = (load(ns)[topicId]?.[letterId]?.level ?? 1) as Level;
+  try {
+    const { logAnswer } = await import("@/data/cloudSync");
+    const row = await logAnswer({ topicId, letterId, correct, gameId: meta?.gameId, responseMs: meta?.responseMs });
+    if (!row) throw new Error("Oturum bulunamadı, ilerleme kaydedilemedi.");
+    mergeCloudRowIntoLocal(ns, row as CloudLetterRow);
+    const entry = rowToEntry(row as CloudLetterRow);
+    if (correct && entry.level > prevLevel) {
+      import("@/lib/analytics").then((m) => m.trackMilestone(topicId, letterId, entry.level)).catch(() => {});
+    }
+    return entry;
+  } catch (error) {
+    dispatchCloudSaveFailure(error);
+    return null;
   }
 }
 
@@ -341,7 +353,10 @@ export async function getCloudSrsState(uid: string | null): Promise<SrsState | n
       .from("letter_stats")
       .select("topic_id, letter_id, level, correct_count, shown_count, last_seen_at, total_response_ms, time_to_learn_ms, knew_before, learned_at")
       .eq("user_id", uid);
-    if (error || !data) return null;
+    if (error || !data) {
+      if (error) dispatchCloudSaveFailure(error);
+      return null;
+    }
     const state: SrsState = {};
     for (const r of data as CloudLetterRow[]) {
       putCloudRow(state, r);

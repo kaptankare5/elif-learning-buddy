@@ -31,6 +31,7 @@ const ProgressPage = () => {
     return () => { cancelled = true; window.removeEventListener("elifba-progress-updated", onProgress); };
   }, [uid]);
 
+  const showCloudLoading = !!uid && cloudLoading;
   const stats = uid ? (cloudStats ?? { total: 0, correct: 0, percent: 0, levelCount: { 1: 0, 2: 0, 3: 0, 4: 0 } as Record<Level, number> }) : localStats;
   const accountLabel = session
     ? (session.user.user_metadata?.display_name || session.user.email || "Hesabım")
@@ -59,15 +60,15 @@ const ProgressPage = () => {
         )}
 
         <div className="mb-4 grid grid-cols-3 gap-2">
-          <Stat label="Toplam Cevap" value={stats.total} color="text-primary" />
-          <Stat label="Doğru" value={stats.correct} color="text-success" />
-          <Stat label="Başarı" value={`${stats.percent}%`} color="text-info" />
+          <Stat label="Toplam Cevap" value={showCloudLoading ? "…" : stats.total} color="text-primary" />
+          <Stat label="Doğru" value={showCloudLoading ? "…" : stats.correct} color="text-success" />
+          <Stat label="Başarı" value={showCloudLoading ? "…" : `${stats.percent}%`} color="text-info" />
         </div>
 
 
         <div className="mb-6 grid grid-cols-4 gap-2">
           {[1, 2, 3, 4].map((l) => (
-            <LevelBox key={l} level={l as Level} count={stats.levelCount[l as Level]} />
+            <LevelBox key={l} level={l as Level} count={showCloudLoading ? "…" : stats.levelCount[l as Level]} />
           ))}
         </div>
 
@@ -91,6 +92,7 @@ const ProgressPage = () => {
                     if (e) { counts[e.level as Level]++; touched++; }
                   }
                   const pct = ids.length ? Math.round((touched / ids.length) * 100) : 0;
+                  const topicLoading = showCloudLoading;
                   return (
                     <details key={t.id} className="group rounded-2xl bg-muted/50 overflow-hidden">
                       <summary className="flex items-center gap-3 p-3 cursor-pointer list-none transition-bouncy hover:bg-muted">
@@ -98,10 +100,10 @@ const ProgressPage = () => {
                         <div className="flex-1 min-w-0">
                           <div className="font-bold text-sm truncate">{t.title}</div>
                           <div className="mt-1 h-2 rounded-full bg-background overflow-hidden">
-                            <div className="h-full bg-gradient-to-r from-info via-primary to-success" style={{ width: `${pct}%` }} />
+                            <div className="h-full bg-gradient-to-r from-info via-primary to-success" style={{ width: topicLoading ? "100%" : `${pct}%` }} />
                           </div>
                           <div className="mt-1 text-[10px] text-muted-foreground font-semibold">
-                            {touched}/{ids.length} öğe • %{pct}
+                            {topicLoading ? "Yükleniyor…" : `${touched}/${ids.length} öğe • %${pct}`}
                           </div>
                         </div>
                         <div className="flex gap-1 text-[10px] font-bold">
@@ -111,7 +113,7 @@ const ProgressPage = () => {
                               l === 2 && "bg-warning/20 text-warning",
                               l === 3 && "bg-secondary text-secondary-foreground",
                               l === 4 && "bg-success/20 text-success")}>
-                              {counts[l as Level]}
+                              {topicLoading ? "…" : counts[l as Level]}
                             </span>
                           ))}
                         </div>
@@ -121,7 +123,7 @@ const ProgressPage = () => {
                         <div className="grid grid-cols-2 gap-1.5 mb-2">
                           {t.items.map((it) => {
                             const e = srs[it.id];
-                            const lv = (e?.level as Level) ?? 0;
+                            const lv = topicLoading ? 0 : ((e?.level as Level) ?? 0);
                             return (
                               <div key={it.id} className={cn(
                                 "flex items-center gap-2 rounded-lg px-2 py-1 text-xs bg-card border",
@@ -182,7 +184,7 @@ function Stat({ label, value, color }: { label: string; value: string | number; 
   );
 }
 
-function LevelBox({ level, count }: { level: Level; count: number }) {
+function LevelBox({ level, count }: { level: Level; count: number | string }) {
   return (
     <div className={cn("rounded-xl p-2 text-center shadow-soft border-2",
       level === 1 && "bg-info/10 border-info/40",
