@@ -12,6 +12,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { migrateGuestDataToAccount } from "@/lib/localProgress";
 import { hydrateSrsFromCloud, hasGuestData } from "@/data/srs";
+import { getCachedProfile } from "@/lib/analytics";
 import { toast } from "sonner";
 
 const ASKED_FLAG = (uid: string) => `miniakil:transfer-asked:${uid}`;
@@ -25,15 +26,21 @@ export function TransferGuestDialog() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    const onPrompt = () => {
+    const tryOpen = () => {
       if (!session) return;
       const uid = session.user.id;
       try { if (localStorage.getItem(ASKED_FLAG(uid)) === "1") return; } catch { /* */ }
       if (!hasGuestData()) return;
+      // Önce KVKK/yaş onay ekranı tamamlanmalı — yoksa Radix dialog overlay'i
+      // ConsentModal tıklamalarını blokluyor.
+      if (!getCachedProfile()?.consent_at) {
+        setTimeout(tryOpen, 1000);
+        return;
+      }
       setOpen(true);
     };
-    window.addEventListener(TRANSFER_PROMPT_EVENT, onPrompt);
-    return () => window.removeEventListener(TRANSFER_PROMPT_EVENT, onPrompt);
+    window.addEventListener(TRANSFER_PROMPT_EVENT, tryOpen);
+    return () => window.removeEventListener(TRANSFER_PROMPT_EVENT, tryOpen);
   }, [session]);
 
   const markAsked = () => {
