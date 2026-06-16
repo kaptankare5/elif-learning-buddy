@@ -168,11 +168,6 @@ const Admin = () => {
                 ))}
                 {rate.length === 0 && <tr><td colSpan={6} className="text-center text-muted-foreground py-3">Henüz veri yok.</td></tr>}
               </Table>
-              {known && (
-                <p className="mt-2 text-[11px] text-muted-foreground">
-                  Kontrol: hesaba katılmayan "zaten biliyordu" öğe sayısı: <b>{known.already_known_items}</b> ({known.users} kişi)
-                </p>
-              )}
             </Card>
 
             <Card title="🕒 Oyun Süresi (toplam dakika, mod kırılımı)">
