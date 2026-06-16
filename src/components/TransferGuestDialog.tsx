@@ -12,6 +12,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { migrateGuestDataToAccount } from "@/lib/localProgress";
 import { hydrateSrsFromCloud, hasGuestData } from "@/data/srs";
+import { getCachedProfile } from "@/lib/analytics";
 import { toast } from "sonner";
 
 const ASKED_FLAG = (uid: string) => `miniakil:transfer-asked:${uid}`;
