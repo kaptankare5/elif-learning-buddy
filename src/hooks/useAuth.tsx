@@ -1,6 +1,7 @@
-import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { setActiveSrsUser, clearUserLocalSrs, hydrateSrsFromCloud } from "@/data/srs";
 
 interface AuthCtx {
   user: User | null;
@@ -14,16 +15,27 @@ const Ctx = createContext<AuthCtx>({ user: null, session: null, loading: true, s
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const prevUidRef = useRef<string | null>(null);
 
   useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
+    const apply = (s: Session | null) => {
+      const newUid = s?.user?.id ?? null;
+      const prevUid = prevUidRef.current;
+      if (newUid !== prevUid) {
+        // Önceki kullanıcının yerel verisini temizle (misafir verisi guest anahtarda ayrı kalır)
+        if (prevUid) clearUserLocalSrs(prevUid);
+        setActiveSrsUser(newUid);
+        if (newUid) {
+          // Yeni hesap için buluttan hidrate et (boşsa görünüm sıfırdan başlar)
+          void hydrateSrsFromCloud(newUid).catch(() => {});
+        }
+        prevUidRef.current = newUid;
+      }
       setSession(s);
       setLoading(false);
-    });
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setLoading(false);
-    });
+    };
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => apply(s));
+    supabase.auth.getSession().then(({ data }) => apply(data.session));
     return () => sub.subscription.unsubscribe();
   }, []);
 

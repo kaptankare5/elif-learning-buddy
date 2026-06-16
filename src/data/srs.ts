@@ -27,9 +27,30 @@ export interface LetterSrsEntry {
 export type TopicSrs = Record<string, LetterSrsEntry>;
 export type SrsState = Record<string, TopicSrs>;
 
-const KEY = (ns: Namespace) => `elifba-srs-${ns}-v1`;
+// Aktif kullanıcı kapsamı — farklı hesapların ilerlemesi karışmasın diye
+// localStorage anahtarına user_id ekleniyor.
+let _activeUid: string | null = null;
 const EVENT = (ns: Namespace) => `elifba-srs-${ns}-updated`;
 const PROGRESS_EVENT = "elifba-progress-updated";
+
+export function setActiveSrsUser(uid: string | null) {
+  _activeUid = uid || null;
+  if (typeof window !== "undefined") {
+    try { window.dispatchEvent(new Event(EVENT("quiz"))); } catch { /* */ }
+    try { window.dispatchEvent(new Event(EVENT("games"))); } catch { /* */ }
+    try { window.dispatchEvent(new Event(PROGRESS_EVENT)); } catch { /* */ }
+  }
+}
+export function getActiveSrsUser(): string | null { return _activeUid; }
+
+const KEY = (ns: Namespace) => `elifba-srs-${ns}-${_activeUid ?? "guest"}-v1`;
+
+export function clearUserLocalSrs(uid: string | null) {
+  if (typeof window === "undefined" || !uid) return;
+  for (const ns of ["quiz", "games"] as Namespace[]) {
+    try { localStorage.removeItem(`elifba-srs-${ns}-${uid}-v1`); } catch { /* */ }
+  }
+}
 
 function load(ns: Namespace): SrsState {
   if (typeof window === "undefined") return {};
@@ -40,6 +61,34 @@ function save(ns: Namespace, s: SrsState) {
   localStorage.setItem(KEY(ns), JSON.stringify(s));
   window.dispatchEvent(new Event(EVENT(ns)));
   window.dispatchEvent(new Event(PROGRESS_EVENT));
+}
+
+export async function hydrateSrsFromCloud(uid: string) {
+  if (!uid || typeof window === "undefined") return;
+  const { supabase } = await import("@/integrations/supabase/client");
+  const { data } = await supabase.from("letter_stats").select("*").eq("user_id", uid);
+  if (!data) return;
+  const state: SrsState = {};
+  for (const r of data as Array<{ topic_id: string; letter_id: string; shown_count: number; correct_count: number; wrong_count: number; level: number; total_response_ms: number | null; learned_at: string | null; time_to_learn_ms: number | null; knew_before: boolean | null; last_seen_at: string | null }>) {
+    if (!state[r.topic_id]) state[r.topic_id] = {};
+    state[r.topic_id][r.letter_id] = {
+      level: Math.max(1, Math.min(4, r.level)) as Level,
+      correct: r.correct_count,
+      total: r.shown_count,
+      seen: r.shown_count,
+      lastSeen: r.last_seen_at ? new Date(r.last_seen_at).getTime() : 0,
+      totalMs: r.total_response_ms ?? 0,
+      msToLearn: r.time_to_learn_ms ?? undefined,
+      knewBefore: r.knew_before ?? undefined,
+      learnedAt: r.learned_at ? new Date(r.learned_at).getTime() : undefined,
+    };
+  }
+  for (const ns of ["quiz", "games"] as Namespace[]) {
+    try { localStorage.setItem(`elifba-srs-${ns}-${uid}-v1`, JSON.stringify(state)); } catch { /* */ }
+  }
+  try { window.dispatchEvent(new Event(PROGRESS_EVENT)); } catch { /* */ }
+  try { window.dispatchEvent(new Event(EVENT("quiz"))); } catch { /* */ }
+  try { window.dispatchEvent(new Event(EVENT("games"))); } catch { /* */ }
 }
 
 function ensureEntry(s: SrsState, topicId: string, letterId: string): LetterSrsEntry {

@@ -21,6 +21,7 @@ export type Database = {
           game_id: string | null
           id: string
           letter_id: string
+          mode: string | null
           response_ms: number | null
           topic_id: string
           user_id: string
@@ -31,6 +32,7 @@ export type Database = {
           game_id?: string | null
           id?: string
           letter_id: string
+          mode?: string | null
           response_ms?: number | null
           topic_id: string
           user_id: string
@@ -41,6 +43,7 @@ export type Database = {
           game_id?: string | null
           id?: string
           letter_id?: string
+          mode?: string | null
           response_ms?: number | null
           topic_id?: string
           user_id?: string
@@ -57,6 +60,7 @@ export type Database = {
           game_id: string
           gender: string | null
           id: string
+          mode: string | null
           platform: string | null
           score: number
           started_at: string
@@ -73,6 +77,7 @@ export type Database = {
           game_id: string
           gender?: string | null
           id?: string
+          mode?: string | null
           platform?: string | null
           score?: number
           started_at?: string
@@ -89,6 +94,7 @@ export type Database = {
           game_id?: string
           gender?: string | null
           id?: string
+          mode?: string | null
           platform?: string | null
           score?: number
           started_at?: string
@@ -358,6 +364,19 @@ export type Database = {
         }
         Relationships: []
       }
+      analytics_game_engagement: {
+        Row: {
+          accuracy_pct: number | null
+          avg_seconds: number | null
+          completion_pct: number | null
+          game_id: string | null
+          mode: string | null
+          sessions: number | null
+          total_minutes: number | null
+          unique_users: number | null
+        }
+        Relationships: []
+      }
       analytics_game_popularity: {
         Row: {
           accuracy_pct: number | null
@@ -369,12 +388,30 @@ export type Database = {
         }
         Relationships: []
       }
+      analytics_known_letters: {
+        Row: {
+          already_known_items: number | null
+          users: number | null
+        }
+        Relationships: []
+      }
       analytics_learning_power: {
         Row: {
           avg_minutes_per_item: number | null
           avg_seconds_per_item: number | null
           learned_items: number | null
           learners: number | null
+        }
+        Relationships: []
+      }
+      analytics_learning_rate: {
+        Row: {
+          active_minutes: number | null
+          items_per_hour: number | null
+          items_per_minute: number | null
+          learned_items: number | null
+          learners: number | null
+          mode: string | null
         }
         Relationships: []
       }
@@ -401,6 +438,27 @@ export type Database = {
         Row: {
           events: number | null
           step: string | null
+          users: number | null
+        }
+        Relationships: []
+      }
+      analytics_retention: {
+        Row: {
+          cohort_size: number | null
+          cohort_week: string | null
+          d1_pct: number | null
+          d30_pct: number | null
+          d7_pct: number | null
+        }
+        Relationships: []
+      }
+      analytics_super_vs_normal: {
+        Row: {
+          accuracy_pct: number | null
+          avg_seconds: number | null
+          completion_pct: number | null
+          mode: string | null
+          sessions: number | null
           users: number | null
         }
         Relationships: []

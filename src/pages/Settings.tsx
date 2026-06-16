@@ -11,6 +11,9 @@ import { consentGiven, setConsent, deleteMyAnalytics, updateMyProfile } from "@/
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { AccountCard } from "@/components/AccountCard";
+import { migrateGuestDataToAccount } from "@/lib/localProgress";
+import { hydrateSrsFromCloud } from "@/data/srs";
+
 
 const Settings = () => {
   const [s, set] = useSettings();
@@ -162,8 +165,31 @@ const Settings = () => {
             </button>
           )}
         </div>
+
+        {/* Misafir verisi içe aktarma */}
+        {session && (
+          <div className="mt-6 rounded-2xl bg-card p-4 shadow-card border-2 border-border/40">
+            <h3 className="text-base font-extrabold mb-1">Cihazdaki misafir ilerlemesi</h3>
+            <p className="text-xs text-muted-foreground mb-3 leading-snug">
+              Giriş yapmadan oynanan ilerlemeyi bu hesaba eklemek istersen aşağıdaki butona dokun.
+              Otomatik aktarılmaz — her hesap kendi ilerlemesine sahiptir.
+            </p>
+            <button
+              onClick={async () => {
+                const uid = session.user.id;
+                const r = await migrateGuestDataToAccount(uid);
+                await hydrateSrsFromCloud(uid);
+                alert(r.errors === 0 ? `${r.migrated} kayıt aktarıldı.` : `Aktarıldı: ${r.migrated} • Hata: ${r.errors}`);
+              }}
+              className="w-full rounded-xl bg-primary/10 text-primary border-2 border-primary/30 py-2 font-extrabold text-sm"
+            >
+              ⬆️ Misafir ilerlemesini hesabıma aktar
+            </button>
+          </div>
+        )}
       </main>
     </div>
+
   );
 };
 

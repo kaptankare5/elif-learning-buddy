@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
+
 import { SUBJECTS } from "@/data/subjects";
 import { Sparkles, Crown, LogIn, UserCircle2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -89,9 +91,12 @@ const Index = () => {
 
         <AgeBadge />
 
+        {!session && <GuestLoginReminder />}
+
         <div className="mb-6 flex justify-center">
           <div className="text-7xl animate-float" aria-hidden>🐱</div>
         </div>
+
 
         <nav className="grid grid-cols-2 gap-3 mb-6">
           {order.map((tileId, i) => {
@@ -164,5 +169,42 @@ const Index = () => {
     </div>
   );
 };
+
+function GuestLoginReminder() {
+  const KEY = "endlessmum:guest-reminder-hide-until";
+  const [hidden, setHidden] = useState<boolean>(() => {
+    try {
+      const v = localStorage.getItem(KEY);
+      return !!(v && Number(v) > Date.now());
+    } catch { return false; }
+  });
+
+  if (hidden) return null;
+  return (
+    <div className="mb-4 rounded-2xl bg-card border-2 border-primary/30 p-3 shadow-card flex items-start gap-3 animate-fade-in">
+      <div className="text-2xl">👋</div>
+      <div className="flex-1">
+        <p className="text-sm font-extrabold text-foreground">Veli misin? Giriş yap.</p>
+        <p className="text-[11px] text-muted-foreground leading-snug">
+          İlerleme şu an sadece bu cihazda. Hesabınla tüm cihazlarda güvenle saklansın.
+        </p>
+        <div className="mt-2 flex gap-2">
+          <Link to="/giris" className="rounded-xl bg-primary text-primary-foreground px-3 py-1.5 text-xs font-extrabold">
+            Giriş yap
+          </Link>
+          <button
+            onClick={() => {
+              try { localStorage.setItem(KEY, String(Date.now() + 3 * 24 * 3600 * 1000)); } catch { /* */ }
+              setHidden(true);
+            }}
+            className="rounded-xl bg-muted text-muted-foreground px-3 py-1.5 text-xs font-bold"
+          >
+            Sonra
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default Index;
