@@ -517,6 +517,38 @@ export type Database = {
           since: string
         }[]
       }
+      record_letter_answer: {
+        Args: {
+          _correct: boolean
+          _game_id?: string
+          _letter_id: string
+          _mode?: string
+          _response_ms?: number
+          _topic_id: string
+        }
+        Returns: {
+          correct_count: number
+          first_seen_at: string
+          id: string
+          knew_before: boolean | null
+          last_seen_at: string
+          learned_at: string | null
+          letter_id: string
+          level: number
+          shown_count: number
+          time_to_learn_ms: number | null
+          topic_id: string
+          total_response_ms: number
+          user_id: string
+          wrong_count: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "letter_stats"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       app_role: "admin" | "user" | "parent" | "teacher"

@@ -158,11 +158,14 @@ function waterfallWeights(filledLevels: Level[]): Record<Level, number> {
 export function pickNextLetter(ns: Namespace, topicId: string, letterIds: string[]): string {
   ensureLetters(ns, topicId, letterIds);
   const s = load(ns);
-  const topic = s[topicId] || {};
+  return pickNextLetterFromTopic(s[topicId] || {}, letterIds);
+}
+
+export function pickNextLetterFromTopic(topic: TopicSrs, letterIds: string[]): string {
   const byLevel: Record<Level, string[]> = { 1: [], 2: [], 3: [], 4: [] };
   for (const id of letterIds) {
-    const e = topic[id]; if (!e) continue;
-    byLevel[e.level].push(id);
+    const e = topic[id] || { level: 1, seen: 0, lastSeen: 0 };
+    byLevel[e.level as Level].push(id);
   }
   const filled: Level[] = ([1, 2, 3, 4] as Level[]).filter((l) => byLevel[l].length > 0);
   if (filled.length === 0) return letterIds[Math.floor(Math.random() * letterIds.length)];
@@ -173,7 +176,8 @@ export function pickNextLetter(ns: Namespace, topicId: string, letterIds: string
   for (const l of filled) { r -= w[l]; if (r <= 0) { chosenLevel = l; break; } }
   const candidates = byLevel[chosenLevel];
   candidates.sort((a, b) => {
-    const ea = topic[a]; const eb = topic[b];
+    const ea = topic[a] || { seen: 0, lastSeen: 0 };
+    const eb = topic[b] || { seen: 0, lastSeen: 0 };
     if (ea.seen !== eb.seen) return ea.seen - eb.seen;
     return ea.lastSeen - eb.lastSeen;
   });
@@ -239,7 +243,12 @@ export function recordSrsAnswer(
       timeToLearnMs: e.msToLearn,
       totalResponseMs: e.totalMs,
       level: e.level,
-    }).catch(() => {});
+    }).then(() => {
+      const uid = getActiveSrsUser();
+      if (uid) void hydrateSrsFromCloud(uid).catch(() => {});
+    }).catch((error) => {
+      console.error("Bulut ilerleme kaydı başarısız:", error);
+    });
   }).catch(() => {});
 
   // Milestone: seviye yükselişinde
