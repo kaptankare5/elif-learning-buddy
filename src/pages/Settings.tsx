@@ -187,8 +187,9 @@ const Settings = () => {
             </button>
           </div>
         )}
-
+      </main>
     </div>
+
   );
 };
 
