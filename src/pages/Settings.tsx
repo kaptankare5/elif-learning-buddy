@@ -41,7 +41,7 @@ const Settings = () => {
 
   const doCloudDelete = async () => {
     const res = await deleteMyAnalytics();
-    if (res.ok) toast.success("Bulut verilerin silindi.");
+    if (res.ok) toast.success("Analitik verilerin silindi. Öğrenme ilerlemen korunuyor.");
     else toast.error("Silme başarısız: " + (res.error ?? "bilinmeyen hata"));
   };
 
@@ -163,7 +163,7 @@ const Settings = () => {
             <Shield className="h-6 w-6 text-primary" />
             <div className="flex-1">
               <h3 className="text-base font-extrabold">Gizlilik & Veri</h3>
-              <p className="text-xs text-muted-foreground">Anonim öğrenme verisi toplama</p>
+              <p className="text-xs text-muted-foreground">Anonim kullanım verisi toplama</p>
             </div>
             <Switch checked={consent} onCheckedChange={toggleConsent} />
           </div>
@@ -176,7 +176,7 @@ const Settings = () => {
               onClick={() => setConfirmCloudDel(true)}
               className="w-full rounded-xl bg-destructive/10 text-destructive border-2 border-destructive/30 py-2 font-extrabold text-sm flex items-center justify-center gap-2"
             >
-              <Trash2 className="h-4 w-4" /> Buluttaki verilerimi sil
+              <Trash2 className="h-4 w-4" /> Kullanım verilerimi sil
             </button>
           )}
         </div>
@@ -218,9 +218,9 @@ const Settings = () => {
         <ConfirmDestructive
           open={confirmCloudDel}
           onOpenChange={setConfirmCloudDel}
-          title="Buluttaki verilerin silinsin mi?"
-          description="Hesabına bağlı tüm öğrenme verileri sunucudan silinir. Cihazdaki önbelleğin bundan etkilenmez."
-          finalDescription="Bu işlem geri alınamaz. Tüm bulut ilerlemen kaybolur."
+          title="Kullanım verilerin silinsin mi?"
+          description="Oyun oturumları ve ekran kullanım kayıtları silinir. Öğrenme ilerlemen ve seviye kayıtların korunur."
+          finalDescription="Bu işlem geri alınamaz; ancak tekrar sistemi ve ilerleme seviyeleri silinmez."
           confirmLabel="Evet, sil"
           onConfirm={doCloudDelete}
         />
