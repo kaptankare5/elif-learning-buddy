@@ -176,7 +176,8 @@ export function pickNextLetterFromTopic(topic: TopicSrs, letterIds: string[]): s
   for (const l of filled) { r -= w[l]; if (r <= 0) { chosenLevel = l; break; } }
   const candidates = byLevel[chosenLevel];
   candidates.sort((a, b) => {
-    const ea = topic[a]; const eb = topic[b];
+    const ea = topic[a] || { seen: 0, lastSeen: 0 };
+    const eb = topic[b] || { seen: 0, lastSeen: 0 };
     if (ea.seen !== eb.seen) return ea.seen - eb.seen;
     return ea.lastSeen - eb.lastSeen;
   });
