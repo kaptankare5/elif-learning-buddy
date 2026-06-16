@@ -9,6 +9,7 @@ import {
 } from "recharts";
 import { Shield, Loader2 } from "lucide-react";
 import { Navigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
 
 type Pop = { game_id: string; session_count: number; unique_users: number; avg_seconds: number | null; completion_pct: number | null; accuracy_pct: number | null };
 type Learn = { topic_id: string; letter_id: string; learners: number; avg_minutes: number | null };
