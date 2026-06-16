@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { setConsent, updateMyProfile, getCachedProfile, PROFILE_CACHE_KEY } from "@/lib/analytics";
