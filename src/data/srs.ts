@@ -277,30 +277,6 @@ function recordLocalSrsAnswer(
 
   save(ns, s);
 
-  // Bulut: cevap olayı + agg istatistik. Giriş yapan kullanıcıda sunucu cevabı
-  // tek gerçek kaynak kabul edilir; dönen satırla yerel önbellek hemen güncellenir.
-  import("@/data/cloudSync").then((m) => {
-    m.logAnswer({
-      topicId,
-      letterId,
-      correct,
-      gameId: meta?.gameId,
-      responseMs: meta?.responseMs,
-      knewBefore: e.knewBefore,
-      learnedAtMs: e.learnedAt,
-      timeToLearnMs: e.msToLearn,
-      totalResponseMs: e.totalMs,
-      level: e.level,
-    }).then((row) => {
-      if (row) mergeCloudRowIntoLocal(ns, row as CloudLetterRow);
-    }).catch((error) => {
-      console.error("Bulut ilerleme kaydı başarısız:", error);
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent("elifba-progress-save-failed", { detail: error }));
-      }
-    });
-  }).catch(() => {});
-
   // Milestone: seviye yükselişinde
   if (correct && e.level > prevLevel) {
     import("@/lib/analytics").then((m) => m.trackMilestone(topicId, letterId, e.level)).catch(() => {});
