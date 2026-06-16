@@ -51,6 +51,12 @@ const ProgressPage = () => {
           )}
         </div>
 
+        {uid && cloudLoading && (
+          <div className="mb-3 text-center text-xs font-bold text-muted-foreground animate-pulse">
+            ☁️ Hesap verisi yükleniyor…
+          </div>
+        )}
+
         <div className="mb-4 grid grid-cols-3 gap-2">
           <Stat label="Toplam Cevap" value={stats.total} color="text-primary" />
           <Stat label="Doğru" value={stats.correct} color="text-success" />
