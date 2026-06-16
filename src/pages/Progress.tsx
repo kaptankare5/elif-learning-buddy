@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { SUBJECTS } from "@/data/subjects";
-import { getTopicSrs, getNamespaceStats, getNamespaceStatsFromCloud, useSrsTick, type Level } from "@/data/srs";
+import { getTopicSrs, getNamespaceStats, getNamespaceStatsFromCloud, getCloudSrsState, useSrsTick, type Level, type SrsState } from "@/data/srs";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -14,15 +14,19 @@ const ProgressPage = () => {
   const { session } = useAuth();
   const uid = session?.user.id ?? null;
   const [cloudStats, setCloudStats] = useState<ReturnType<typeof getNamespaceStats> | null>(null);
+  const [cloudSrs, setCloudSrs] = useState<SrsState | null>(null);
   const [cloudLoading, setCloudLoading] = useState<boolean>(!!uid);
 
   useEffect(() => {
     let cancelled = false;
-    if (!uid) { setCloudStats(null); setCloudLoading(false); return; }
+    if (!uid) { setCloudStats(null); setCloudSrs(null); setCloudLoading(false); return; }
     setCloudLoading(true);
     const fetch = async () => {
-      const r = await getNamespaceStatsFromCloud(uid);
-      if (!cancelled) { setCloudStats(r); setCloudLoading(false); }
+      const [s, full] = await Promise.all([
+        getNamespaceStatsFromCloud(uid),
+        getCloudSrsState(uid),
+      ]);
+      if (!cancelled) { setCloudStats(s); setCloudSrs(full); setCloudLoading(false); }
     };
     void fetch();
     const onProgress = () => void fetch();
@@ -81,7 +85,7 @@ const ProgressPage = () => {
               </div>
               <div className="p-3 space-y-2">
                 {s.topics.map((t) => {
-                  const srs = getTopicSrs(NS, t.id);
+                  const srs = uid ? (cloudSrs?.[t.id] ?? {}) : getTopicSrs(NS, t.id);
                   const ids = t.items.map((i) => i.id);
                   const counts: Record<Level, number> = { 1: 0, 2: 0, 3: 0, 4: 0 };
                   let touched = 0;
