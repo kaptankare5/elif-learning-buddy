@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { PageHeader } from "@/components/PageHeader";
 import { Switch } from "@/components/ui/switch";
 import { useSettings } from "@/lib/settings";
 import { playFeedback } from "@/lib/audio";
-import { Volume2, Vibrate, GraduationCap, Shield, Trash2, Lock } from "lucide-react";
+import { Volume2, Vibrate, GraduationCap, Shield, Trash2, Lock, Smartphone, Upload } from "lucide-react";
 import { useGameMode } from "@/lib/gameMode";
 import { cn } from "@/lib/utils";
 import { consentGiven, setConsent, deleteMyAnalytics, updateMyProfile } from "@/lib/analytics";
@@ -12,7 +12,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { AccountCard } from "@/components/AccountCard";
 import { migrateGuestDataToAccount } from "@/lib/localProgress";
-import { hydrateSrsFromCloud } from "@/data/srs";
+import { hydrateSrsFromCloud, hasGuestData, clearLocalProgress } from "@/data/srs";
+import { ConfirmDestructive } from "@/components/ConfirmDestructive";
+import { toast } from "sonner";
 
 
 const Settings = () => {
@@ -21,6 +23,12 @@ const Settings = () => {
   const { session } = useAuth();
   const { hasSuperMode } = useSubscription();
   const [consent, setConsentState] = useState(consentGiven());
+  const [busyMigrate, setBusyMigrate] = useState(false);
+  const [confirmCloudDel, setConfirmCloudDel] = useState(false);
+  const [confirmDeviceDel, setConfirmDeviceDel] = useState(false);
+  const [deviceScope, setDeviceScope] = useState<"active" | "guest" | "all">(session ? "active" : "guest");
+  const guestHas = useMemo(() => hasGuestData(), [session, busyMigrate]);
+
   useEffect(() => {
     const fn = () => setConsentState(consentGiven());
     window.addEventListener("miniakil:consent-changed", fn);
@@ -33,12 +41,32 @@ const Settings = () => {
     setConsent(v); setConsentState(v);
     if (session) await updateMyProfile({ analytics_consent: v });
   };
-  const handleDelete = async () => {
-    if (!confirm("Tüm öğrenme verilerin sunucudan silinecek. Emin misin?")) return;
-    const res = await deleteMyAnalytics();
-    if (res.ok) alert("Verilerin silindi.");
-    else alert("Silme başarısız: " + (res.error ?? "bilinmeyen hata"));
+
+  const doMigrate = async () => {
+    if (!session) return;
+    setBusyMigrate(true);
+    try {
+      const uid = session.user.id;
+      const r = await migrateGuestDataToAccount(uid);
+      await hydrateSrsFromCloud(uid);
+      if (r.errors === 0) toast.success(`✅ ${r.migrated} kayıt aktarıldı`);
+      else toast.error(`Aktarıldı: ${r.migrated} • Hata: ${r.errors}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Aktarım başarısız");
+    } finally { setBusyMigrate(false); }
   };
+
+  const doCloudDelete = async () => {
+    const res = await deleteMyAnalytics();
+    if (res.ok) toast.success("Bulut verilerin silindi.");
+    else toast.error("Silme başarısız: " + (res.error ?? "bilinmeyen hata"));
+  };
+
+  const doDeviceDelete = async () => {
+    clearLocalProgress(deviceScope);
+    toast.success("Cihazdaki ilerleme verisi silindi.");
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-secondary/30 to-background">
       <main className="container mx-auto max-w-xl px-4 pb-16">
@@ -142,6 +170,28 @@ const Settings = () => {
           </button>
         </div>
 
+        {/* Misafir verisi içe aktarma */}
+        {session && (
+          <div className="mt-6 rounded-2xl bg-card p-4 shadow-card border-2 border-primary/30">
+            <div className="flex items-center gap-3 mb-2">
+              <Upload className="h-6 w-6 text-primary" />
+              <h3 className="text-base font-extrabold flex-1">Cihazdaki misafir ilerlemesi</h3>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3 leading-snug">
+              {guestHas
+                ? "Bu cihazda giriş yapmadan oynanan ilerleme bulundu. Bu hesaba eklemek istersen aşağıdaki butona dokun. Mevcut hesap verisi silinmez."
+                : "Bu cihazda misafir ilerlemesi bulunamadı — eklenecek bir şey yok."}
+            </p>
+            <button
+              onClick={doMigrate}
+              disabled={busyMigrate || !guestHas}
+              className="w-full rounded-xl bg-primary/10 text-primary border-2 border-primary/30 py-2 font-extrabold text-sm disabled:opacity-50"
+            >
+              {busyMigrate ? "Aktarılıyor…" : "⬆️ Misafir ilerlemesini bu hesaba aktar"}
+            </button>
+          </div>
+        )}
+
         {/* Gizlilik */}
         <div className="mt-6 rounded-2xl bg-card p-4 shadow-card border-2 border-border/40">
           <div className="flex items-center gap-3 mb-3">
@@ -158,35 +208,71 @@ const Settings = () => {
           </p>
           {session && (
             <button
-              onClick={handleDelete}
+              onClick={() => setConfirmCloudDel(true)}
               className="w-full rounded-xl bg-destructive/10 text-destructive border-2 border-destructive/30 py-2 font-extrabold text-sm flex items-center justify-center gap-2"
             >
-              <Trash2 className="h-4 w-4" /> Verilerimi sil
+              <Trash2 className="h-4 w-4" /> Buluttaki verilerimi sil
             </button>
           )}
         </div>
 
-        {/* Misafir verisi içe aktarma */}
-        {session && (
-          <div className="mt-6 rounded-2xl bg-card p-4 shadow-card border-2 border-border/40">
-            <h3 className="text-base font-extrabold mb-1">Cihazdaki misafir ilerlemesi</h3>
-            <p className="text-xs text-muted-foreground mb-3 leading-snug">
-              Giriş yapmadan oynanan ilerlemeyi bu hesaba eklemek istersen aşağıdaki butona dokun.
-              Otomatik aktarılmaz — her hesap kendi ilerlemesine sahiptir.
-            </p>
-            <button
-              onClick={async () => {
-                const uid = session.user.id;
-                const r = await migrateGuestDataToAccount(uid);
-                await hydrateSrsFromCloud(uid);
-                alert(r.errors === 0 ? `${r.migrated} kayıt aktarıldı.` : `Aktarıldı: ${r.migrated} • Hata: ${r.errors}`);
-              }}
-              className="w-full rounded-xl bg-primary/10 text-primary border-2 border-primary/30 py-2 font-extrabold text-sm"
-            >
-              ⬆️ Misafir ilerlemesini hesabıma aktar
-            </button>
+        {/* Cihaz verileri */}
+        <div className="mt-6 rounded-2xl bg-card p-4 shadow-card border-2 border-border/40">
+          <div className="flex items-center gap-3 mb-2">
+            <Smartphone className="h-6 w-6 text-primary" />
+            <h3 className="text-base font-extrabold flex-1">📱 Cihaz verileri</h3>
           </div>
-        )}
+          <p className="text-[11px] text-muted-foreground mb-3 leading-snug">
+            Bu cihazda tutulan ilerleme önbelleğini siler. <strong>Buluttaki verin etkilenmez</strong>;
+            tekrar giriş yaptığında hesabından geri yüklenir.
+          </p>
+          {session && (
+            <div className="mb-3 space-y-1">
+              <label className="flex items-center gap-2 text-xs">
+                <input type="radio" name="dscope" checked={deviceScope === "active"} onChange={() => setDeviceScope("active")} />
+                Yalnız bu hesabın cihaz önbelleği
+              </label>
+              <label className="flex items-center gap-2 text-xs">
+                <input type="radio" name="dscope" checked={deviceScope === "guest"} onChange={() => setDeviceScope("guest")} />
+                Yalnız misafir ilerlemesi
+              </label>
+              <label className="flex items-center gap-2 text-xs">
+                <input type="radio" name="dscope" checked={deviceScope === "all"} onChange={() => setDeviceScope("all")} />
+                Hepsi (bu hesap + misafir)
+              </label>
+            </div>
+          )}
+          <button
+            onClick={() => setConfirmDeviceDel(true)}
+            className="w-full rounded-xl bg-destructive/10 text-destructive border-2 border-destructive/30 py-2 font-extrabold text-sm flex items-center justify-center gap-2"
+          >
+            <Trash2 className="h-4 w-4" /> Cihazdaki ilerlememi sil
+          </button>
+        </div>
+
+        <ConfirmDestructive
+          open={confirmCloudDel}
+          onOpenChange={setConfirmCloudDel}
+          title="Buluttaki verilerin silinsin mi?"
+          description="Hesabına bağlı tüm öğrenme verileri sunucudan silinir. Cihazdaki önbelleğin bundan etkilenmez."
+          finalDescription="Bu işlem geri alınamaz. Tüm bulut ilerlemen kaybolur."
+          confirmLabel="Evet, sil"
+          onConfirm={doCloudDelete}
+        />
+
+        <ConfirmDestructive
+          open={confirmDeviceDel}
+          onOpenChange={setConfirmDeviceDel}
+          title="Cihazdaki ilerleme silinsin mi?"
+          description={
+            session
+              ? "Yalnızca bu cihazdaki önbellek silinir. Buluttaki ilerlemen yerinde kalır ve tekrar giriş yapınca geri yüklenir."
+              : "Misafir ilerlemen bu cihazdan silinir. Hesabın olmadığı için geri yüklenemez."
+          }
+          finalDescription="Bu işlem geri alınamaz."
+          confirmLabel="Evet, sil"
+          onConfirm={doDeviceDelete}
+        />
       </main>
     </div>
 
