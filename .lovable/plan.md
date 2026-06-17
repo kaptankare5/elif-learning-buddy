@@ -1,34 +1,45 @@
-Plan:
+## Hedef
+Hesap açıkken harf seviyeleri, tekrar sistemi ve ilerleme ekranı artık tarayıcı verisine bağlı kalmayacak; her cevap kullanıcının kendi hesabına bağlı backend kaydına yazılacak ve ekranlar aynı kullanıcı kaydından okuyacak.
 
-1. Backend izinlerini kesinleştir
-- `letter_stats` ve `answer_events` tablolarında kullanıcı bazlı okuma/yazma/güncelleme izinlerini migration ile açıkça yeniden tanımlayacağım.
-- RLS mantığı kullanıcıya sadece kendi `user_id` ilerlemesini gösterecek/yazdıracak şekilde kalacak.
-- Cevap kaydeden `record_letter_answer` fonksiyonunun giriş yapan kullanıcılar tarafından çalıştırılabildiğini garanti edeceğim.
+## Bulduğum ana sorun
+- `letter_stats` ve `answer_events` tablolarında `user_id` alanı var; yani veri kullanıcıya bağlanabilecek şekilde tasarlanmış.
+- Ama Data API izinleri görünmüyor: `information_schema.role_table_grants` sonucu boş. Bu, uygulamanın hesap açıkken tabloyu okuyamamasına/yazamamasına ve ekranların 0 göstermesine yol açabilir.
+- `record_letter_answer` fonksiyonu şu an `SECURITY INVOKER`; tablo izinleri eksik olduğunda fonksiyon içindeki kayıt işlemleri de takılabilir.
+- Backend’de geçmiş kayıtlar var, fakat son cevap kayıtları artık düzenli akmıyor görünüyor.
 
-2. Cevap kaydını localStorage yerine backend-first yap
-- Kullanıcı giriş yapmışsa doğru/yanlış cevabı önce backend fonksiyonuna gönderilecek.
-- Seviye güncellemesi backend’de yapılacak: doğru cevap `1→2→3→4`, yanlış cevap `4→3→2→1`.
-- Backend başarılı dönerse local cache sadece ekrandaki hızlı yenileme için backend satırından güncellenecek.
-- Backend hatası olursa sessizce geçilmeyecek; böylece ilerleme “0” kalırsa sebebi görülebilecek.
+## Uygulama planı
 
-3. Uygulama açılışında backend verisini yükle
-- Hesap açıkken uygulama/ilerleme ekranı önce kullanıcının backend ilerlemesini çekecek.
-- Veri gelmeden toplam cevap, doğru, başarı ve seviye kutularında `0` göstermek yerine yükleniyor durumu gösterilecek.
-- Veri geldikten sonra tüm ekranlar aynı backend state’i okuyacak.
+1. **Backend tablo izinlerini kesinleştir**
+   - `letter_stats` ve `answer_events` için giriş yapmış kullanıcıya okuma/yazma/güncelleme izinlerini açıkça vereceğim.
+   - `service_role` için yönetim erişimini açıkça vereceğim.
+   - Anon erişim açmayacağım; bu ilerleme verileri sadece giriş yapan kullanıcıya ait olmalı.
 
-4. İlerleme ekranını sadece hesap verisine bağla
-- `Progress` ekranındaki toplamlar ve Seviye 1/2/3/4 kutuları giriş yapan kullanıcıda doğrudan backend’deki `letter_stats` verisinden hesaplanacak.
-- Tarayıcı geçmişi/localStorage silinse bile hesap verisi tekrar çekilip ekranda görünecek.
+2. **Kayıt fonksiyonunu kullanıcı bazlı ve güvenilir yap**
+   - `record_letter_answer` fonksiyonunu, giriş yapan kullanıcının `auth.uid()` değerini kullanarak kayıt yapacak şekilde koruyacağım.
+   - Fonksiyon cevabı `letter_stats.user_id = auth.uid()` altında güncelleyecek.
+   - Doğru cevapta seviye `1→2→3→4`, yanlış cevapta `4→3→2→1` olarak backend’de güncellenecek.
+   - Fonksiyon çalıştırma iznini giriş yapmış kullanıcıya açıkça vereceğim.
 
-5. Test ve konu üstündeki seviye kutularını düzelt
-- Konu/test ekranındaki üst seviye kutuları backend state yüklenmeden hesaplanmayacak.
-- Soru seçimi de giriş yapan kullanıcıda backend seviyelerine göre yapılacak; localStorage sıfırlanınca tekrar sistemi sıfırlanmayacak.
+3. **Okuma tarafını kullanıcı hesabına sabitle**
+   - `hydrateSrsFromCloud`, `getCloudSrsState` ve ilerleme ekranı okumaları sadece aktif kullanıcının `user_id` değerine göre çalışacak.
+   - Veri yüklenmeden ekranda `0` gösterilmeyecek; yükleme durumu korunacak.
+   - Veri gelince seviye kutuları ve toplam ilerleme doğrudan backend’den gelen kullanıcı verisine göre hesaplanacak.
 
-6. Oyun cevaplarını aynı ilerleme sistemine yazdır
-- Oyunlardaki doğru/yanlış cevaplar da aynı backend kayıt fonksiyonundan geçecek.
-- Oyunlarda görünen kelime seviyeleri local cache yerine backend’den gelen seviyeyi kullanacak.
+4. **Test/oyun cevap kayıtlarını bekletmeden backend’e yazdır**
+   - Oyunlarda `recordSrsAnswer` şu an async çağrılıp beklenmiyor; hata sessiz kalabiliyor.
+   - Bunu görünür ve güvenilir hale getireceğim: kayıt başarısız olursa event/console üzerinden net hata üretilecek, başarılı olursa ilgili ekranlar tekrar yüklenecek.
 
-7. Doğrulama
-- Değişiklikten sonra backend’de yeni cevap olayının ve kelime istatistiğinin yazıldığını sorguyla kontrol edeceğim.
-- İlerleme ekranının hesap açıkken yükleme durumundan sonra gerçek sayıları gösterdiğini kontrol edeceğim.
-- Tarayıcı verisi silinse bile hesap ilerlemesinin tekrar geldiğini doğrulayacağım.
+5. **Seviye kutularını backend state’e bağla**
+   - Konu/test üstündeki Seviye 1/2/3/4 kutuları sadece local cache’e güvenmeyecek.
+   - Hesap açıkken önce backend state kullanılacak; local cache sadece hızlı ekran güncellemesi için ikinci kaynak olacak.
+
+6. **Doğrulama**
+   - Migration sonrası izinleri tekrar sorgulayacağım.
+   - Bir kullanıcı için `letter_stats` satırlarının `user_id` altında geldiğini kontrol edeceğim.
+   - `record_letter_answer` fonksiyonunun yeni cevap sonrası ilgili kullanıcının satırını artırdığını doğrulayacağım.
+   - Progress ekranındaki yükleme bittikten sonra 0 yerine gerçek kullanıcı verisinin görünmesi hedeflenecek.
+
+## Teknik detay
+- Etkilenecek ana dosyalar: `src/data/srs.ts`, `src/data/cloudSync.ts`, `src/lib/gameProgress.ts`, `src/pages/Progress.tsx`, `src/pages/Topic.tsx`.
+- Backend değişikliği migration ile yapılacak.
+- Yeni tablo oluşturulmayacak; mevcut `letter_stats` ve `answer_events` kullanıcı bazlı kayıt kaynağı olarak kullanılacak.
