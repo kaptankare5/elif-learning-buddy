@@ -247,7 +247,7 @@ const Topic = () => {
 
             <div className="grid grid-cols-2 gap-3">
               {q.options.map((opt) => {
-                const isCorrect = picked && opt.id === q.target.id;
+                const isCorrect = !!picked && opt.id === q.target.id;
                 const isWrong = picked === opt.id && opt.id !== q.target.id;
                 const showLabel = opt.lang === "en";
                 return (
