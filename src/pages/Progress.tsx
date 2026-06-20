@@ -77,7 +77,7 @@ const ProgressPage = () => {
               </div>
               <div className="p-3 space-y-2">
                 {s.topics.map((t) => {
-                  const srs = uid ? (cloudSrs?.[t.id] ?? {}) : getTopicSrs(NS, t.id);
+                  const srs = getTopicSrs(NS, t.id);
                   const ids = t.items.map((i) => i.id);
                   const counts: Record<Level, number> = { 1: 0, 2: 0, 3: 0, 4: 0 };
                   let touched = 0;
