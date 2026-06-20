@@ -113,9 +113,10 @@ export default function Auth() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-secondary/40 via-background to-primary-soft/40 px-4 py-8">
       <div className="w-full max-w-sm rounded-3xl bg-card p-6 shadow-card">
         <div className="text-center mb-5">
-          <div className="text-5xl mb-2">📖</div>
-          <h1 className="text-2xl font-extrabold text-primary">Elifmim</h1>
-          <p className="text-sm text-muted-foreground mt-1">{title}</p>
+          <div className="text-5xl mb-2 animate-float">🐱</div>
+          <h1 className="text-2xl font-extrabold text-primary text-shadow-soft">Endless Mum</h1>
+          <p className="text-xs font-semibold text-muted-foreground">MEB Okul Öncesi • Çocuklar için</p>
+          <p className="text-sm text-foreground mt-2 font-bold">{title}</p>
         </div>
 
         {mode !== "forgot" && (
