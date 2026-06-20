@@ -74,22 +74,26 @@ const SnakeGame = () => {
     const target = pickNextGameItem(pool) || pool[0];
     const wrong = pickN(pool.filter((p) => p.id !== target.id), 1)[0];
     const taken = [...occupied];
-    // Yılan kafasının etrafında 3 kareyi (önü dahil) boş tut — spam cevap olmasın
+    // Yılan kafasının etrafında geniş bir alanı boş tut — istemeden cevap üstüne gitmesin
     const head = occupied[0];
     const d = dirRef.current;
     const avoid: Cell[] = [];
     if (head) {
       avoid.push(head);
-      for (let i = 1; i <= 3; i++) {
+      // Önümüzdeki 5 kareyi tamamen yasak böl
+      for (let i = 1; i <= 5; i++) {
         avoid.push({ x: head.x + d.x * i, y: head.y + d.y * i });
-        avoid.push({ x: head.x + i, y: head.y });
-        avoid.push({ x: head.x - i, y: head.y });
-        avoid.push({ x: head.x, y: head.y + i });
-        avoid.push({ x: head.x, y: head.y - i });
+      }
+      // Kafanın etrafında 2 kare yarıçaplı bölge
+      for (let dx = -2; dx <= 2; dx++) {
+        for (let dy = -2; dy <= 2; dy++) {
+          avoid.push({ x: head.x + dx, y: head.y + dy });
+        }
       }
     }
-    const a = randCell(taken, avoid, 1); taken.push(a);
-    const b = randCell(taken, [...avoid, a], 2);
+    // Seçenekler kafadan en az 4 kare uzakta olsun ki tepki süresi yeterli olsun
+    const a = randCell(taken, avoid, 4); taken.push(a);
+    const b = randCell(taken, [...avoid, a], 4);
     const items = shuffle([target, wrong]);
     setQuiz({
       target,

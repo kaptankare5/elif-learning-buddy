@@ -45,7 +45,7 @@ const PLANS: Plan[] = [
     price: 249,
     per: "ay",
     monthly: "₺249/ay",
-    badge: "En çok seçilen",
+    badge: "Yeni",
     highlight: true,
     icon: Zap,
     tone: "super",
