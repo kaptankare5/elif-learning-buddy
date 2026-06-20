@@ -156,12 +156,18 @@ const FlappyGame = () => {
       setLetters((prev) => {
         const curTargetId = targetRef.current?.id;
         const moved: Letter[] = [];
-        let missedTarget = false;
+        let missedTarget: Letter | null = null;
         for (const l of prev) {
           if (l.hit) continue;
+          // "missed" işaretli harfler ekranda dururlar (sol kenarda gözüksünler)
+          if (l.missed) { moved.push(l); continue; }
           const nx = l.x - LETTER_SPEED;
           if (nx < -8) {
-            if (l.item.id === curTargetId) missedTarget = true;
+            if (l.item.id === curTargetId) {
+              // Hedef harfi kaçırdı — sol kenarda kırmızı parlasın, sonra kaybolsun
+              missedTarget = { ...l, x: 4, missed: true };
+              moved.push(missedTarget);
+            }
             continue;
           }
           moved.push({ ...l, x: nx, isTarget: l.item.id === curTargetId });
@@ -173,6 +179,7 @@ const FlappyGame = () => {
         let bestWrongD = Infinity;
         const by = yRef.current;
         for (const l of moved) {
+          if (l.missed) continue;
           const dx = l.x - BIRD_X;
           const dy = l.y - by;
           const d2 = dx * dx + dy * dy;
@@ -185,7 +192,7 @@ const FlappyGame = () => {
         if (collidedTarget) collidedWrong = null;
         if (!collidedTarget && collidedWrong) {
           const nearTarget = moved.find(
-            (l) => l.isTarget && Math.abs(l.x - BIRD_X) < 14,
+            (l) => l.isTarget && !l.missed && Math.abs(l.x - BIRD_X) < 14,
           );
           if (nearTarget) collidedWrong = null;
         }
@@ -198,6 +205,7 @@ const FlappyGame = () => {
           playSpeech(collidedTarget.item.speech);
           setScore((s) => s + 1);
           next = next.filter((l) => {
+            if (l.missed) return true;
             const dx = l.x - BIRD_X, dy = l.y - by;
             return dx * dx + dy * dy > NEAR_PLUS_SQ;
           });
@@ -209,6 +217,13 @@ const FlappyGame = () => {
           recordLetterMastery(targetRef.current!.id, false);
           recordGameAnswer(targetRef.current!, false);
           playFeedback(false);
+          // Yanlış harfi sol kenarda kısa süre parlat ki oyuncu görsün
+          const flashed: Letter = { ...collidedWrong, x: 10, missed: true };
+          next = [...next, flashed];
+          const flashedUid = flashed.uid;
+          setTimeout(() => {
+            setLetters((cur) => cur.filter((l) => l.uid !== flashedUid));
+          }, 900);
           setLives((l) => {
             const nl = l - 1;
             if (nl <= 0) setGameOver(true);
@@ -219,12 +234,16 @@ const FlappyGame = () => {
           recordLetterMastery(targetRef.current!.id, false);
           recordGameAnswer(targetRef.current!, false);
           playFeedback(false);
+          const missedUid = missedTarget.uid;
+          setTimeout(() => {
+            setLetters((cur) => cur.filter((l) => l.uid !== missedUid));
+          }, 1000);
           setLives((l) => {
             const nl = l - 1;
             if (nl <= 0) setGameOver(true);
             return nl;
           });
-          setTimeout(pickTarget, 250);
+          setTimeout(pickTarget, 300);
         }
         return next;
       });
@@ -316,8 +335,10 @@ const FlappyGame = () => {
               <div
                 key={l.uid}
                 className={cn(
-                  "absolute flex items-center justify-center rounded-full font-extrabold border-2 shadow-soft",
-                  showRing
+                  "absolute flex items-center justify-center rounded-full font-extrabold border-2 shadow-soft transition-colors",
+                  l.missed
+                    ? "bg-destructive text-white border-white ring-4 ring-destructive/40 animate-pulse scale-110 z-20"
+                    : showRing
                     ? "bg-warning/30 border-warning text-foreground"
                     : "bg-card border-border text-foreground",
                 )}
