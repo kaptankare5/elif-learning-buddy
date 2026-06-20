@@ -47,7 +47,7 @@ const ProgressPage = () => {
           )}
         </div>
 
-        {uid && cloudLoading && (
+        {false && (
           <div className="mb-3 text-center text-xs font-bold text-muted-foreground animate-pulse">
             ☁️ Hesap verisi yükleniyor…
           </div>
