@@ -218,7 +218,7 @@ const Topic = () => {
               )}
             >
               <div className="text-[10px] leading-none">{"⭐".repeat(l)}</div>
-              <div className="text-xs font-extrabold text-foreground mt-0.5">{uid && cloudLoading ? "…" : levelCount[l as Level]}</div>
+              <div className="text-xs font-extrabold text-foreground mt-0.5">{levelCount[l as Level]}</div>
             </div>
           ))}
         </div>
