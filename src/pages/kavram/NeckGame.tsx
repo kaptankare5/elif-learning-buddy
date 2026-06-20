@@ -1,114 +1,123 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { PageHeader } from "@/components/PageHeader";
 import { HowToPlay } from "@/components/HowToPlay";
 import { playSpeech } from "@/lib/audio";
 
 /**
- * Uzun & Kısa — Zürafa boynu oyunu.
- * Çocuk boynu yukarı/aşağı sürükler. Boyun uzunsa "uzun", kısaysa "kısa" der.
+ * Uzun & Kısa — İki ağacı karşılaştır.
+ * Çocuğa "Uzun olanı seç" veya "Kısa olanı seç" denir,
+ * iki farklı boyda ağaca dokunur. Net, sade, eğitici.
  */
-const MIN_NECK = 40;   // px
-const MAX_NECK = 320;  // px
-const LONG_TH = 200;   // bunun üstü = uzun
-const SHORT_TH = 110;  // bunun altı = kısa
+
+type Ask = "long" | "short";
+
+interface Round {
+  ask: Ask;
+  leftH: number;   // px
+  rightH: number;  // px
+  correct: "left" | "right";
+}
+
+const MIN_H = 90;
+const MAX_H = 260;
+
+function makeRound(): Round {
+  // İki belirgin farklı yükseklik
+  const a = MIN_H + Math.floor(Math.random() * 70);          // 90-160
+  const b = a + 70 + Math.floor(Math.random() * 60);         // a+70 .. a+130
+  const swap = Math.random() < 0.5;
+  const leftH = swap ? b : a;
+  const rightH = swap ? a : b;
+  const ask: Ask = Math.random() < 0.5 ? "long" : "short";
+  const tallerSide: "left" | "right" = leftH > rightH ? "left" : "right";
+  const correct = ask === "long" ? tallerSide : tallerSide === "left" ? "right" : "left";
+  return { ask, leftH, rightH, correct };
+}
 
 const NeckGame = () => {
   const { subjectId } = useParams<{ subjectId: string }>();
   const navigate = useNavigate();
   const [intro, setIntro] = useState(true);
-  const [neck, setNeck] = useState(160);
-  const lastSpokenRef = useRef<"long" | "short" | null>(null);
-  const dragRef = useRef<{ startY: number; startNeck: number } | null>(null);
+  const [round, setRound] = useState<Round>(() => makeRound());
+  const [score, setScore] = useState(0);
+  const [feedback, setFeedback] = useState<"ok" | "no" | null>(null);
 
-  // Boyun değişince ses çal (debounce + sadece sınıf değişince)
+  // Soru sorulduğunda sesli oku
   useEffect(() => {
     if (intro) return;
-    const cls = neck >= LONG_TH ? "long" : neck <= SHORT_TH ? "short" : null;
-    if (cls && cls !== lastSpokenRef.current) {
-      lastSpokenRef.current = cls;
-      playSpeech(cls === "long" ? "uzun" : "kısa", "tr");
-    } else if (!cls) {
-      lastSpokenRef.current = null;
+    const t = setTimeout(() => {
+      playSpeech(round.ask === "long" ? "Uzun olanı seç" : "Kısa olanı seç", "tr");
+    }, 150);
+    return () => clearTimeout(t);
+  }, [round, intro]);
+
+  const handlePick = (side: "left" | "right") => {
+    if (feedback) return;
+    if (side === round.correct) {
+      setFeedback("ok");
+      setScore((s) => s + 1);
+      playSpeech(round.ask === "long" ? "Uzun!" : "Kısa!", "tr");
+      setTimeout(() => {
+        setFeedback(null);
+        setRound(makeRound());
+      }, 900);
+    } else {
+      setFeedback("no");
+      setTimeout(() => setFeedback(null), 700);
     }
-  }, [neck, intro]);
-
-  const onPointerDown = (e: React.PointerEvent) => {
-    (e.target as Element).setPointerCapture(e.pointerId);
-    dragRef.current = { startY: e.clientY, startNeck: neck };
   };
-  const onPointerMove = (e: React.PointerEvent) => {
-    if (!dragRef.current) return;
-    const dy = dragRef.current.startY - e.clientY;
-    const next = Math.max(MIN_NECK, Math.min(MAX_NECK, dragRef.current.startNeck + dy));
-    setNeck(next);
-  };
-  const onPointerUp = () => { dragRef.current = null; };
 
-  const status = neck >= LONG_TH ? "long" : neck <= SHORT_TH ? "short" : null;
+  const promptText = round.ask === "long" ? "🔼 Uzun olanı seç" : "🔽 Kısa olanı seç";
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-success/10 via-background to-info/10">
+    <div className="min-h-screen bg-gradient-to-b from-sky-100 via-background to-green-100">
       <main className="container mx-auto max-w-xl px-4 pb-16 select-none">
         <PageHeader backTo={`/konu/${subjectId}`} />
         {intro && (
           <HowToPlay
-            voice="Zürafanın boynunu yukarı ve aşağı kaydır."
-            hint="drag-y"
-            emoji="🦒"
+            voice="Uzun ya da kısa olan ağaca dokun."
+            hint="tap-two"
+            emoji="🌳"
             onDone={() => setIntro(false)}
           />
         )}
 
-        <div
-          className="relative mx-auto mt-4 flex h-[70vh] w-full max-w-sm flex-col items-center justify-end rounded-3xl bg-gradient-to-b from-sky-200/40 to-green-200/40 border-4 border-primary/20 shadow-card overflow-hidden touch-none"
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerCancel={onPointerUp}
-        >
-          {/* Bulutlar */}
-          <div className="absolute top-4 left-6 text-4xl opacity-70">☁️</div>
-          <div className="absolute top-10 right-8 text-3xl opacity-60">☁️</div>
+        {/* Skor + soru */}
+        <div className="mt-2 mb-3 flex items-center justify-between">
+          <div className="rounded-full bg-card px-3 py-1.5 text-sm font-extrabold shadow-card">
+            ⭐ {score}
+          </div>
+          <div
+            key={`${round.ask}-${round.leftH}-${round.rightH}`}
+            className="rounded-full bg-primary text-primary-foreground px-4 py-2 text-base font-extrabold shadow-card animate-pop"
+          >
+            {promptText}
+          </div>
+          <div className="w-12" />
+        </div>
 
-          {/* Geri-bildirim rozeti */}
-          {status && (
-            <div
-              key={status}
-              className={`absolute top-4 left-1/2 -translate-x-1/2 rounded-full px-5 py-2 text-3xl font-extrabold shadow-soft animate-pop ${
-                status === "long" ? "bg-success text-white" : "bg-warning text-foreground"
-              }`}
-            >
-              {status === "long" ? "⬆️ Uzun" : "⬇️ Kısa"}
-            </div>
-          )}
-
-          {/* Zürafa: gövde sabit altta, boyun yukarı uzar, kafa boynun ucunda */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center">
-            {/* Kafa — boynun üstüne otur */}
-            <div className="text-7xl leading-none" style={{ marginBottom: -10 }}>
-              🦒
-            </div>
-            {/* Boyun — yukarı doğru uzar */}
-            <div
-              className="w-6 rounded-full bg-gradient-to-b from-yellow-400 to-yellow-600 shadow-md border-2 border-yellow-700/40"
-              style={{ height: neck, transition: "height 60ms linear" }}
-            />
-            {/* Gövde — sabit */}
-            <div className="-mt-3 h-20 w-32 rounded-[40%] bg-gradient-to-b from-yellow-400 to-yellow-600 border-2 border-yellow-700/40 shadow-md flex items-end justify-around pb-1">
-              <div className="h-6 w-2 rounded-b bg-yellow-700" />
-              <div className="h-6 w-2 rounded-b bg-yellow-700" />
-              <div className="h-6 w-2 rounded-b bg-yellow-700" />
-              <div className="h-6 w-2 rounded-b bg-yellow-700" />
-            </div>
-            <div className="mt-1 text-3xl">🌿🌿🌱🌿</div>
+        {/* Sahne */}
+        <div className="relative mx-auto flex h-[62vh] w-full max-w-md items-end justify-around rounded-3xl bg-gradient-to-b from-sky-200/60 to-green-300/60 border-4 border-primary/20 shadow-card overflow-hidden">
+          <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 flex justify-between px-6 pt-4 text-3xl opacity-70">
+            <span>☁️</span>
+            <span className="text-2xl">🌞</span>
+            <span>☁️</span>
           </div>
 
-          {/* Sürükleme ipucu okları */}
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-3 text-3xl opacity-60 animate-pulse">
-            <span>⬆️</span>
-            <span>⬇️</span>
-          </div>
+          <TreeButton
+            heightPx={round.leftH}
+            onClick={() => handlePick("left")}
+            feedback={feedback && round.correct === "left" ? feedback : null}
+          />
+          <TreeButton
+            heightPx={round.rightH}
+            onClick={() => handlePick("right")}
+            feedback={feedback && round.correct === "right" ? feedback : null}
+          />
+
+          {/* Yer çizgisi */}
+          <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-green-600/80 to-transparent" />
         </div>
 
         <div className="mt-6 flex justify-center">
@@ -124,5 +133,42 @@ const NeckGame = () => {
     </div>
   );
 };
+
+function TreeButton({
+  heightPx,
+  onClick,
+  feedback,
+}: {
+  heightPx: number;
+  onClick: () => void;
+  feedback: "ok" | "no" | null;
+}) {
+  const trunk = useMemo(() => Math.max(28, Math.round(heightPx * 0.35)), [heightPx]);
+  const crown = heightPx - trunk;
+  return (
+    <button
+      onClick={onClick}
+      className={`relative z-10 flex flex-col items-center justify-end transition-transform active:scale-95 ${
+        feedback === "ok" ? "animate-pop" : feedback === "no" ? "animate-[shake_0.4s]" : ""
+      }`}
+      style={{ height: heightPx + 24 }}
+      aria-label="ağaç"
+    >
+      {/* Taç */}
+      <div
+        className="rounded-full bg-gradient-to-b from-green-400 to-green-700 border-4 border-green-800/40 shadow-lg"
+        style={{ width: Math.min(140, crown * 0.95 + 40), height: crown }}
+      />
+      {/* Gövde */}
+      <div
+        className="w-7 rounded-b-md bg-gradient-to-b from-amber-700 to-amber-900 border-x-2 border-amber-950/40"
+        style={{ height: trunk }}
+      />
+      {feedback === "ok" && (
+        <div className="absolute -top-2 right-0 text-3xl animate-bounce-in">✅</div>
+      )}
+    </button>
+  );
+}
 
 export default NeckGame;
