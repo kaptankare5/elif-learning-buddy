@@ -44,7 +44,9 @@ export function setActiveSrsUser(uid: string | null) {
 }
 export function getActiveSrsUser(): string | null { return _activeUid; }
 
-const KEY = (ns: Namespace) => `elifba-srs-${ns}-${_activeUid ?? "guest"}-v1`;
+// Local-first: ilerleme verisi cihaza bağlıdır, hesaba değil. Aynı cihazda
+// giriş yapsan da yapmasan da aynı önbellek kullanılır (kullanıcı isteği).
+const KEY = (ns: Namespace) => `elifba-srs-${ns}-guest-v1`;
 
 export function clearUserLocalSrs(uid: string | null) {
   if (typeof window === "undefined" || !uid) return;
@@ -152,21 +154,10 @@ function putCloudRow(state: SrsState, row: CloudLetterRow) {
   }
 }
 
-export async function hydrateSrsFromCloud(uid: string) {
-  if (!uid || typeof window === "undefined") return;
-  const { supabase } = await import("@/integrations/supabase/client");
-  const { data } = await supabase.from("letter_stats").select("*").eq("user_id", uid);
-  if (!data) return;
-  const state: SrsState = {};
-  for (const r of data as CloudLetterRow[]) {
-    putCloudRow(state, r);
-  }
-  for (const ns of ["quiz", "games"] as Namespace[]) {
-    try { localStorage.setItem(`elifba-srs-${ns}-${uid}-v1`, JSON.stringify(state)); } catch { /* */ }
-  }
-  try { window.dispatchEvent(new Event(PROGRESS_EVENT)); } catch { /* */ }
-  try { window.dispatchEvent(new Event(EVENT("quiz"))); } catch { /* */ }
-  try { window.dispatchEvent(new Event(EVENT("games"))); } catch { /* */ }
+export async function hydrateSrsFromCloud(_uid: string) {
+  // Local-first: bulut verisi yerel önbelleğin üzerine yazılmaz.
+  // Cihazdaki ilerleme tek doğru kaynaktır.
+  return;
 }
 
 function ensureEntry(s: SrsState, topicId: string, letterId: string): LetterSrsEntry {
@@ -285,7 +276,8 @@ function recordLocalSrsAnswer(
   return e;
 }
 
-// Cevap kaydet → giriş yapan kullanıcıda backend tek gerçek kaynaktır.
+// Cevap kaydet → Local-first: her durumda cihaza yazılır. Giriş yapan
+// kullanıcıda ek olarak buluta arka planda yedeklenir (okuma yapılmaz).
 export async function recordSrsAnswer(
   ns: Namespace,
   topicId: string,
@@ -293,24 +285,15 @@ export async function recordSrsAnswer(
   correct: boolean,
   meta?: AnswerMeta,
 ): Promise<LetterSrsEntry | null> {
+  const entry = recordLocalSrsAnswer(ns, topicId, letterId, correct, meta);
   const uid = getActiveSrsUser();
-  if (!uid) return recordLocalSrsAnswer(ns, topicId, letterId, correct, meta);
-
-  const prevLevel = (load(ns)[topicId]?.[letterId]?.level ?? 1) as Level;
-  try {
-    const { logAnswer } = await import("@/data/cloudSync");
-    const row = await logAnswer({ topicId, letterId, correct, gameId: meta?.gameId, responseMs: meta?.responseMs });
-    if (!row) throw new Error("Oturum bulunamadı, ilerleme kaydedilemedi.");
-    mergeCloudRowIntoLocal(ns, row as CloudLetterRow);
-    const entry = rowToEntry(row as CloudLetterRow);
-    if (correct && entry.level > prevLevel) {
-      import("@/lib/analytics").then((m) => m.trackMilestone(topicId, letterId, entry.level)).catch(() => {});
-    }
-    return entry;
-  } catch (error) {
-    dispatchCloudSaveFailure(error);
-    return null;
+  if (uid) {
+    // Fire-and-forget bulut yedeği — başarısız olsa bile yerel ilerleme korunur.
+    import("@/data/cloudSync")
+      .then(({ logAnswer }) => logAnswer({ topicId, letterId, correct, gameId: meta?.gameId, responseMs: meta?.responseMs }))
+      .catch((error) => dispatchCloudSaveFailure(error));
   }
+  return entry;
 }
 
 export function getNamespaceStats(ns: Namespace) {
