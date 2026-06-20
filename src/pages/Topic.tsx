@@ -119,7 +119,7 @@ const Topic = () => {
     );
   }
 
-  const srs = uid ? (cloudSrs?.[topic.id] ?? {}) : getTopicSrs(NS, topic.id);
+  const srs = getTopicSrs(NS, topic.id);
   const levelCount: Record<Level, number> = { 1: 0, 2: 0, 3: 0, 4: 0 };
   for (const id of itemIds) {
     const lvl = (srs[id]?.level || 1) as Level;
