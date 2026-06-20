@@ -154,21 +154,10 @@ function putCloudRow(state: SrsState, row: CloudLetterRow) {
   }
 }
 
-export async function hydrateSrsFromCloud(uid: string) {
-  if (!uid || typeof window === "undefined") return;
-  const { supabase } = await import("@/integrations/supabase/client");
-  const { data } = await supabase.from("letter_stats").select("*").eq("user_id", uid);
-  if (!data) return;
-  const state: SrsState = {};
-  for (const r of data as CloudLetterRow[]) {
-    putCloudRow(state, r);
-  }
-  for (const ns of ["quiz", "games"] as Namespace[]) {
-    try { localStorage.setItem(`elifba-srs-${ns}-${uid}-v1`, JSON.stringify(state)); } catch { /* */ }
-  }
-  try { window.dispatchEvent(new Event(PROGRESS_EVENT)); } catch { /* */ }
-  try { window.dispatchEvent(new Event(EVENT("quiz"))); } catch { /* */ }
-  try { window.dispatchEvent(new Event(EVENT("games"))); } catch { /* */ }
+export async function hydrateSrsFromCloud(_uid: string) {
+  // Local-first: bulut verisi yerel önbelleğin üzerine yazılmaz.
+  // Cihazdaki ilerleme tek doğru kaynaktır.
+  return;
 }
 
 function ensureEntry(s: SrsState, topicId: string, letterId: string): LetterSrsEntry {
