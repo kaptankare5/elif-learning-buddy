@@ -44,7 +44,9 @@ export function setActiveSrsUser(uid: string | null) {
 }
 export function getActiveSrsUser(): string | null { return _activeUid; }
 
-const KEY = (ns: Namespace) => `elifba-srs-${ns}-${_activeUid ?? "guest"}-v1`;
+// Local-first: ilerleme verisi cihaza bağlıdır, hesaba değil. Aynı cihazda
+// giriş yapsan da yapmasan da aynı önbellek kullanılır (kullanıcı isteği).
+const KEY = (ns: Namespace) => `elifba-srs-${ns}-guest-v1`;
 
 export function clearUserLocalSrs(uid: string | null) {
   if (typeof window === "undefined" || !uid) return;
