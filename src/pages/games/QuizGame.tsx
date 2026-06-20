@@ -49,7 +49,7 @@ const QuizGame = () => {
     const responseMs = Date.now() - questionStartRef.current;
     recordGameAnswer(q.target, correct, { responseMs, gameId: "quiz" });
     await playFeedback(correct);
-    setTimeout(() => { setQ(makeQ()); setPicked(null); }, 700);
+    setTimeout(() => { setQ(makeQ()); setPicked(null); }, correct ? 700 : 1800);
   };
 
   const ended = time <= 0;
@@ -89,7 +89,7 @@ const QuizGame = () => {
             </div>
             <div className="grid grid-cols-2 gap-3">
               {q.options.map((opt) => {
-                const isCorrect = picked && opt.id === q.target.id;
+                const isCorrect = !!picked && opt.id === q.target.id;
                 const isWrong = picked === opt.id && opt.id !== q.target.id;
                 return (
                   <button key={opt.id} onClick={() => choose(opt)}

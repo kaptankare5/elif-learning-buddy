@@ -187,7 +187,7 @@ const Topic = () => {
     const responseMs = questionStartRef.current ? Date.now() - questionStartRef.current : undefined;
     await recordSrsAnswer(NS, topic.id, q.target.id, correct, { responseMs });
     await playFeedback(correct);
-    setTimeout(() => setQ(null), 700);
+    setTimeout(() => setQ(null), correct ? 700 : 2200);
   };
 
   const askAgain = () => {
@@ -247,7 +247,7 @@ const Topic = () => {
 
             <div className="grid grid-cols-2 gap-3">
               {q.options.map((opt) => {
-                const isCorrect = picked && opt.id === q.target.id;
+                const isCorrect = !!picked && opt.id === q.target.id;
                 const isWrong = picked === opt.id && opt.id !== q.target.id;
                 const showLabel = opt.lang === "en";
                 return (
