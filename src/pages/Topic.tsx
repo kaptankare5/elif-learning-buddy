@@ -76,25 +76,17 @@ const Topic = () => {
   useEffect(() => {
     if (mode !== "pratik" || !topic || itemIds.length === 0 || q) return;
     if (topic.interactiveGame) return;
-    if (uid && cloudLoading) return;
-    const tid = uid ? pickNextLetterFromTopic(cloudSrs?.[topic.id] ?? {}, itemIds) : pickNextLetter(NS, topic.id, itemIds);
+    // Local-first: ilerleme her zaman cihazdan okunur
+    const tid = pickNextLetter(NS, topic.id, itemIds);
     setQ(buildQuestion(items, tid));
     setPicked(null);
     questionStartRef.current = Date.now();
-  }, [mode, topic, itemIds, q, items, uid, cloudSrs, cloudLoading]);
+  }, [mode, topic, itemIds, q, items]);
 
+  // Cloud okuma kaldırıldı (local-first). Yazma srs.ts içinde devam ediyor.
   useEffect(() => {
-    let cancelled = false;
-    if (!uid) { setCloudSrs(null); setCloudLoading(false); return; }
-    setCloudLoading(true);
-    const fetch = async () => {
-      const full = await getCloudSrsState(uid);
-      if (!cancelled) { setCloudSrs(full); setCloudLoading(false); }
-    };
-    void fetch();
-    const onProgress = () => void fetch();
-    window.addEventListener("elifba-progress-updated", onProgress);
-    return () => { cancelled = true; window.removeEventListener("elifba-progress-updated", onProgress); };
+    setCloudSrs(null);
+    setCloudLoading(false);
   }, [uid]);
 
   useEffect(() => {
