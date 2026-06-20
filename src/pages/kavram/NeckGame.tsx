@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { PageHeader } from "@/components/PageHeader";
 import { HowToPlay } from "@/components/HowToPlay";
-import { playSpeech, playSfx } from "@/lib/audio";
+import { playSpeech } from "@/lib/audio";
 
 /**
  * Uzun & Kısa — İki ağacı karşılaştır.
