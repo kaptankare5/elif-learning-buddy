@@ -285,7 +285,8 @@ function recordLocalSrsAnswer(
   return e;
 }
 
-// Cevap kaydet → giriş yapan kullanıcıda backend tek gerçek kaynaktır.
+// Cevap kaydet → Local-first: her durumda cihaza yazılır. Giriş yapan
+// kullanıcıda ek olarak buluta arka planda yedeklenir (okuma yapılmaz).
 export async function recordSrsAnswer(
   ns: Namespace,
   topicId: string,
@@ -293,24 +294,15 @@ export async function recordSrsAnswer(
   correct: boolean,
   meta?: AnswerMeta,
 ): Promise<LetterSrsEntry | null> {
+  const entry = recordLocalSrsAnswer(ns, topicId, letterId, correct, meta);
   const uid = getActiveSrsUser();
-  if (!uid) return recordLocalSrsAnswer(ns, topicId, letterId, correct, meta);
-
-  const prevLevel = (load(ns)[topicId]?.[letterId]?.level ?? 1) as Level;
-  try {
-    const { logAnswer } = await import("@/data/cloudSync");
-    const row = await logAnswer({ topicId, letterId, correct, gameId: meta?.gameId, responseMs: meta?.responseMs });
-    if (!row) throw new Error("Oturum bulunamadı, ilerleme kaydedilemedi.");
-    mergeCloudRowIntoLocal(ns, row as CloudLetterRow);
-    const entry = rowToEntry(row as CloudLetterRow);
-    if (correct && entry.level > prevLevel) {
-      import("@/lib/analytics").then((m) => m.trackMilestone(topicId, letterId, entry.level)).catch(() => {});
-    }
-    return entry;
-  } catch (error) {
-    dispatchCloudSaveFailure(error);
-    return null;
+  if (uid) {
+    // Fire-and-forget bulut yedeği — başarısız olsa bile yerel ilerleme korunur.
+    import("@/data/cloudSync")
+      .then(({ logAnswer }) => logAnswer({ topicId, letterId, correct, gameId: meta?.gameId, responseMs: meta?.responseMs }))
+      .catch((error) => dispatchCloudSaveFailure(error));
   }
+  return entry;
 }
 
 export function getNamespaceStats(ns: Namespace) {
