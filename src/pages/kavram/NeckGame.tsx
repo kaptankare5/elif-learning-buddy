@@ -77,7 +77,7 @@ const NeckGame = () => {
         {intro && (
           <HowToPlay
             voice="Uzun ya da kısa olan ağaca dokun."
-            hint="tap"
+            hint="tap-two"
             emoji="🌳"
             onDone={() => setIntro(false)}
           />
