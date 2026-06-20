@@ -49,7 +49,7 @@ const QuizGame = () => {
     const responseMs = Date.now() - questionStartRef.current;
     recordGameAnswer(q.target, correct, { responseMs, gameId: "quiz" });
     await playFeedback(correct);
-    setTimeout(() => { setQ(makeQ()); setPicked(null); }, 700);
+    setTimeout(() => { setQ(makeQ()); setPicked(null); }, correct ? 700 : 1800);
   };
 
   const ended = time <= 0;
