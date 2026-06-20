@@ -187,7 +187,7 @@ const Topic = () => {
     const responseMs = questionStartRef.current ? Date.now() - questionStartRef.current : undefined;
     await recordSrsAnswer(NS, topic.id, q.target.id, correct, { responseMs });
     await playFeedback(correct);
-    setTimeout(() => setQ(null), 700);
+    setTimeout(() => setQ(null), correct ? 700 : 2200);
   };
 
   const askAgain = () => {
