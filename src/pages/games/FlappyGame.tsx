@@ -335,8 +335,10 @@ const FlappyGame = () => {
               <div
                 key={l.uid}
                 className={cn(
-                  "absolute flex items-center justify-center rounded-full font-extrabold border-2 shadow-soft",
-                  showRing
+                  "absolute flex items-center justify-center rounded-full font-extrabold border-2 shadow-soft transition-colors",
+                  l.missed
+                    ? "bg-destructive text-white border-white ring-4 ring-destructive/40 animate-pulse scale-110 z-20"
+                    : showRing
                     ? "bg-warning/30 border-warning text-foreground"
                     : "bg-card border-border text-foreground",
                 )}
