@@ -12,27 +12,21 @@ const ProgressPage = () => {
   useSrsTick(NS);
   const localStats = getNamespaceStats(NS);
   const { session } = useAuth();
+  // Local-first: ilerleme verisi her zaman bu cihazdaki localStorage'dan okunur.
+  // Bulut sadece yedek/izleme amaçlıdır (yazma devam ediyor, okuma yapılmıyor).
   const uid = session?.user.id ?? null;
-  const [cloudStats, setCloudStats] = useState<ReturnType<typeof getNamespaceStats> | null>(null);
-  const [cloudSrs, setCloudSrs] = useState<SrsState | null>(null);
-  const [cloudLoading, setCloudLoading] = useState<boolean>(!!uid);
+  const [cloudSrs] = useState<SrsState | null>(null);
 
+  // (kaldırıldı) bulut yükleme efekti — local-first
   useEffect(() => {
-    let cancelled = false;
-    if (!uid) { setCloudStats(null); setCloudSrs(null); setCloudLoading(false); return; }
-    setCloudLoading(true);
-    const fetch = async () => {
-      const full = await getCloudSrsState(uid);
-      if (!cancelled) { setCloudStats(full ? statsFromState(full) : null); setCloudSrs(full); setCloudLoading(false); }
-    };
-    void fetch();
-    const onProgress = () => void fetch();
+    // re-render on progress updates
+    const onProgress = () => {};
     window.addEventListener("elifba-progress-updated", onProgress);
-    return () => { cancelled = true; window.removeEventListener("elifba-progress-updated", onProgress); };
-  }, [uid]);
+    return () => { window.removeEventListener("elifba-progress-updated", onProgress); };
+  }, []);
 
-  const showCloudLoading = !!uid && cloudLoading;
-  const stats = uid ? (cloudStats ?? { total: 0, correct: 0, percent: 0, levelCount: { 1: 0, 2: 0, 3: 0, 4: 0 } as Record<Level, number> }) : localStats;
+  const showCloudLoading = false;
+  const stats = localStats;
   const accountLabel = session
     ? (session.user.user_metadata?.display_name || session.user.email || "Hesabım")
     : "Misafir (sadece bu cihaz)";
