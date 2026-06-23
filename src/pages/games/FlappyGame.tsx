@@ -216,6 +216,7 @@ const FlappyGame = () => {
         if (collidedWrong) {
           recordLetterMastery(targetRef.current!.id, false);
           recordGameAnswer(targetRef.current!, false);
+          if (isSuper) enqueueRetryItem(targetRef.current!);
           playFeedback(false);
           // Yanlış harfi sol kenarda kısa süre parlat ki oyuncu görsün
           const flashed: Letter = { ...collidedWrong, x: 10, missed: true };
@@ -229,10 +230,12 @@ const FlappyGame = () => {
             if (nl <= 0) setGameOver(true);
             return nl;
           });
+          if (isSuper) setTimeout(pickTarget, 300);
         }
         if (missedTarget) {
           recordLetterMastery(targetRef.current!.id, false);
           recordGameAnswer(targetRef.current!, false);
+          if (isSuper) enqueueRetryItem(targetRef.current!);
           playFeedback(false);
           const missedUid = missedTarget.uid;
           setTimeout(() => {
