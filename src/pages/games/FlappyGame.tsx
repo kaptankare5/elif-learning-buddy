@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { playItem, playFeedback, playSpeech } from "@/lib/audio";
 import { gamePool, shuffle, pickN } from "./_shared";
 import { recordLetterMastery } from "@/data/srs";
-import { getGameItemLevel, pickNextGameItem, recordGameAnswer } from "@/lib/gameProgress";
+import { enqueueRetryItem, getGameItemLevel, pickNextGameItem, recordGameAnswer } from "@/lib/gameProgress";
 import { useGameMode } from "@/lib/gameMode";
 import type { ContentItem } from "@/data/types";
 import { cn } from "@/lib/utils";
@@ -216,6 +216,7 @@ const FlappyGame = () => {
         if (collidedWrong) {
           recordLetterMastery(targetRef.current!.id, false);
           recordGameAnswer(targetRef.current!, false);
+          if (isSuper) enqueueRetryItem(targetRef.current!);
           playFeedback(false);
           // Yanlış harfi sol kenarda kısa süre parlat ki oyuncu görsün
           const flashed: Letter = { ...collidedWrong, x: 10, missed: true };
@@ -229,10 +230,12 @@ const FlappyGame = () => {
             if (nl <= 0) setGameOver(true);
             return nl;
           });
+          if (isSuper) setTimeout(pickTarget, 300);
         }
         if (missedTarget) {
           recordLetterMastery(targetRef.current!.id, false);
           recordGameAnswer(targetRef.current!, false);
+          if (isSuper) enqueueRetryItem(targetRef.current!);
           playFeedback(false);
           const missedUid = missedTarget.uid;
           setTimeout(() => {

@@ -29,7 +29,7 @@ ShipSvg.displayName = "ShipSvg";
 import { PageHeader } from "@/components/PageHeader";
 import { playFeedback, playSpeech } from "@/lib/audio";
 import { gamePool, pickN, shuffle } from "./_shared";
-import { getGameItemLevel, pickNextGameItem, recordGameAnswer } from "@/lib/gameProgress";
+import { enqueueRetryItem, getGameItemLevel, pickNextGameItem, recordGameAnswer } from "@/lib/gameProgress";
 import { useGameMode } from "@/lib/gameMode";
 import type { ContentItem } from "@/data/types";
 import { cn } from "@/lib/utils";
@@ -124,6 +124,8 @@ const RunnerGame = () => {
     playFeedback(false);
     setCombo(0);
     flashFx("bad");
+    // Süper modda yanlış cevaplanan hedefi tekrar sor
+    if (isSuper && targetRef.current) enqueueRetryItem(targetRef.current);
     setLives((l) => {
       const nl = l - 1;
       if (nl <= 0) { setGameOver(true); return nl; }
@@ -131,7 +133,7 @@ const RunnerGame = () => {
       setTimeout(() => { void nextRound(); }, 400);
       return nl;
     });
-  }, [nextRound]);
+  }, [nextRound, isSuper]);
 
   const startGame = useCallback(() => {
     if (!pausedRef.current) return;

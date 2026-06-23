@@ -27,8 +27,28 @@ export function getGameItemLevel(item: ContentItem | undefined | null): Level {
   return (getTopicSrs(NS, t.topicId)[item.id]?.level ?? 1) as Level;
 }
 
+// --- Süper öğrenme: yanlış cevaplanan soruyu tekrar sorma kuyruğu ---
+// Oyunlar wrong answer'da `enqueueRetryItem(item)` çağırır.
+// Bir sonraki `pickNextGameItem` çağrısı kuyruktaki item'ı verir (havuzda varsa).
+const _retryQueue: string[] = [];
+
+export function enqueueRetryItem(item: ContentItem | undefined | null) {
+  if (!item) return;
+  // Aynı id zaten kuyruktaysa tekrar ekleme
+  if (_retryQueue.includes(item.id)) return;
+  _retryQueue.push(item.id);
+}
+
+export function clearRetryQueue() { _retryQueue.length = 0; }
+
 export function pickNextGameItem(pool: ContentItem[]): ContentItem | undefined {
   if (pool.length === 0) return undefined;
+  // Önce retry kuyruğunu kontrol et
+  while (_retryQueue.length > 0) {
+    const id = _retryQueue.shift()!;
+    const found = pool.find((p) => p.id === id);
+    if (found) return found;
+  }
   const synthetic: TopicSrs = {};
   for (const item of pool) {
     const t = findTopicOfItem(item.id);
