@@ -29,7 +29,7 @@ ShipSvg.displayName = "ShipSvg";
 import { PageHeader } from "@/components/PageHeader";
 import { playFeedback, playSpeech } from "@/lib/audio";
 import { gamePool, pickN, shuffle } from "./_shared";
-import { getGameItemLevel, pickNextGameItem, recordGameAnswer } from "@/lib/gameProgress";
+import { enqueueRetryItem, getGameItemLevel, pickNextGameItem, recordGameAnswer } from "@/lib/gameProgress";
 import { useGameMode } from "@/lib/gameMode";
 import type { ContentItem } from "@/data/types";
 import { cn } from "@/lib/utils";
