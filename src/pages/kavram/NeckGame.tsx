@@ -1,63 +1,62 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { PageHeader } from "@/components/PageHeader";
 import { HowToPlay } from "@/components/HowToPlay";
 import { playSpeech } from "@/lib/audio";
 
 /**
- * Uzun & Kısa — Çeşitli nesnelerin uzun/kısa karşılaştırması.
- * Her turda iki farklı nesne (aynı tür, farklı boyda) gösterilir.
- * Çocuğa "Uzun olanı seç" ya da "Kısa olanı seç" denir.
+ * Uzun & Kısa — Gerçek görsel farkı olan eşleştirmeler.
+ * Her tür için "uzun" ve "kısa" varyantları farklı emojilerle gösterilir.
+ * Hiçbir dikdörtgen/kutucuk yok — sadece nesnenin kendisi.
  */
 
 type Ask = "long" | "short";
 
-interface ItemKind {
-  emoji: string;
-  /** Görsel oran: yükseklik / genişlik (uzun = ince/yüksek görünür) */
-  ratio: number;
-  /** Taban genişliği (px) */
-  baseWidth: number;
-  /** Renk (Tailwind class) */
-  color: string;
+interface KindPair {
   name: string;
+  tall: string;   // uzun varyant
+  short: string;  // kısa varyant
+  /** Uzun varyantın görsel yükseklik katsayısı */
+  tallScale: number;
+  /** Kısa varyantın görsel yükseklik katsayısı */
+  shortScale: number;
 }
 
-const KINDS: ItemKind[] = [
-  { emoji: "🌳", ratio: 1, baseWidth: 80, color: "from-green-400 to-green-700", name: "ağaç" },
-  { emoji: "🦒", ratio: 1, baseWidth: 70, color: "from-yellow-300 to-yellow-600", name: "zürafa" },
-  { emoji: "🐍", ratio: 1, baseWidth: 70, color: "from-emerald-400 to-emerald-700", name: "yılan" },
-  { emoji: "✏️", ratio: 1, baseWidth: 36, color: "from-yellow-200 to-yellow-500", name: "kalem" },
-  { emoji: "🥕", ratio: 1, baseWidth: 50, color: "from-orange-300 to-orange-600", name: "havuç" },
-  { emoji: "🏢", ratio: 1, baseWidth: 90, color: "from-slate-300 to-slate-600", name: "bina" },
-  { emoji: "🕯️", ratio: 1, baseWidth: 40, color: "from-amber-200 to-amber-500", name: "mum" },
-  { emoji: "🎀", ratio: 1, baseWidth: 60, color: "from-pink-300 to-pink-600", name: "kurdele" },
+/** Her tür: belirgin biçimde farklı 2 emoji (yapı/boy farkı net görünür). */
+const PAIRS: KindPair[] = [
+  { name: "ağaç",      tall: "🌳", short: "🌱", tallScale: 1.0, shortScale: 0.45 },
+  { name: "bina",      tall: "🏢", short: "🏠", tallScale: 1.0, shortScale: 0.55 },
+  { name: "zürafa",    tall: "🦒", short: "🐐", tallScale: 1.0, shortScale: 0.55 },
+  { name: "insan",     tall: "🧍", short: "👶", tallScale: 1.0, shortScale: 0.55 },
+  { name: "kule",      tall: "🗼", short: "⛺", tallScale: 1.0, shortScale: 0.55 },
+  { name: "çiçek",     tall: "🌻", short: "🌼", tallScale: 0.95, shortScale: 0.5 },
+  { name: "ağaç2",     tall: "🌲", short: "🍄", tallScale: 1.0, shortScale: 0.5 },
+  { name: "kalem",     tall: "✏️", short: "✏️", tallScale: 1.0, shortScale: 0.45 },
+  { name: "yılan",     tall: "🐍", short: "🐛", tallScale: 0.9, shortScale: 0.5 },
+  { name: "havuç",     tall: "🥕", short: "🥕", tallScale: 1.0, shortScale: 0.5 },
+  { name: "mum",       tall: "🕯️", short: "🕯️", tallScale: 1.0, shortScale: 0.45 },
 ];
 
 interface Round {
   ask: Ask;
-  kind: ItemKind;
-  leftH: number;
-  rightH: number;
-  correct: "left" | "right";
+  pair: KindPair;
+  /** Sol tarafta uzun mu var? */
+  tallOnLeft: boolean;
 }
 
 function makeRound(prev?: Round): Round {
-  let kind = KINDS[Math.floor(Math.random() * KINDS.length)];
-  if (prev && KINDS.length > 1) {
-    while (kind.emoji === prev.kind.emoji) {
-      kind = KINDS[Math.floor(Math.random() * KINDS.length)];
+  let pair = PAIRS[Math.floor(Math.random() * PAIRS.length)];
+  if (prev) {
+    let guard = 0;
+    while (pair.name === prev.pair.name && guard++ < 6) {
+      pair = PAIRS[Math.floor(Math.random() * PAIRS.length)];
     }
   }
-  const a = 90 + Math.floor(Math.random() * 60);
-  const b = a + 80 + Math.floor(Math.random() * 60);
-  const swap = Math.random() < 0.5;
-  const leftH = swap ? b : a;
-  const rightH = swap ? a : b;
-  const ask: Ask = Math.random() < 0.5 ? "long" : "short";
-  const tallerSide: "left" | "right" = leftH > rightH ? "left" : "right";
-  const correct = ask === "long" ? tallerSide : tallerSide === "left" ? "right" : "left";
-  return { ask, kind, leftH, rightH, correct };
+  return {
+    ask: Math.random() < 0.5 ? "long" : "short",
+    pair,
+    tallOnLeft: Math.random() < 0.5,
+  };
 }
 
 const NeckGame = () => {
@@ -66,7 +65,7 @@ const NeckGame = () => {
   const [intro, setIntro] = useState(true);
   const [round, setRound] = useState<Round>(() => makeRound());
   const [score, setScore] = useState(0);
-  const [feedback, setFeedback] = useState<"ok" | "no" | null>(null);
+  const [feedback, setFeedback] = useState<{ side: "left" | "right"; ok: boolean } | null>(null);
 
   useEffect(() => {
     if (intro) return;
@@ -76,10 +75,16 @@ const NeckGame = () => {
     return () => clearTimeout(t);
   }, [round, intro]);
 
+  const correctSide: "left" | "right" =
+    round.ask === "long"
+      ? round.tallOnLeft ? "left" : "right"
+      : round.tallOnLeft ? "right" : "left";
+
   const handlePick = (side: "left" | "right") => {
     if (feedback) return;
-    if (side === round.correct) {
-      setFeedback("ok");
+    const ok = side === correctSide;
+    setFeedback({ side, ok });
+    if (ok) {
       setScore((s) => s + 1);
       playSpeech(round.ask === "long" ? "Uzun!" : "Kısa!", "tr");
       setTimeout(() => {
@@ -87,13 +92,19 @@ const NeckGame = () => {
         setRound((r) => makeRound(r));
       }, 900);
     } else {
-      setFeedback("no");
       playSpeech("Tekrar dene", "tr");
       setTimeout(() => setFeedback(null), 700);
     }
   };
 
   const promptText = round.ask === "long" ? "🔼 Uzun olanı seç" : "🔽 Kısa olanı seç";
+
+  // Sahne yüksekliği baz alınır; emoji font-size oranla ölçeklenir.
+  const STAGE_H = 360; // px
+  const leftScale  = round.tallOnLeft ? round.pair.tallScale  : round.pair.shortScale;
+  const rightScale = round.tallOnLeft ? round.pair.shortScale : round.pair.tallScale;
+  const leftEmoji  = round.tallOnLeft ? round.pair.tall : round.pair.short;
+  const rightEmoji = round.tallOnLeft ? round.pair.short : round.pair.tall;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-sky-100 via-background to-green-100">
@@ -113,7 +124,7 @@ const NeckGame = () => {
             ⭐ {score}
           </div>
           <div
-            key={`${round.ask}-${round.kind.emoji}-${round.leftH}`}
+            key={`${round.ask}-${round.pair.name}-${round.tallOnLeft}`}
             className="rounded-full bg-primary text-primary-foreground px-4 py-2 text-base font-extrabold shadow-card animate-pop"
           >
             {promptText}
@@ -121,27 +132,36 @@ const NeckGame = () => {
           <div className="w-12" />
         </div>
 
-        <div className="relative mx-auto flex h-[62vh] w-full max-w-md items-end justify-around rounded-3xl bg-gradient-to-b from-sky-200/60 to-green-300/60 border-4 border-primary/20 shadow-card overflow-hidden">
-          <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 flex justify-between px-6 pt-4 text-3xl opacity-70">
+        <div
+          className="relative mx-auto flex w-full max-w-md items-end justify-around rounded-3xl bg-gradient-to-b from-sky-200/60 to-green-200/60 border-4 border-primary/20 shadow-card overflow-hidden"
+          style={{ height: STAGE_H + 60 }}
+        >
+          {/* Gökyüzü süsleri */}
+          <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 flex justify-between px-6 pt-4 text-3xl opacity-80">
             <span>☁️</span>
             <span className="text-2xl">🌞</span>
             <span>☁️</span>
           </div>
 
           <ObjectButton
-            kind={round.kind}
-            heightPx={round.leftH}
+            emoji={leftEmoji}
+            scale={leftScale}
+            stageHeight={STAGE_H}
             onClick={() => handlePick("left")}
-            feedback={feedback && round.correct === "left" ? feedback : null}
+            feedback={feedback?.side === "left" ? (feedback.ok ? "ok" : "no") : null}
+            ariaLabel={round.pair.name}
           />
           <ObjectButton
-            kind={round.kind}
-            heightPx={round.rightH}
+            emoji={rightEmoji}
+            scale={rightScale}
+            stageHeight={STAGE_H}
             onClick={() => handlePick("right")}
-            feedback={feedback && round.correct === "right" ? feedback : null}
+            feedback={feedback?.side === "right" ? (feedback.ok ? "ok" : "no") : null}
+            ariaLabel={round.pair.name}
           />
 
-          <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-green-600/80 to-transparent" />
+          {/* Zemin (çimen) */}
+          <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-green-600/80 to-transparent" />
         </div>
 
         <div className="mt-6 flex justify-center">
@@ -159,36 +179,39 @@ const NeckGame = () => {
 };
 
 function ObjectButton({
-  kind,
-  heightPx,
+  emoji,
+  scale,
+  stageHeight,
   onClick,
   feedback,
+  ariaLabel,
 }: {
-  kind: ItemKind;
-  heightPx: number;
+  emoji: string;
+  scale: number;
+  stageHeight: number;
   onClick: () => void;
   feedback: "ok" | "no" | null;
+  ariaLabel: string;
 }) {
-  const width = useMemo(() => Math.max(40, kind.baseWidth), [kind]);
+  const fontSize = Math.round(stageHeight * scale);
   return (
     <button
       onClick={onClick}
-      className={`relative z-10 flex flex-col items-center justify-end transition-transform active:scale-95 ${
+      className={`relative z-10 flex items-end justify-center transition-transform active:scale-95 ${
         feedback === "ok" ? "animate-pop" : feedback === "no" ? "animate-[shake_0.4s]" : ""
       }`}
-      style={{ height: heightPx + 30 }}
-      aria-label={kind.name}
+      style={{ height: stageHeight }}
+      aria-label={ariaLabel}
     >
-      <div
-        className={`relative flex items-end justify-center rounded-2xl bg-gradient-to-b ${kind.color} border-4 border-foreground/10 shadow-lg`}
-        style={{ width, height: heightPx }}
+      <span
+        className="leading-none drop-shadow-md"
+        style={{ fontSize, lineHeight: 1 }}
+        aria-hidden
       >
-        <span className="absolute -top-3 text-4xl drop-shadow" aria-hidden>
-          {kind.emoji}
-        </span>
-      </div>
+        {emoji}
+      </span>
       {feedback === "ok" && (
-        <div className="absolute -top-2 right-0 text-3xl animate-bounce-in">✅</div>
+        <span className="absolute -top-2 right-0 text-3xl animate-bounce-in">✅</span>
       )}
     </button>
   );
