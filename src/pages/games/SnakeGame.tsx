@@ -165,8 +165,15 @@ const SnakeGame = () => {
               else setTimeout(() => newFood(newSnake), 0);
             } else {
               playFeedback(false);
-              setGameOver(true);
-              return prev;
+              // Süper modda: aynı soruyu tekrar sor, oyunu bitirme
+              if (isSuper) {
+                enqueueRetryItem(quiz.target);
+                setQuiz(null);
+                setTimeout(() => startQuiz(newSnake), 200);
+              } else {
+                setGameOver(true);
+                return prev;
+              }
             }
           }
         } else if (food && food.pos.x === next.x && food.pos.y === next.y) {
