@@ -42,6 +42,9 @@ const Index = () => {
             <p className="text-xs font-semibold text-muted-foreground">Sana uygun konuları hazırlayalım</p>
           </div>
           <AgePicker />
+          <footer className="mt-6 text-center text-xs text-muted-foreground">
+            <Link to="/privacy-policy" className="underline hover:text-primary">Gizlilik Politikası / Privacy Policy</Link>
+          </footer>
         </main>
       </div>
     );
