@@ -50,6 +50,8 @@ const AppShell = () => {
               <Route path="/ilerleme" element={<Progress />} />
               <Route path="/ayarlar" element={<Settings />} />
               <Route path="/admin" element={<Admin />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/gizlilik" element={<PrivacyPolicy />} />
               
               <Route path="*" element={<NotFound />} />
             </Routes>
