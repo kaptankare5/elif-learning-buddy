@@ -42,6 +42,9 @@ const Index = () => {
             <p className="text-xs font-semibold text-muted-foreground">Sana uygun konuları hazırlayalım</p>
           </div>
           <AgePicker />
+          <footer className="mt-6 text-center text-xs text-muted-foreground">
+            <Link to="/privacy-policy" className="underline hover:text-primary">Gizlilik Politikası / Privacy Policy</Link>
+          </footer>
         </main>
       </div>
     );
@@ -165,6 +168,12 @@ const Index = () => {
         <p className="mt-6 text-center text-xs font-semibold text-muted-foreground">
           {AGE_LABELS[age]} • {allVisible.reduce((a, s) => a + s.topicCount, 0)} Konu • Eğlenceli Oyunlar
         </p>
+
+        <footer className="mt-4 text-center text-xs text-muted-foreground">
+          <Link to="/privacy-policy" className="underline hover:text-primary">Gizlilik Politikası</Link>
+          <span className="mx-2">•</span>
+          <Link to="/privacy-policy" className="underline hover:text-primary">Privacy Policy</Link>
+        </footer>
       </main>
     </div>
   );
