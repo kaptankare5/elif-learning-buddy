@@ -11,7 +11,7 @@ export default function PrivacyPolicy() {
         <section className="space-y-4 text-sm leading-relaxed text-foreground">
           <h2 className="text-xl font-bold mt-6">Toplanan Veriler</h2>
           <p>
-            Bu uygulama, kullanıcının ilerlemesini kaydetmek amacıyla bulut hizmetlerini (Supabase/Lovable Cloud) kullanır.
+            Bu uygulama, kullanıcının ilerlemesini kaydetmek amacıyla güvenli bulut altyapısı kullanır.
             Normal kullanımda, kullanıcıya özel anonim bir kimlik (ID) oluşturulur.
           </p>
           <p>
