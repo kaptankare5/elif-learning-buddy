@@ -1,35 +1,105 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { PageHeader } from "@/components/PageHeader";
 import { HowToPlay } from "@/components/HowToPlay";
 import { playSpeech } from "@/lib/audio";
 
 /**
- * Büyük & Küçük — Top oyunu.
- * Çocuk iki butona basarak topu büyütür/küçültür. Boyut sınıfına göre ses çıkar.
+ * Büyük & Küçük — Gerçek görsel farkı olan eşleştirmeler.
+ * Her tür için "büyük" ve "küçük" varyantları farklı emojilerle gösterilir.
  */
-const MIN = 60, MAX = 320;
-const BIG_TH = 240, SMALL_TH = 110;
+
+type Ask = "big" | "small";
+
+interface KindPair {
+  name: string;
+  big: string;
+  small: string;
+  bigScale: number;
+  smallScale: number;
+}
+
+const PAIRS: KindPair[] = [
+  { name: "fil/fare",     big: "🐘", small: "🐭", bigScale: 1.0,  smallScale: 0.45 },
+  { name: "balina/balık", big: "🐳", small: "🐟", bigScale: 1.0,  smallScale: 0.5 },
+  { name: "ağaç",         big: "🌳", small: "🌱", bigScale: 1.0,  smallScale: 0.45 },
+  { name: "bina/ev",      big: "🏢", small: "🏠", bigScale: 1.0,  smallScale: 0.55 },
+  { name: "araba/oyuncak",big: "🚙", small: "🚗", bigScale: 1.0,  smallScale: 0.5 },
+  { name: "köpek",        big: "🐕", small: "🐶", bigScale: 1.0,  smallScale: 0.55 },
+  { name: "ayı",          big: "🐻", small: "🧸", bigScale: 1.0,  smallScale: 0.55 },
+  { name: "karpuz/üzüm",  big: "🍉", small: "🍇", bigScale: 1.0,  smallScale: 0.55 },
+  { name: "balon",        big: "🎈", small: "🎈", bigScale: 1.0,  smallScale: 0.4 },
+  { name: "yıldız",       big: "⭐", small: "⭐", bigScale: 1.0,  smallScale: 0.4 },
+  { name: "top",          big: "⚽", small: "⚽", bigScale: 1.0,  smallScale: 0.4 },
+  { name: "güneş/ay",     big: "☀️", small: "🌙", bigScale: 1.0,  smallScale: 0.5 },
+];
+
+interface Round {
+  ask: Ask;
+  pair: KindPair;
+  bigOnLeft: boolean;
+}
+
+function makeRound(prev?: Round): Round {
+  let pair = PAIRS[Math.floor(Math.random() * PAIRS.length)];
+  if (prev) {
+    let guard = 0;
+    while (pair.name === prev.pair.name && guard++ < 6) {
+      pair = PAIRS[Math.floor(Math.random() * PAIRS.length)];
+    }
+  }
+  return {
+    ask: Math.random() < 0.5 ? "big" : "small",
+    pair,
+    bigOnLeft: Math.random() < 0.5,
+  };
+}
 
 const SizeGame = () => {
   const { subjectId } = useParams<{ subjectId: string }>();
   const navigate = useNavigate();
   const [intro, setIntro] = useState(true);
-  const [size, setSize] = useState(160);
-  const lastRef = useRef<"big" | "small" | null>(null);
+  const [round, setRound] = useState<Round>(() => makeRound());
+  const [score, setScore] = useState(0);
+  const [feedback, setFeedback] = useState<{ side: "left" | "right"; ok: boolean } | null>(null);
 
   useEffect(() => {
     if (intro) return;
-    const cls = size >= BIG_TH ? "big" : size <= SMALL_TH ? "small" : null;
-    if (cls && cls !== lastRef.current) {
-      lastRef.current = cls;
-      playSpeech(cls === "big" ? "büyük" : "küçük", "tr");
-    } else if (!cls) {
-      lastRef.current = null;
-    }
-  }, [size, intro]);
+    const t = setTimeout(() => {
+      playSpeech(round.ask === "big" ? "Büyük olanı seç" : "Küçük olanı seç", "tr");
+    }, 150);
+    return () => clearTimeout(t);
+  }, [round, intro]);
 
-  const status = size >= BIG_TH ? "big" : size <= SMALL_TH ? "small" : null;
+  const correctSide: "left" | "right" =
+    round.ask === "big"
+      ? round.bigOnLeft ? "left" : "right"
+      : round.bigOnLeft ? "right" : "left";
+
+  const handlePick = (side: "left" | "right") => {
+    if (feedback) return;
+    const ok = side === correctSide;
+    setFeedback({ side, ok });
+    if (ok) {
+      setScore((s) => s + 1);
+      playSpeech(round.ask === "big" ? "Büyük!" : "Küçük!", "tr");
+      setTimeout(() => {
+        setFeedback(null);
+        setRound((r) => makeRound(r));
+      }, 900);
+    } else {
+      playSpeech("Tekrar dene", "tr");
+      setTimeout(() => setFeedback(null), 700);
+    }
+  };
+
+  const promptText = round.ask === "big" ? "🔼 Büyük olanı seç" : "🔽 Küçük olanı seç";
+
+  const STAGE_H = 320;
+  const leftScale  = round.bigOnLeft ? round.pair.bigScale  : round.pair.smallScale;
+  const rightScale = round.bigOnLeft ? round.pair.smallScale : round.pair.bigScale;
+  const leftEmoji  = round.bigOnLeft ? round.pair.big : round.pair.small;
+  const rightEmoji = round.bigOnLeft ? round.pair.small : round.pair.big;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-warning/10 via-background to-secondary/20">
@@ -37,50 +107,53 @@ const SizeGame = () => {
         <PageHeader backTo={`/konu/${subjectId}`} />
         {intro && (
           <HowToPlay
-            voice="Topu büyüt veya küçült."
+            voice="Büyük ya da küçük olanı seç."
             hint="tap-two"
-            emoji="⚽"
+            emoji="🔵"
             onDone={() => setIntro(false)}
           />
         )}
 
-        <div className="relative mx-auto mt-4 flex h-[55vh] w-full max-w-sm items-center justify-center rounded-3xl bg-gradient-to-b from-sky-100 to-green-100 border-4 border-primary/20 shadow-card overflow-hidden">
-          {status && (
-            <div
-              key={status}
-              className={`absolute top-4 left-1/2 -translate-x-1/2 rounded-full px-5 py-2 text-3xl font-extrabold shadow-soft animate-pop ${
-                status === "big" ? "bg-success text-white" : "bg-info text-white"
-              }`}
-            >
-              {status === "big" ? "🔼 Büyük" : "🔽 Küçük"}
-            </div>
-          )}
-          <div
-            className="leading-none flex items-center justify-center"
-            style={{ fontSize: size, transition: "font-size 120ms ease-out" }}
-          >
-            ⚽
+        <div className="mt-2 mb-3 flex items-center justify-between">
+          <div className="rounded-full bg-card px-3 py-1.5 text-sm font-extrabold shadow-card">
+            ⭐ {score}
           </div>
+          <div
+            key={`${round.ask}-${round.pair.name}-${round.bigOnLeft}`}
+            className="rounded-full bg-primary text-primary-foreground px-4 py-2 text-base font-extrabold shadow-card animate-pop"
+          >
+            {promptText}
+          </div>
+          <div className="w-12" />
         </div>
 
-        <div className="mt-6 grid grid-cols-2 gap-4">
-          <button
-            onClick={() => setSize((s) => Math.max(MIN, s - 30))}
-            className="aspect-square rounded-3xl bg-card border-4 border-info/40 shadow-card text-7xl active:scale-95 transition-bouncy"
-            aria-label="Küçült"
-          >
-            ➖
-          </button>
-          <button
-            onClick={() => setSize((s) => Math.min(MAX, s + 30))}
-            className="aspect-square rounded-3xl bg-card border-4 border-success/40 shadow-card text-7xl active:scale-95 transition-bouncy"
-            aria-label="Büyüt"
-          >
-            ➕
-          </button>
+        <div
+          className="relative mx-auto flex w-full max-w-md items-center justify-around rounded-3xl bg-gradient-to-b from-sky-100 to-green-100 border-4 border-primary/20 shadow-card overflow-hidden"
+          style={{ height: STAGE_H + 40 }}
+        >
+          <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 flex justify-between px-6 pt-3 text-2xl opacity-80">
+            <span>☁️</span><span>🌞</span><span>☁️</span>
+          </div>
+
+          <ObjectButton
+            emoji={leftEmoji}
+            scale={leftScale}
+            stageHeight={STAGE_H}
+            onClick={() => handlePick("left")}
+            feedback={feedback?.side === "left" ? (feedback.ok ? "ok" : "no") : null}
+            ariaLabel={round.pair.name}
+          />
+          <ObjectButton
+            emoji={rightEmoji}
+            scale={rightScale}
+            stageHeight={STAGE_H}
+            onClick={() => handlePick("right")}
+            feedback={feedback?.side === "right" ? (feedback.ok ? "ok" : "no") : null}
+            ariaLabel={round.pair.name}
+          />
         </div>
 
-        <div className="mt-4 flex justify-center">
+        <div className="mt-6 flex justify-center">
           <button
             onClick={() => navigate(`/konu/${subjectId}`)}
             className="rounded-full bg-primary/10 px-6 py-3 text-2xl"
@@ -93,5 +166,35 @@ const SizeGame = () => {
     </div>
   );
 };
+
+function ObjectButton({
+  emoji, scale, stageHeight, onClick, feedback, ariaLabel,
+}: {
+  emoji: string;
+  scale: number;
+  stageHeight: number;
+  onClick: () => void;
+  feedback: "ok" | "no" | null;
+  ariaLabel: string;
+}) {
+  const fontSize = Math.round(stageHeight * scale);
+  return (
+    <button
+      onClick={onClick}
+      className={`relative z-10 flex items-center justify-center transition-transform active:scale-95 ${
+        feedback === "ok" ? "animate-pop" : feedback === "no" ? "animate-[shake_0.4s]" : ""
+      }`}
+      style={{ height: stageHeight }}
+      aria-label={ariaLabel}
+    >
+      <span className="leading-none drop-shadow-md" style={{ fontSize, lineHeight: 1 }} aria-hidden>
+        {emoji}
+      </span>
+      {feedback === "ok" && (
+        <span className="absolute -top-2 right-0 text-3xl animate-bounce-in">✅</span>
+      )}
+    </button>
+  );
+}
 
 export default SizeGame;
