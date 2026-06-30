@@ -23,7 +23,9 @@ export const CapacitorBackHandler = () => {
         const w = window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } };
         if (!w.Capacitor?.isNativePlatform?.()) return;
 
-        const mod: any = await import(/* @vite-ignore */ ("@capacitor/" + "app")).catch(() => null);
+        const pkg = ["@capacitor", "app"].join("/");
+        const dynImport = new Function("p", "return import(p)") as (p: string) => Promise<any>;
+        const mod: any = await dynImport(pkg).catch(() => null);
         const App = mod?.App;
         if (cancelled || !App) return;
 
