@@ -21,6 +21,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { SubscriptionProvider } from "@/hooks/useSubscription";
 import { BottomNav } from "@/components/BottomNav";
 import { ConsentModal } from "@/components/ConsentModal";
+import { CapacitorBackHandler } from "@/components/CapacitorBackHandler";
 
 import { installAudioUnlock } from "@/lib/audio";
 
@@ -37,6 +38,7 @@ const AppShell = () => {
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <CapacitorBackHandler />
           <SubscriptionProvider>
             <Routes>
               <Route path="/" element={<Index />} />
