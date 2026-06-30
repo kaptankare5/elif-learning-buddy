@@ -38,6 +38,7 @@ const AppShell = () => {
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <CapacitorBackHandler />
           <SubscriptionProvider>
             <Routes>
               <Route path="/" element={<Index />} />
