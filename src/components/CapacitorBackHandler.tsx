@@ -23,9 +23,8 @@ export const CapacitorBackHandler = () => {
         const w = window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } };
         if (!w.Capacitor?.isNativePlatform?.()) return;
 
-        const [{ App }] = await Promise.all([
-          import(/* @vite-ignore */ "@capacitor/app").catch(() => ({ App: null as null | { addListener: Function; exitApp: () => void } })),
-        ]);
+        const mod: any = await import(/* @vite-ignore */ ("@capacitor/" + "app")).catch(() => null);
+        const App = mod?.App;
         if (cancelled || !App) return;
 
         const handle = await App.addListener("backButton", () => {
