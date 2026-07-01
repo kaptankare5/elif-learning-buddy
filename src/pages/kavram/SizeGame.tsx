@@ -66,7 +66,7 @@ const SizeGame = () => {
   useEffect(() => {
     if (intro) return;
     const t = setTimeout(() => {
-      playSpeech(round.ask === "big" ? "Büyük olanı seç" : "Küçük olanı seç", "tr");
+      playSpeech(round.ask === "big" ? "büyük" : "küçük", "tr");
     }, 150);
     return () => clearTimeout(t);
   }, [round, intro]);
@@ -82,7 +82,7 @@ const SizeGame = () => {
     setFeedback({ side, ok });
     if (ok) {
       setScore((s) => s + 1);
-      playSpeech(round.ask === "big" ? "Büyük!" : "Küçük!", "tr");
+      playSpeech(round.ask === "big" ? "büyük" : "küçük", "tr");
       setTimeout(() => {
         setFeedback(null);
         setRound((r) => makeRound(r));
@@ -177,11 +177,11 @@ function ObjectButton({
   feedback: "ok" | "no" | null;
   ariaLabel: string;
 }) {
-  const fontSize = Math.round(stageHeight * scale);
+  const fontSize = `min(${Math.round(stageHeight * scale)}px, ${Math.round(scale * 38)}vw)`;
   return (
     <button
       onClick={onClick}
-      className={`relative z-10 flex items-center justify-center transition-transform active:scale-95 ${
+      className={`relative z-10 flex items-center justify-center transition-transform active:scale-95 flex-1 min-w-0 ${
         feedback === "ok" ? "animate-pop" : feedback === "no" ? "animate-[shake_0.4s]" : ""
       }`}
       style={{ height: stageHeight }}

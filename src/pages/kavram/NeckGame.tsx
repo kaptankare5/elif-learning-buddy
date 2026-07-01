@@ -70,7 +70,7 @@ const NeckGame = () => {
   useEffect(() => {
     if (intro) return;
     const t = setTimeout(() => {
-      playSpeech(round.ask === "long" ? "Uzun olanı seç" : "Kısa olanı seç", "tr");
+      playSpeech(round.ask === "long" ? "uzun" : "kısa", "tr");
     }, 150);
     return () => clearTimeout(t);
   }, [round, intro]);
@@ -86,7 +86,7 @@ const NeckGame = () => {
     setFeedback({ side, ok });
     if (ok) {
       setScore((s) => s + 1);
-      playSpeech(round.ask === "long" ? "Uzun!" : "Kısa!", "tr");
+      playSpeech(round.ask === "long" ? "uzun" : "kısa", "tr");
       setTimeout(() => {
         setFeedback(null);
         setRound((r) => makeRound(r));
@@ -193,11 +193,12 @@ function ObjectButton({
   feedback: "ok" | "no" | null;
   ariaLabel: string;
 }) {
-  const fontSize = Math.round(stageHeight * scale);
+  // Responsive font: sığdır — hem sahne yüksekliğine hem yarım ekran genişliğine göre ölçekle
+  const fontSize = `min(${Math.round(stageHeight * scale)}px, ${Math.round(scale * 38)}vw)`;
   return (
     <button
       onClick={onClick}
-      className={`relative z-10 flex items-end justify-center transition-transform active:scale-95 ${
+      className={`relative z-10 flex items-end justify-center transition-transform active:scale-95 flex-1 min-w-0 ${
         feedback === "ok" ? "animate-pop" : feedback === "no" ? "animate-[shake_0.4s]" : ""
       }`}
       style={{ height: stageHeight }}
