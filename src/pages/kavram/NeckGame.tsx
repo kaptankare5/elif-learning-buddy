@@ -70,7 +70,7 @@ const NeckGame = () => {
   useEffect(() => {
     if (intro) return;
     const t = setTimeout(() => {
-      playSpeech(round.ask === "long" ? "Uzun olanı seç" : "Kısa olanı seç", "tr");
+      playSpeech(round.ask === "long" ? "uzun" : "kısa", "tr");
     }, 150);
     return () => clearTimeout(t);
   }, [round, intro]);
