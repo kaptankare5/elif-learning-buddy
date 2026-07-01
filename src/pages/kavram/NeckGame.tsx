@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { PageHeader } from "@/components/PageHeader";
 import { HowToPlay } from "@/components/HowToPlay";
-import { playSpeech } from "@/lib/audio";
+import { playSpeech, playFeedback } from "@/lib/audio";
 
 /**
  * Uzun & Kısa — Gerçek görsel farkı olan eşleştirmeler.
@@ -84,17 +84,12 @@ const NeckGame = () => {
     if (feedback) return;
     const ok = side === correctSide;
     setFeedback({ side, ok });
-    if (ok) {
-      setScore((s) => s + 1);
-      playSpeech(round.ask === "long" ? "uzun" : "kısa", "tr");
-      setTimeout(() => {
-        setFeedback(null);
-        setRound((r) => makeRound(r));
-      }, 900);
-    } else {
-      playSpeech("Tekrar dene", "tr");
-      setTimeout(() => setFeedback(null), 700);
-    }
+    playFeedback(ok);
+    if (ok) setScore((s) => s + 1);
+    setTimeout(() => {
+      setFeedback(null);
+      setRound((r) => makeRound(r));
+    }, ok ? 800 : 1100);
   };
 
   const promptText = round.ask === "long" ? "🔼 Uzun olanı seç" : "🔽 Kısa olanı seç";
