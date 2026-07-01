@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState, ReactN
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { setActiveSrsUser, hydrateSrsFromCloud } from "@/data/srs";
+import { initPurchases, loginPurchases, logoutPurchases } from "@/lib/purchases";
 
 interface AuthCtx {
   user: User | null;
