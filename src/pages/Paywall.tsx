@@ -3,115 +3,90 @@ import { Link, useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/PageHeader";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useAuth } from "@/hooks/useAuth";
-import { Check, Lock, Crown, Sparkles, Zap, Heart } from "lucide-react";
+import { Check, Lock, Crown, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { trackPaywall } from "@/lib/analytics";
 import { ParentGate } from "@/components/ParentGate";
+import {
+  getOfferings,
+  purchasePackage,
+  restorePurchases,
+  isNativePlatform,
+  type RcPackages,
+} from "@/lib/purchases";
 
-interface Plan {
-  id: string;          // product_id (used to derive tier)
-  name: string;
-  price: number;       // TL
-  per: string;         // "ay" | "destek"
-  monthly?: string;
-  badge?: string;
-  highlight?: boolean;
-  features: string[];
-  icon: typeof Crown;
-  tone: "basic" | "super" | "patron";
-}
-
-// Tier'lar: free (limitli + normal mod) → basic (49₺ tüm konular) →
-// super (249₺ tüm konular + süper öğrenme) → patron (5000₺ onur listesi)
-const PLANS: Plan[] = [
-  {
-    id: "basic_monthly",
-    name: "Tam Erişim",
-    price: 49,
-    per: "ay",
-    monthly: "₺49/ay",
-    icon: Sparkles,
-    tone: "basic",
-    features: [
-      "Tüm konular açık (Türkçe, İngilizce, Matematik, Doğa, Kavramlar)",
-      "Tüm yaşlar için sınırsız içerik",
-      "Normal öğrenme modu",
-      "Reklamsız deneyim",
-    ],
-  },
-  {
-    id: "super_monthly",
-    name: "Süper Öğrenme",
-    price: 249,
-    per: "ay",
-    monthly: "₺249/ay",
-    badge: "Yeni",
-    highlight: true,
-    icon: Zap,
-    tone: "super",
-    features: [
-      "Tam Erişim paketinin tüm özellikleri",
-      "⚡ Süper Öğrenme modu açılır",
-      "Bilmiyordu / yeni öğrendi / biliyordu izleme",
-      "Sıkı tekrar, hızlı kalıcılık",
-    ],
-  },
-  {
-    id: "patron_monthly",
-    name: "Onur Listesi",
-    price: 5000,
-    per: "ay",
-    monthly: "₺5000/ay",
-    badge: "VIP",
-    icon: Heart,
-    tone: "patron",
-    features: [
-      "Süper Öğrenme paketinin tüm özellikleri",
-      "Abone olduğun sürece adın 👑 Onur Listesi'nde",
-      "Aylık abonelik — istediğin zaman iptal",
-      "Uygulamayı ayakta tutanlar",
-    ],
-  },
+const FEATURES = [
+  "Tüm konular açık (Türkçe, İngilizce, Matematik, Doğa, Kavramlar)",
+  "Tüm yaşlar için sınırsız içerik",
+  "⚡ Süper Öğrenme modu açık",
+  "Tüm oyunlar ve seviyeler kilitsiz",
+  "Reklamsız, kesintisiz deneyim",
 ];
 
-const TONE_RING: Record<Plan["tone"], string> = {
-  basic: "border-primary",
-  super: "border-warning",
-  patron: "border-destructive",
-};
+type PlanKey = "monthly" | "yearly";
 
 const Paywall = () => {
-  const { isPremium, isAdmin, loading, expiresAt, plan, tier } = useSubscription();
+  const { isPremium, isAdmin, loading, refresh } = useSubscription();
   const { session } = useAuth();
   const navigate = useNavigate();
-  const [selected, setSelected] = useState<string>("super_monthly");
+  const [selected, setSelected] = useState<PlanKey>("yearly");
   const [parentOk, setParentOk] = useState(false);
   const [parentConsent, setParentConsent] = useState(false);
   const [gateOpen, setGateOpen] = useState(false);
+  const [pkgs, setPkgs] = useState<RcPackages>({ monthly: null, yearly: null, monthlyPrice: null, yearlyPrice: null });
+  const [buying, setBuying] = useState(false);
+  const native = isNativePlatform();
 
   useEffect(() => { void trackPaywall("viewed"); }, []);
 
-  const handleSelect = (id: string) => {
+  useEffect(() => {
+    (async () => {
+      const p = await getOfferings();
+      setPkgs(p);
+    })();
+  }, []);
+
+  const handleSelect = (id: PlanKey) => {
     setSelected(id);
     void trackPaywall("plan_selected", id);
   };
 
-  const runCheckout = () => {
-    const p = PLANS.find((x) => x.id === selected);
+  const runCheckout = async () => {
     void trackPaywall("checkout_started", selected);
-    alert(
-      `"${p?.name}" (${p?.price}₺) — abonelik satın alma mobil sürümde (Google Play Billing / Capacitor) aktif olacaktır.`,
-    );
+    if (!native) {
+      alert("Abonelik satın alma sadece mobil uygulama (Android/iOS) üzerinden yapılabilir.");
+      return;
+    }
+    const pkg = selected === "yearly" ? pkgs.yearly : pkgs.monthly;
+    if (!pkg) {
+      alert("Abonelik bilgileri yüklenemedi. Lütfen tekrar dene.");
+      return;
+    }
+    setBuying(true);
+    const ok = await purchasePackage(pkg);
+    setBuying(false);
+    if (ok) {
+      await refresh();
+      navigate("/");
+    }
   };
 
   const handleSubscribe = () => {
     if (!session) { navigate("/giris"); return; }
     if (!parentConsent) { alert("Önce veli beyanını onaylamalısın."); return; }
     if (!parentOk) { setGateOpen(true); return; }
-    runCheckout();
+    void runCheckout();
   };
 
-  const currentPlan = PLANS.find((p) => p.id === plan);
+  const handleRestore = async () => {
+    if (!native) { alert("Geri yükleme sadece mobil uygulamada çalışır."); return; }
+    const ok = await restorePurchases();
+    await refresh();
+    alert(ok ? "Aboneliğin geri yüklendi ✨" : "Aktif bir abonelik bulunamadı.");
+  };
+
+  const monthlyPrice = pkgs.monthlyPrice ?? "₺49,99/ay";
+  const yearlyPrice = pkgs.yearlyPrice ?? "₺399,99/yıl";
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-warning/20 via-background to-primary-soft/30">
@@ -122,21 +97,13 @@ const Paywall = () => {
           <p className="text-center text-muted-foreground font-bold py-12">Yükleniyor…</p>
         ) : isPremium ? (
           <div className="rounded-3xl bg-card p-6 shadow-card border-4 border-success/40 text-center animate-bounce-in">
-            <div className="text-6xl mb-3">
-              {isAdmin ? "🛡️" : tier === "patron" ? "👑" : tier === "super" ? "⚡" : "✨"}
-            </div>
+            <div className="text-6xl mb-3">{isAdmin ? "🛡️" : "✨"}</div>
             <h1 className="text-2xl font-extrabold text-success mb-2">
-              {isAdmin ? "Yönetici Erişimi" : `${currentPlan?.name ?? "Premium"} aktif!`}
+              {isAdmin ? "Yönetici Erişimi" : "Endless Mum Pro aktif!"}
             </h1>
             <p className="text-sm font-bold text-muted-foreground mb-4">
-              Tüm konular ve oyunlar açık.
-              {tier === "patron" && " Adın Onur Listesi'nde 💛"}
+              Tüm konular, oyunlar ve Süper Öğrenme modu açık.
             </p>
-            {expiresAt && !isAdmin && (
-              <p className="text-xs font-semibold text-muted-foreground">
-                Bitiş: {new Date(expiresAt).toLocaleDateString("tr-TR")}
-              </p>
-            )}
             <Link
               to="/"
               className="mt-5 inline-block rounded-full bg-primary text-primary-foreground px-6 py-3 font-extrabold shadow-soft"
@@ -148,67 +115,50 @@ const Paywall = () => {
           <>
             <div className="rounded-3xl bg-gradient-to-br from-warning to-primary p-6 text-white text-center shadow-elegant mb-5 animate-bounce-in">
               <Crown className="h-14 w-14 mx-auto mb-2" />
-              <h1 className="text-3xl font-extrabold text-shadow-soft mb-1">Paket Seç</h1>
-              <p className="text-sm font-bold opacity-90">Ücretsiz sürümde sınırlı içerik + normal mod açıktır.</p>
+              <h1 className="text-3xl font-extrabold text-shadow-soft mb-1">Endless Mum Pro</h1>
+              <p className="text-sm font-bold opacity-90">Tek abonelik — her şey açık.</p>
             </div>
 
-            <div className="space-y-3 mb-5">
-              {PLANS.map((p) => {
-                const isSel = selected === p.id;
-                const Icon = p.icon;
+            <div className="rounded-3xl bg-card p-5 shadow-card border-4 border-primary/30 mb-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles className="h-5 w-5 text-warning" />
+                <h2 className="font-extrabold text-lg">Pro üyelik neler açar?</h2>
+              </div>
+              <ul className="space-y-2">
+                {FEATURES.map((f) => (
+                  <li key={f} className="flex items-start gap-2 text-sm font-semibold text-foreground/90">
+                    <Check className="h-5 w-5 text-success shrink-0 mt-0.5" />
+                    <span>{f}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mb-5">
+              {(["yearly", "monthly"] as const).map((key) => {
+                const isSel = selected === key;
+                const price = key === "yearly" ? yearlyPrice : monthlyPrice;
+                const title = key === "yearly" ? "Yıllık" : "Aylık";
+                const badge = key === "yearly" ? "En avantajlı" : null;
                 return (
                   <button
-                    key={p.id}
-                    onClick={() => handleSelect(p.id)}
+                    key={key}
+                    onClick={() => handleSelect(key)}
                     className={cn(
-                      "w-full text-left rounded-3xl p-4 border-4 shadow-card transition-bouncy",
-                      isSel
-                        ? `bg-card ${TONE_RING[p.tone]}`
-                        : "bg-card border-border/40 hover:border-primary/40",
-                      p.highlight && !isSel && "border-warning/40",
+                      "rounded-3xl p-4 border-4 shadow-card transition-bouncy text-left",
+                      isSel ? "bg-card border-primary" : "bg-card border-border/40 hover:border-primary/40",
                     )}
                   >
-                    <div className="flex items-start gap-3">
-                      <div className={cn(
-                        "h-12 w-12 rounded-2xl flex items-center justify-center shrink-0",
-                        p.tone === "basic" && "bg-primary/15 text-primary",
-                        p.tone === "super" && "bg-warning/20 text-warning",
-                        p.tone === "patron" && "bg-destructive/15 text-destructive",
-                      )}>
-                        <Icon className="h-7 w-7" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-extrabold text-base text-foreground">{p.name}</span>
-                          {p.badge && (
-                            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-warning/20 text-warning">
-                              {p.badge}
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-xs font-bold text-muted-foreground">{p.monthly}</div>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <div className="text-xl font-extrabold text-primary">₺{p.price}</div>
-                        <div className="text-[10px] font-bold text-muted-foreground">/ {p.per}</div>
-                      </div>
-                    </div>
-                    <ul className="mt-3 space-y-1.5 pl-1">
-                      {p.features.map((f) => (
-                        <li key={f} className="flex items-start gap-2 text-xs font-semibold text-foreground/90">
-                          <Check className="h-4 w-4 text-success shrink-0 mt-0.5" />
-                          <span>{f}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    {badge && (
+                      <span className="inline-block mb-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-warning/20 text-warning">
+                        {badge}
+                      </span>
+                    )}
+                    <div className="font-extrabold text-base">{title}</div>
+                    <div className="text-primary font-extrabold text-lg mt-1">{price}</div>
                   </button>
                 );
               })}
-            </div>
-
-            <div className="rounded-2xl bg-muted/40 p-3 mb-4 text-[11px] font-semibold text-muted-foreground">
-              <strong>Ücretsiz:</strong> her dersin ilk yarısı + normal öğrenme modu.
-              Oyunlar herkese açıktır.
             </div>
 
             <label className="flex items-start gap-2 mb-3 text-[11px] text-muted-foreground leading-snug cursor-pointer px-1">
@@ -222,20 +172,28 @@ const Paywall = () => {
 
             <button
               onClick={handleSubscribe}
-              className="w-full rounded-3xl bg-gradient-to-r from-warning to-primary text-white py-5 font-extrabold text-lg shadow-elegant active:scale-95 transition-bouncy flex items-center justify-center gap-2"
+              disabled={buying}
+              className="w-full rounded-3xl bg-gradient-to-r from-warning to-primary text-white py-5 font-extrabold text-lg shadow-elegant active:scale-95 transition-bouncy flex items-center justify-center gap-2 disabled:opacity-60"
             >
-              <Crown className="h-6 w-6" /> Devam Et
+              <Crown className="h-6 w-6" /> {buying ? "İşleniyor…" : "Pro'ya Geç"}
+            </button>
+
+            <button
+              onClick={handleRestore}
+              className="mt-3 w-full rounded-2xl border-2 border-border py-3 text-sm font-bold text-muted-foreground hover:bg-muted/40"
+            >
+              Satın almayı geri yükle
             </button>
 
             <p className="mt-4 text-center text-[11px] text-muted-foreground">
-              Satın alma Google Play / App Store üzerinden gerçekleşir (Capacitor). Aboneliği istediğin zaman iptal edebilirsin.
+              Satın alma Google Play / App Store üzerinden gerçekleşir. Aboneliği istediğin zaman iptal edebilirsin.
             </p>
           </>
         )}
 
         <ParentGate
           open={gateOpen}
-          onPass={() => { setParentOk(true); setGateOpen(false); runCheckout(); }}
+          onPass={() => { setParentOk(true); setGateOpen(false); void runCheckout(); }}
           onCancel={() => setGateOpen(false)}
           title="Ödemeden önce: Veli doğrulaması"
         />
