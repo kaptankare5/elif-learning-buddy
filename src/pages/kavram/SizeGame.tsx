@@ -66,7 +66,7 @@ const SizeGame = () => {
   useEffect(() => {
     if (intro) return;
     const t = setTimeout(() => {
-      playSpeech(round.ask === "big" ? "Büyük olanı seç" : "Küçük olanı seç", "tr");
+      playSpeech(round.ask === "big" ? "büyük" : "küçük", "tr");
     }, 150);
     return () => clearTimeout(t);
   }, [round, intro]);
