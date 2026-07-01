@@ -194,7 +194,7 @@ function ObjectButton({
   ariaLabel: string;
 }) {
   // Responsive font: sığdır — hem sahne yüksekliğine hem yarım ekran genişliğine göre ölçekle
-  const fontSize = `min(${Math.round(stageHeight * scale)}px, ${Math.round(scale * 38)}vw)`;
+  const fontSize = `min(${Math.round(stageHeight * scale * 0.9)}px, ${Math.round(scale * 32)}vw)`;
   return (
     <button
       onClick={onClick}
