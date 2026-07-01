@@ -128,7 +128,7 @@ const SizeGame = () => {
         </div>
 
         <div
-          className="relative mx-auto flex w-full max-w-md items-center justify-around rounded-3xl bg-gradient-to-b from-sky-100 to-green-100 border-4 border-primary/20 shadow-card overflow-hidden"
+          className="relative mx-auto flex w-full max-w-md items-center justify-around gap-2 rounded-3xl bg-gradient-to-b from-sky-100 to-green-100 border-4 border-primary/20 shadow-card overflow-hidden px-2"
           style={{ height: STAGE_H + 40 }}
         >
           <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 flex justify-between px-6 pt-3 text-2xl opacity-80">
