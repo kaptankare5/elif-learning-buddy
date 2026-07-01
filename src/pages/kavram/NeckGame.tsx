@@ -133,7 +133,7 @@ const NeckGame = () => {
         </div>
 
         <div
-          className="relative mx-auto flex w-full max-w-md items-end justify-around rounded-3xl bg-gradient-to-b from-sky-200/60 to-green-200/60 border-4 border-primary/20 shadow-card overflow-hidden"
+          className="relative mx-auto flex w-full max-w-md items-end justify-around gap-2 rounded-3xl bg-gradient-to-b from-sky-200/60 to-green-200/60 border-4 border-primary/20 shadow-card overflow-hidden px-2"
           style={{ height: STAGE_H + 60 }}
         >
           {/* Gökyüzü süsleri */}
@@ -194,7 +194,7 @@ function ObjectButton({
   ariaLabel: string;
 }) {
   // Responsive font: sığdır — hem sahne yüksekliğine hem yarım ekran genişliğine göre ölçekle
-  const fontSize = `min(${Math.round(stageHeight * scale)}px, ${Math.round(scale * 38)}vw)`;
+  const fontSize = `min(${Math.round(stageHeight * scale * 0.9)}px, ${Math.round(scale * 32)}vw)`;
   return (
     <button
       onClick={onClick}

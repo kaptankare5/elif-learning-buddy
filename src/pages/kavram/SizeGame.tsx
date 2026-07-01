@@ -128,7 +128,7 @@ const SizeGame = () => {
         </div>
 
         <div
-          className="relative mx-auto flex w-full max-w-md items-center justify-around rounded-3xl bg-gradient-to-b from-sky-100 to-green-100 border-4 border-primary/20 shadow-card overflow-hidden"
+          className="relative mx-auto flex w-full max-w-md items-center justify-around gap-2 rounded-3xl bg-gradient-to-b from-sky-100 to-green-100 border-4 border-primary/20 shadow-card overflow-hidden px-2"
           style={{ height: STAGE_H + 40 }}
         >
           <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 flex justify-between px-6 pt-3 text-2xl opacity-80">
@@ -177,7 +177,7 @@ function ObjectButton({
   feedback: "ok" | "no" | null;
   ariaLabel: string;
 }) {
-  const fontSize = `min(${Math.round(stageHeight * scale)}px, ${Math.round(scale * 38)}vw)`;
+  const fontSize = `min(${Math.round(stageHeight * scale * 0.85)}px, ${Math.round(scale * 32)}vw)`;
   return (
     <button
       onClick={onClick}
