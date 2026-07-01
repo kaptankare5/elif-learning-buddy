@@ -177,11 +177,11 @@ function ObjectButton({
   feedback: "ok" | "no" | null;
   ariaLabel: string;
 }) {
-  const fontSize = Math.round(stageHeight * scale);
+  const fontSize = `min(${Math.round(stageHeight * scale)}px, ${Math.round(scale * 38)}vw)`;
   return (
     <button
       onClick={onClick}
-      className={`relative z-10 flex items-center justify-center transition-transform active:scale-95 ${
+      className={`relative z-10 flex items-center justify-center transition-transform active:scale-95 flex-1 min-w-0 ${
         feedback === "ok" ? "animate-pop" : feedback === "no" ? "animate-[shake_0.4s]" : ""
       }`}
       style={{ height: stageHeight }}
