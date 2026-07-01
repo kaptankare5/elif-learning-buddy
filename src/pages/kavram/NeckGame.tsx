@@ -86,7 +86,7 @@ const NeckGame = () => {
     setFeedback({ side, ok });
     if (ok) {
       setScore((s) => s + 1);
-      playSpeech(round.ask === "long" ? "Uzun!" : "Kısa!", "tr");
+      playSpeech(round.ask === "long" ? "uzun" : "kısa", "tr");
       setTimeout(() => {
         setFeedback(null);
         setRound((r) => makeRound(r));
