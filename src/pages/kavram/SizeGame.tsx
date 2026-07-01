@@ -177,7 +177,7 @@ function ObjectButton({
   feedback: "ok" | "no" | null;
   ariaLabel: string;
 }) {
-  const fontSize = `min(${Math.round(stageHeight * scale)}px, ${Math.round(scale * 38)}vw)`;
+  const fontSize = `min(${Math.round(stageHeight * scale * 0.85)}px, ${Math.round(scale * 32)}vw)`;
   return (
     <button
       onClick={onClick}
