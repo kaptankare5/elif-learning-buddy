@@ -82,7 +82,7 @@ const SizeGame = () => {
     setFeedback({ side, ok });
     if (ok) {
       setScore((s) => s + 1);
-      playSpeech(round.ask === "big" ? "Büyük!" : "Küçük!", "tr");
+      playSpeech(round.ask === "big" ? "büyük" : "küçük", "tr");
       setTimeout(() => {
         setFeedback(null);
         setRound((r) => makeRound(r));
