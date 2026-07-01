@@ -19,16 +19,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const prevUidRef = useRef<string | null>(null);
 
   useEffect(() => {
+    void initPurchases();
     const apply = (s: Session | null) => {
       const newUid = s?.user?.id ?? null;
       const prevUid = prevUidRef.current;
       if (newUid !== prevUid) {
-        // Aktif SRS kapsamını değiştir. Misafir önbelleği KORUNUR — hesap kendi
-        // önbelleğine buluttan çekilir; cihaz başkasıyla paylaşılıyorsa Ayarlar >
-        // "Cihazdaki ilerlememi sil" ile temizlenebilir.
         setActiveSrsUser(newUid);
         if (newUid) {
           void hydrateSrsFromCloud(newUid).catch(() => {});
+          void loginPurchases(newUid).catch(() => {});
+        } else if (prevUid) {
+          void logoutPurchases().catch(() => {});
         }
         prevUidRef.current = newUid;
       }
