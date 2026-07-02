@@ -16,7 +16,7 @@ import {
 } from "@/lib/purchases";
 
 const FEATURES = [
-  "Tüm konular açık (Türkçe, İngilizce, Matematik, Doğa, Kavramlar)",
+  "Tüm konular açık (İngilizce, Matematik, Doğa, Kavramlar)",
   "Tüm yaşlar için sınırsız içerik",
   "⚡ Süper Öğrenme modu açık",
   "Tüm oyunlar ve seviyeler kilitsiz",
@@ -86,7 +86,7 @@ const Paywall = () => {
   };
 
   const monthlyPrice = pkgs.monthlyPrice ?? "₺49,99/ay";
-  const yearlyPrice = pkgs.yearlyPrice ?? "₺399,99/yıl";
+  const yearlyPrice = pkgs.yearlyPrice ?? "₺4.999,99/yıl";
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-warning/20 via-background to-primary-soft/30">
@@ -139,7 +139,7 @@ const Paywall = () => {
                 const isSel = selected === key;
                 const price = key === "yearly" ? yearlyPrice : monthlyPrice;
                 const title = key === "yearly" ? "Yıllık" : "Aylık";
-                const badge = key === "yearly" ? "En avantajlı" : null;
+                const badge = null;
                 return (
                   <button
                     key={key}
